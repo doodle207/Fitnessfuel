@@ -1,15 +1,28 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: FitTrack Pro API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: profile
+    description: User profile operations
+  - name: workouts
+    description: Workout tracking operations
+  - name: exercises
+    description: Exercise library operations
+  - name: progress
+    description: Progress tracking operations
+  - name: diet
+    description: Diet and nutrition operations
+  - name: achievements
+    description: Achievements and badges
 paths:
   /healthz:
     get:
@@ -24,6 +37,496 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/user:
+    get:
+      operationId: getCurrentAuthUser
+      tags: [auth]
+      summary: Get current user auth state
+      responses:
+        "200":
+          description: Current auth user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetCurrentAuthUserResponse"
+
+  /login:
+    get:
+      operationId: beginBrowserLogin
+      tags: [auth]
+      summary: Start browser OIDC login flow
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to OIDC provider
+
+  /callback:
+    get:
+      operationId: handleBrowserLoginCallback
+      tags: [auth]
+      summary: Complete the browser OIDC login flow
+      responses:
+        "302":
+          description: Redirect after login
+
+  /logout:
+    get:
+      operationId: logoutBrowserSession
+      tags: [auth]
+      summary: Clear session and begin OIDC logout
+      responses:
+        "302":
+          description: Redirect to logout
+
+  /mobile-auth/token-exchange:
+    post:
+      operationId: exchangeMobileAuthorizationCode
+      tags: [auth]
+      summary: Exchange a mobile OIDC code for a session token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExchangeMobileAuthorizationCodeBody"
+      responses:
+        "200":
+          description: Session token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExchangeMobileAuthorizationCodeResponse"
+
+  /mobile-auth/logout:
+    post:
+      operationId: logoutMobileSession
+      tags: [auth]
+      summary: Log out mobile session
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutMobileSessionResponse"
+
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      summary: Get user profile
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createProfile
+      tags: [profile]
+      summary: Create or update user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertProfileBody"
+      responses:
+        "200":
+          description: Profile saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /workouts:
+    get:
+      operationId: getWorkouts
+      tags: [workouts]
+      summary: Get workout history
+      responses:
+        "200":
+          description: List of workouts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Workout"
+    post:
+      operationId: createWorkout
+      tags: [workouts]
+      summary: Create a new workout session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWorkoutBody"
+      responses:
+        "201":
+          description: Workout created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workout"
+
+  /workouts/{id}:
+    get:
+      operationId: getWorkout
+      tags: [workouts]
+      summary: Get a specific workout
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Workout details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkoutDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteWorkout
+      tags: [workouts]
+      summary: Delete a workout
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /workouts/{workoutId}/sets:
+    post:
+      operationId: addSet
+      tags: [workouts]
+      summary: Add a set to a workout
+      parameters:
+        - name: workoutId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddSetBody"
+      responses:
+        "201":
+          description: Set added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkoutSet"
+
+  /exercises:
+    get:
+      operationId: getExercises
+      tags: [exercises]
+      summary: Get exercise library
+      parameters:
+        - name: muscleGroup
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of exercises
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Exercise"
+
+  /exercises/{id}/progression:
+    get:
+      operationId: getExerciseProgression
+      tags: [exercises]
+      summary: Get progression data for an exercise
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Exercise progression data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExerciseProgression"
+
+  /exercises/favorites:
+    get:
+      operationId: getFavoriteExercises
+      tags: [exercises]
+      summary: Get favorite exercises
+      responses:
+        "200":
+          description: Favorite exercises
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Exercise"
+
+  /exercises/{id}/favorite:
+    post:
+      operationId: toggleFavoriteExercise
+      tags: [exercises]
+      summary: Toggle favorite status of exercise
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Favorite toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /progress/bodyweight:
+    get:
+      operationId: getBodyweightLogs
+      tags: [progress]
+      summary: Get body weight log
+      responses:
+        "200":
+          description: Body weight entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BodyweightLog"
+    post:
+      operationId: addBodyweightLog
+      tags: [progress]
+      summary: Log body weight
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddBodyweightBody"
+      responses:
+        "201":
+          description: Weight logged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BodyweightLog"
+
+  /progress/measurements:
+    get:
+      operationId: getMeasurements
+      tags: [progress]
+      summary: Get body measurements
+      responses:
+        "200":
+          description: Measurements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Measurement"
+    post:
+      operationId: addMeasurement
+      tags: [progress]
+      summary: Add body measurement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddMeasurementBody"
+      responses:
+        "201":
+          description: Measurement added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Measurement"
+
+  /progress/water:
+    get:
+      operationId: getWaterLogs
+      tags: [progress]
+      summary: Get water intake for today
+      responses:
+        "200":
+          description: Water logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaterLog"
+    post:
+      operationId: logWater
+      tags: [progress]
+      summary: Log water intake
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogWaterBody"
+      responses:
+        "200":
+          description: Water logged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaterLog"
+
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [workouts]
+      summary: Get dashboard stats
+      responses:
+        "200":
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /diet/meal-plan:
+    get:
+      operationId: getMealPlan
+      tags: [diet]
+      summary: Get personalized meal plan
+      responses:
+        "200":
+          description: Meal plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MealPlan"
+    post:
+      operationId: generateMealPlan
+      tags: [diet]
+      summary: Generate meal plan based on profile
+      responses:
+        "200":
+          description: Generated meal plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MealPlan"
+
+  /diet/food-log:
+    get:
+      operationId: getFoodLog
+      tags: [diet]
+      summary: Get food log for today
+      responses:
+        "200":
+          description: Food log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FoodLogEntry"
+    post:
+      operationId: addFoodLog
+      tags: [diet]
+      summary: Add food log entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddFoodLogBody"
+      responses:
+        "201":
+          description: Food logged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoodLogEntry"
+
+  /diet/food-log/{id}:
+    delete:
+      operationId: deleteFoodLog
+      tags: [diet]
+      summary: Delete food log entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /achievements:
+    get:
+      operationId: getAchievements
+      tags: [achievements]
+      summary: Get user achievements and badges
+      responses:
+        "200":
+          description: Achievements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Achievement"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +537,725 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+    GetCurrentAuthUserResponse:
+      type: object
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AuthUser"
+            - type: "null"
+      required:
+        - user
+
+    ExchangeMobileAuthorizationCodeBody:
+      type: object
+      required: [code, code_verifier, redirect_uri, state]
+      properties:
+        code:
+          type: string
+          minLength: 1
+        code_verifier:
+          type: string
+          minLength: 1
+        redirect_uri:
+          type: string
+          minLength: 1
+        state:
+          type: string
+          minLength: 1
+        nonce:
+          type: ["string", "null"]
+
+    ExchangeMobileAuthorizationCodeResponse:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    LogoutMobileSessionResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: ["string", "null"]
+        firstName:
+          type: ["string", "null"]
+        lastName:
+          type: ["string", "null"]
+        profileImageUrl:
+          type: ["string", "null"]
+      required:
+        - id
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        name:
+          type: string
+        age:
+          type: integer
+        gender:
+          type: string
+        heightCm:
+          type: number
+        weightKg:
+          type: number
+        fitnessGoal:
+          type: string
+        experienceLevel:
+          type: string
+        activityLevel:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - userId
+        - name
+        - age
+        - gender
+        - heightCm
+        - weightKg
+        - fitnessGoal
+        - experienceLevel
+        - activityLevel
+        - createdAt
+        - updatedAt
+
+    UpsertProfileBody:
+      type: object
+      properties:
+        name:
+          type: string
+        age:
+          type: integer
+        gender:
+          type: string
+        heightCm:
+          type: number
+        weightKg:
+          type: number
+        fitnessGoal:
+          type: string
+        experienceLevel:
+          type: string
+        activityLevel:
+          type: string
+      required:
+        - name
+        - age
+        - gender
+        - heightCm
+        - weightKg
+        - fitnessGoal
+        - experienceLevel
+        - activityLevel
+
+    Exercise:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        muscleGroup:
+          type: string
+        secondaryMuscles:
+          type: ["string", "null"]
+        equipment:
+          type: string
+        instructions:
+          type: string
+        difficulty:
+          type: string
+        isFavorite:
+          type: boolean
+      required:
+        - id
+        - name
+        - muscleGroup
+        - equipment
+        - instructions
+        - difficulty
+        - isFavorite
+
+    ExerciseProgression:
+      type: object
+      properties:
+        exerciseId:
+          type: integer
+        exerciseName:
+          type: string
+        personalRecord:
+          type: ["number", "null"]
+        lastWeight:
+          type: ["number", "null"]
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProgressionEntry"
+      required:
+        - exerciseId
+        - exerciseName
+        - history
+
+    ProgressionEntry:
+      type: object
+      properties:
+        date:
+          type: string
+        maxWeight:
+          type: number
+        totalVolume:
+          type: number
+        sets:
+          type: integer
+      required:
+        - date
+        - maxWeight
+        - totalVolume
+        - sets
+
+    Workout:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        name:
+          type: string
+        muscleGroup:
+          type: ["string", "null"]
+        date:
+          type: string
+        durationMinutes:
+          type: ["integer", "null"]
+        caloriesBurned:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]
+        setCount:
+          type: integer
+        exerciseCount:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - name
+        - date
+        - setCount
+        - exerciseCount
+        - createdAt
+
+    WorkoutDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        name:
+          type: string
+        muscleGroup:
+          type: ["string", "null"]
+        date:
+          type: string
+        durationMinutes:
+          type: ["integer", "null"]
+        caloriesBurned:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]
+        sets:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkoutSetDetail"
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - name
+        - date
+        - sets
+        - createdAt
+
+    WorkoutSet:
+      type: object
+      properties:
+        id:
+          type: integer
+        workoutId:
+          type: integer
+        exerciseId:
+          type: integer
+        setNumber:
+          type: integer
+        reps:
+          type: integer
+        weightKg:
+          type: number
+        notes:
+          type: ["string", "null"]
+      required:
+        - id
+        - workoutId
+        - exerciseId
+        - setNumber
+        - reps
+        - weightKg
+
+    WorkoutSetDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        workoutId:
+          type: integer
+        exerciseId:
+          type: integer
+        exerciseName:
+          type: string
+        muscleGroup:
+          type: string
+        setNumber:
+          type: integer
+        reps:
+          type: integer
+        weightKg:
+          type: number
+        notes:
+          type: ["string", "null"]
+      required:
+        - id
+        - workoutId
+        - exerciseId
+        - exerciseName
+        - muscleGroup
+        - setNumber
+        - reps
+        - weightKg
+
+    CreateWorkoutBody:
+      type: object
+      properties:
+        name:
+          type: string
+        muscleGroup:
+          type: ["string", "null"]
+        date:
+          type: string
+        durationMinutes:
+          type: ["integer", "null"]
+        caloriesBurned:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]
+      required:
+        - name
+        - date
+
+    AddSetBody:
+      type: object
+      properties:
+        exerciseId:
+          type: integer
+        setNumber:
+          type: integer
+        reps:
+          type: integer
+        weightKg:
+          type: number
+        notes:
+          type: ["string", "null"]
+      required:
+        - exerciseId
+        - setNumber
+        - reps
+        - weightKg
+
+    BodyweightLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        weightKg:
+          type: number
+        date:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - weightKg
+        - date
+        - createdAt
+
+    AddBodyweightBody:
+      type: object
+      properties:
+        weightKg:
+          type: number
+        date:
+          type: string
+      required:
+        - weightKg
+        - date
+
+    Measurement:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        date:
+          type: string
+        chestCm:
+          type: ["number", "null"]
+        waistCm:
+          type: ["number", "null"]
+        hipsCm:
+          type: ["number", "null"]
+        bicepCm:
+          type: ["number", "null"]
+        thighCm:
+          type: ["number", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - date
+        - createdAt
+
+    AddMeasurementBody:
+      type: object
+      properties:
+        date:
+          type: string
+        chestCm:
+          type: ["number", "null"]
+        waistCm:
+          type: ["number", "null"]
+        hipsCm:
+          type: ["number", "null"]
+        bicepCm:
+          type: ["number", "null"]
+        thighCm:
+          type: ["number", "null"]
+      required:
+        - date
+
+    WaterLog:
+      type: object
+      properties:
+        date:
+          type: string
+        totalMl:
+          type: integer
+        goalMl:
+          type: integer
+        logs:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaterEntry"
+      required:
+        - date
+        - totalMl
+        - goalMl
+        - logs
+
+    WaterEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        amountMl:
+          type: integer
+        loggedAt:
+          type: string
+      required:
+        - id
+        - amountMl
+        - loggedAt
+
+    LogWaterBody:
+      type: object
+      properties:
+        amountMl:
+          type: integer
+        date:
+          type: string
+      required:
+        - amountMl
+        - date
+
+    DashboardStats:
+      type: object
+      properties:
+        totalWorkouts:
+          type: integer
+        weeklyStreak:
+          type: integer
+        currentStreak:
+          type: integer
+        totalCaloriesBurned:
+          type: integer
+        recentWorkouts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Workout"
+        personalRecords:
+          type: array
+          items:
+            $ref: "#/components/schemas/PersonalRecord"
+        weeklyVolume:
+          type: array
+          items:
+            $ref: "#/components/schemas/WeeklyVolumeEntry"
+      required:
+        - totalWorkouts
+        - weeklyStreak
+        - currentStreak
+        - totalCaloriesBurned
+        - recentWorkouts
+        - personalRecords
+        - weeklyVolume
+
+    PersonalRecord:
+      type: object
+      properties:
+        exerciseId:
+          type: integer
+        exerciseName:
+          type: string
+        weightKg:
+          type: number
+        date:
+          type: string
+      required:
+        - exerciseId
+        - exerciseName
+        - weightKg
+        - date
+
+    WeeklyVolumeEntry:
+      type: object
+      properties:
+        day:
+          type: string
+        volume:
+          type: number
+        workouts:
+          type: integer
+      required:
+        - day
+        - volume
+        - workouts
+
+    MealPlan:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        dailyCalories:
+          type: integer
+        proteinG:
+          type: integer
+        carbsG:
+          type: integer
+        fatG:
+          type: integer
+        meals:
+          type: array
+          items:
+            $ref: "#/components/schemas/Meal"
+        generatedAt:
+          type: string
+      required:
+        - id
+        - userId
+        - dailyCalories
+        - proteinG
+        - carbsG
+        - fatG
+        - meals
+        - generatedAt
+
+    Meal:
+      type: object
+      properties:
+        id:
+          type: integer
+        mealPlanId:
+          type: integer
+        mealType:
+          type: string
+        name:
+          type: string
+        calories:
+          type: integer
+        proteinG:
+          type: integer
+        carbsG:
+          type: integer
+        fatG:
+          type: integer
+        foods:
+          type: array
+          items:
+            $ref: "#/components/schemas/MealFood"
+      required:
+        - id
+        - mealPlanId
+        - mealType
+        - name
+        - calories
+        - proteinG
+        - carbsG
+        - fatG
+        - foods
+
+    MealFood:
+      type: object
+      properties:
+        name:
+          type: string
+        amount:
+          type: string
+        calories:
+          type: integer
+      required:
+        - name
+        - amount
+        - calories
+
+    FoodLogEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        date:
+          type: string
+        foodName:
+          type: string
+        calories:
+          type: integer
+        proteinG:
+          type: ["integer", "null"]
+        carbsG:
+          type: ["integer", "null"]
+        fatG:
+          type: ["integer", "null"]
+        servingSize:
+          type: ["string", "null"]
+        mealType:
+          type: string
+        loggedAt:
+          type: string
+      required:
+        - id
+        - userId
+        - date
+        - foodName
+        - calories
+        - mealType
+        - loggedAt
+
+    AddFoodLogBody:
+      type: object
+      properties:
+        date:
+          type: string
+        foodName:
+          type: string
+        calories:
+          type: integer
+        proteinG:
+          type: ["integer", "null"]
+        carbsG:
+          type: ["integer", "null"]
+        fatG:
+          type: ["integer", "null"]
+        servingSize:
+          type: ["string", "null"]
+        mealType:
+          type: string
+      required:
+        - date
+        - foodName
+        - calories
+        - mealType
+
+    Achievement:
+      type: object
+      properties:
+        id:
+          type: integer
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+        category:
+          type: string
+        earnedAt:
+          type: ["string", "null"]
+        progress:
+          type: integer
+        target:
+          type: integer
+      required:
+        - id
+        - key
+        - name
+        - description
+        - icon
+        - category
+        - progress
+        - target

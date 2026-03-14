@@ -1,0 +1,27 @@
+packages:
+  "framer-motion": "For premium smooth animations, page transitions, and list stagger effects"
+  "recharts": "For bodyweight progression line charts and weekly volume bar charts"
+  "date-fns": "For readable date formatting across the dashboard and workout history"
+  "@hookform/resolvers": "For Zod form validation in onboarding and log forms"
+  "lucide-react": "For all icons"
+  "clsx": "For classname merging"
+  "tailwind-merge": "For tailwind class merging"
+
+images:
+  - path: "artifacts/fitness-app/public/images/hero-bg.png"
+    description: "Abstract geometric gradient mesh background in deep neon violet and cyan on a dark background, evoking a futuristic premium gym vibe"
+    aspect_ratio: "16:9"
+  - path: "artifacts/fitness-app/public/images/badge-streak.png"
+    description: "A glowing 3D stylized fire icon on a dark hexagonal badge, representing a workout streak achievement in neon cyan and purple"
+    aspect_ratio: "1:1"
+  - path: "artifacts/fitness-app/public/images/badge-strength.png"
+    description: "A glowing 3D stylized dumbbell icon on a dark hexagonal badge, representing a strength achievement in neon violet"
+    aspect_ratio: "1:1"
+  - path: "artifacts/fitness-app/public/images/badge-nutrition.png"
+    description: "A glowing 3D stylized apple icon on a dark hexagonal badge, representing a nutrition achievement in bright green and cyan"
+    aspect_ratio: "1:1"
+
+notes:
+  - Using generated Orval hooks from @workspace/api-client-react
+  - Using @workspace/replit-auth-web for authentication state
+  - Assuming standard Replit routing/proxy handles the API requests to /api
