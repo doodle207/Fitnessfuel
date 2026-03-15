@@ -1,0 +1,46 @@
+<!-- COPY EVERYTHING BELOW THIS LINE AND PASTE INTO REPLIT AI -->
+
+Fix and upgrade the existing FitTrack web app[](https://fittrack-profitness-fuel--aurorakiii207.replit.app) with the following specific changes in the **Workout Section**.
+
+The app must remain a clean, smooth, dark-themed single-page fitness tracker built with HTML + Tailwind CSS + vanilla JS + Chart.js. Keep the existing dark charcoal background (#0A0A0A), neon accents (cyan #00F5FF, lime #39FF14, orange #FF9500), sidebar navigation, and all current features.
+
+**MANDATORY FIXES & NEW FEATURES IN WORKOUT SECTION:**
+
+1. **Exercise Selection Flow**
+   - When user clicks any exercise from the list (Bench Press, Squats, Deadlift, Pull-ups, etc.), it must:
+     - Immediately mark the exercise as **"Selected"** with a bright lime checkmark and glowing border.
+     - Open a **detailed modal or expandable card** (smooth animation) that shows:
+       • **Benefits** – muscle groups covered (e.g., "Targets Chest, Triceps & Anterior Delts")
+       • **Way to do** – step-by-step instructions (3–5 bullet points)
+       • **Optimal Reps & Sets** – e.g., "4 sets of 8–12 reps (Hypertrophy focus)"
+       • **Rest Time Between Sets** – clear timer suggestion (e.g., "60–90 seconds")
+       • **Range of Motion** – detailed suggestion (e.g., "Full stretch at bottom, lockout at top – avoid partial reps")
+       • **Hypertrophy Focus** – special highlighted box: "Best for muscle growth when performed with controlled tempo 2-1-2"
+
+2. **Weight Logging & Progression System (NEW SECTION)**
+   - Inside the same selected exercise card/modal, add a clean **"Log Your Lift"** section:
+     • Input fields: Weight (kg/lbs), Reps completed, Sets completed
+     • "Upload Weight Loaded" button (simulated – store in localStorage)
+     • After logging, auto-calculate and display:
+       • "Suggested next session weight: +2.5 kg (or +5 lbs)"
+       • "Recommended rest days before same exercise: 48–72 hours"
+       • Progress sparkline (small Chart.js line chart showing last 3 sessions)
+
+3. **UI/UX Requirements**
+   - Keep everything extremely simple and smooth (hover glows, neon buttons, no clutter).
+   - The exercise detail view must be one-click accessible and dismissible.
+   - All new text must be bright and readable on dark background.
+   - Add small disclaimer at bottom of Workout page (light gray):  
+     "For educational and training reference only. Consult a doctor before starting any program."
+   - Auto-save all logged weights/reps in localStorage so they persist on refresh.
+   - When user returns to the same exercise later, pre-fill the "Next suggested weight" based on previous log.
+
+**Implementation Rules:**
+- Use only existing tech stack (Tailwind via CDN, Chart.js via CDN, Lucide icons).
+- Make the changes in the Workout tab/section only – do not break Dashboard, Progress, or other pages.
+- Add smooth transitions (Tailwind) and loading states.
+- After updating, show a "✅ Workout section upgraded with exercise details + progression system" message.
+
+Generate the full updated index.html code with all fixes applied and ready to run instantly.
+
+Start coding now.
