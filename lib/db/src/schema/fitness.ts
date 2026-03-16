@@ -131,9 +131,20 @@ export const foodLogsTable = pgTable("food_logs", {
   proteinG: integer("protein_g"),
   carbsG: integer("carbs_g"),
   fatG: integer("fat_g"),
+  fiberG: integer("fiber_g"),
+  sodiumMg: integer("sodium_mg"),
   servingSize: text("serving_size"),
   mealType: text("meal_type").notNull(),
   loggedAt: timestamp("logged_at").defaultNow().notNull(),
+});
+
+export const progressPhotosTable = pgTable("progress_photos", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  photoDataUrl: text("photo_data_url").notNull(),
+  label: text("label"),
+  date: date("date").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const achievementsTable = pgTable("achievements", {

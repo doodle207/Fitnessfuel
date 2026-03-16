@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { workoutsTable, workoutSetsTable, exercisesTable } from "@workspace/db/schema";
+import { workoutsTable, workoutSetsTable, exercisesTable, userProfilesTable } from "@workspace/db/schema";
 import { CreateWorkoutBody, AddSetBody } from "@workspace/api-zod";
 import { eq, and, desc, sql, count } from "drizzle-orm";
 
@@ -83,6 +83,40 @@ router.get("/workouts/:id", async (req, res) => {
     createdAt: w.createdAt.toISOString(),
     sets,
   });
+});
+
+// Finish a workout: auto-calculate calories burned
+router.patch("/workouts/:id/finish", async (req, res) => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.user.id;
+  const id = parseInt(req.params.id);
+
+  const profileRows = await db.select().from(userProfilesTable).where(eq(userProfilesTable.userId, userId)).limit(1);
+  const bodyWeightKg = profileRows[0]?.weightKg ?? 75;
+
+  const sets = await db.select().from(workoutSetsTable).where(eq(workoutSetsTable.workoutId, id));
+  if (sets.length === 0) {
+    res.json({ caloriesBurned: 0, durationMinutes: 0 });
+    return;
+  }
+
+  // Estimate duration: each set ~2 min work + rest, minimum 20 min
+  const totalSets = sets.length;
+  const durationMinutes = Math.max(20, Math.min(90, totalSets * 3));
+
+  // MET value: 5.0 for moderate weightlifting, 6.0 for heavy compound
+  const totalVolume = sets.reduce((sum, s) => sum + s.weightKg * s.reps, 0);
+  const avgVolume = totalVolume / totalSets;
+  const MET = avgVolume > 2000 ? 6.0 : avgVolume > 500 ? 5.0 : 3.5;
+
+  // Mifflin-St Jeor calories burned formula
+  const caloriesBurned = Math.round(MET * bodyWeightKg * (durationMinutes / 60));
+
+  await db.update(workoutsTable)
+    .set({ caloriesBurned, durationMinutes })
+    .where(and(eq(workoutsTable.id, id), eq(workoutsTable.userId, userId)));
+
+  res.json({ caloriesBurned, durationMinutes });
 });
 
 router.delete("/workouts/:id", async (req, res) => {
