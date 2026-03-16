@@ -7,6 +7,7 @@ import {
   LogoutMobileSessionResponse,
 } from "@workspace/api-zod";
 import { db, usersTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import {
   clearSession,
   getOidcConfig,
@@ -82,12 +83,81 @@ async function upsertUser(claims: Record<string, unknown>) {
   return user;
 }
 
+async function upsertGoogleUser(claims: Record<string, unknown>) {
+  const email = (claims.email as string) || null;
+  const googleId = `google_${claims.sub as string}`;
+
+  if (email) {
+    const [existing] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.email, email));
+
+    if (existing) {
+      await db
+        .update(usersTable)
+        .set({
+          profileImageUrl: existing.profileImageUrl ?? ((claims.picture as string) || null),
+          updatedAt: new Date(),
+        })
+        .where(eq(usersTable.id, existing.id));
+      return { ...existing, profileImageUrl: existing.profileImageUrl ?? ((claims.picture as string) || null) };
+    }
+  }
+
+  const [user] = await db
+    .insert(usersTable)
+    .values({
+      id: googleId,
+      email,
+      firstName: (claims.given_name as string) || null,
+      lastName: (claims.family_name as string) || null,
+      profileImageUrl: (claims.picture as string) || null,
+    })
+    .onConflictDoUpdate({
+      target: usersTable.id,
+      set: {
+        email,
+        firstName: (claims.given_name as string) || null,
+        lastName: (claims.family_name as string) || null,
+        profileImageUrl: (claims.picture as string) || null,
+        updatedAt: new Date(),
+      },
+    })
+    .returning();
+  return user;
+}
+
+let googleOidcConfig: oidc.Configuration | null = null;
+
+async function getGoogleOidcConfig(): Promise<oidc.Configuration | null> {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return null;
+
+  if (!googleOidcConfig) {
+    googleOidcConfig = await oidc.discovery(
+      new URL("https://accounts.google.com"),
+      clientId,
+      clientSecret,
+    );
+  }
+  return googleOidcConfig;
+}
+
 router.get("/auth/user", (req: Request, res: Response) => {
   res.json(
     GetCurrentAuthUserResponse.parse({
       user: req.isAuthenticated() ? req.user : null,
     }),
   );
+});
+
+router.get("/auth/providers", (_req: Request, res: Response) => {
+  res.json({
+    google: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+    replit: true,
+  });
 });
 
 router.get("/login", async (req: Request, res: Response) => {
@@ -119,8 +189,6 @@ router.get("/login", async (req: Request, res: Response) => {
   res.redirect(redirectTo.href);
 });
 
-// Query params are not validated because the OIDC provider may include
-// parameters not expressed in the schema.
 router.get("/callback", async (req: Request, res: Response) => {
   const config = await getOidcConfig();
   const callbackUrl = `${getOrigin(req)}/api/callback`;
@@ -185,6 +253,106 @@ router.get("/callback", async (req: Request, res: Response) => {
   const sid = await createSession(sessionData);
   setSessionCookie(res, sid);
   res.redirect(returnTo);
+});
+
+router.get("/auth/google/login", async (req: Request, res: Response) => {
+  const config = await getGoogleOidcConfig();
+  if (!config) {
+    res.redirect("/?error=google_not_configured");
+    return;
+  }
+
+  const callbackUrl = `${getOrigin(req)}/api/auth/google/callback`;
+  const returnTo = getSafeReturnTo(req.query.returnTo);
+
+  const state = oidc.randomState();
+  const nonce = oidc.randomNonce();
+  const codeVerifier = oidc.randomPKCECodeVerifier();
+  const codeChallenge = await oidc.calculatePKCECodeChallenge(codeVerifier);
+
+  const redirectTo = oidc.buildAuthorizationUrl(config, {
+    redirect_uri: callbackUrl,
+    scope: "openid email profile",
+    code_challenge: codeChallenge,
+    code_challenge_method: "S256",
+    state,
+    nonce,
+  });
+
+  setOidcCookie(res, "g_code_verifier", codeVerifier);
+  setOidcCookie(res, "g_nonce", nonce);
+  setOidcCookie(res, "g_state", state);
+  setOidcCookie(res, "g_return_to", returnTo);
+
+  res.redirect(redirectTo.href);
+});
+
+router.get("/auth/google/callback", async (req: Request, res: Response) => {
+  const config = await getGoogleOidcConfig();
+  if (!config) {
+    res.redirect("/");
+    return;
+  }
+
+  const callbackUrl = `${getOrigin(req)}/api/auth/google/callback`;
+  const codeVerifier = req.cookies?.g_code_verifier;
+  const nonce = req.cookies?.g_nonce;
+  const expectedState = req.cookies?.g_state;
+  const returnTo = getSafeReturnTo(req.cookies?.g_return_to);
+
+  if (!codeVerifier || !expectedState) {
+    res.redirect("/api/auth/google/login");
+    return;
+  }
+
+  const currentUrl = new URL(
+    `${callbackUrl}?${new URL(req.url, `http://${req.headers.host}`).searchParams}`,
+  );
+
+  try {
+    const tokens = await oidc.authorizationCodeGrant(config, currentUrl, {
+      pkceCodeVerifier: codeVerifier,
+      expectedNonce: nonce,
+      expectedState,
+      idTokenExpected: true,
+    });
+
+    res.clearCookie("g_code_verifier", { path: "/" });
+    res.clearCookie("g_nonce", { path: "/" });
+    res.clearCookie("g_state", { path: "/" });
+    res.clearCookie("g_return_to", { path: "/" });
+
+    const claims = tokens.claims();
+    if (!claims) {
+      res.redirect("/?error=google_auth_failed");
+      return;
+    }
+
+    const dbUser = await upsertGoogleUser(
+      claims as unknown as Record<string, unknown>,
+    );
+
+    const now = Math.floor(Date.now() / 1000);
+    const sessionData: SessionData = {
+      user: {
+        id: dbUser.id,
+        email: dbUser.email,
+        firstName: dbUser.firstName,
+        lastName: dbUser.lastName,
+        profileImageUrl: dbUser.profileImageUrl,
+      },
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      expires_at: tokens.expiresIn() ? now + tokens.expiresIn()! : claims.exp,
+    };
+
+    const sid = await createSession(sessionData);
+    setSessionCookie(res, sid);
+    res.redirect(returnTo);
+  } catch (err) {
+    console.error("Google auth error:", err);
+    res.redirect("/?error=google_auth_failed");
+  }
 });
 
 router.get("/logout", async (req: Request, res: Response) => {
