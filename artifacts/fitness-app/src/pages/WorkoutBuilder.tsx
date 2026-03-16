@@ -6,8 +6,80 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import {
   Dumbbell, Activity, Play, Calendar, ChevronDown, CheckCircle2,
-  Timer, Zap, Target, Info, RotateCcw, X, ChevronRight
+  Timer, Zap, Target, Info, RotateCcw, X, ChevronRight, LayoutGrid
 } from "lucide-react";
+
+// ── Workout Splits ──────────────────────────────────────────────────────────
+const SPLITS = [
+  {
+    id: "bro",
+    name: "Bro Split",
+    desc: "Classic bodybuilder split — one muscle group per day, max volume.",
+    schedule: [
+      { day: "Mon", label: "Chest", group: "Chest" },
+      { day: "Tue", label: "Back", group: "Back" },
+      { day: "Wed", label: "Shoulders", group: "Shoulders" },
+      { day: "Thu", label: "Arms", group: "Arms" },
+      { day: "Fri", label: "Legs", group: "Legs" },
+      { day: "Sat", label: "Core", group: "Core" },
+      { day: "Sun", label: "Rest", group: null },
+    ],
+    color: "from-violet-600 to-purple-700",
+    badge: "🏋️",
+    pros: ["High volume per muscle", "Classic & proven", "Easy to follow"],
+  },
+  {
+    id: "ppl",
+    name: "Push Pull Legs",
+    desc: "Push, pull and leg days. Each muscle hit 2x/week.",
+    schedule: [
+      { day: "Mon", label: "Push (Chest/Shoulders/Triceps)", group: "Chest" },
+      { day: "Tue", label: "Pull (Back/Biceps)", group: "Back" },
+      { day: "Wed", label: "Legs", group: "Legs" },
+      { day: "Thu", label: "Push", group: "Chest" },
+      { day: "Fri", label: "Pull", group: "Back" },
+      { day: "Sat", label: "Legs", group: "Legs" },
+      { day: "Sun", label: "Rest", group: null },
+    ],
+    color: "from-cyan-600 to-blue-700",
+    badge: "⚡",
+    pros: ["2x frequency", "Optimal for intermediate+", "Balanced volume"],
+  },
+  {
+    id: "upper_lower",
+    name: "Upper/Lower",
+    desc: "Upper body and lower body alternate days. Great for all levels.",
+    schedule: [
+      { day: "Mon", label: "Upper Body", group: "Chest" },
+      { day: "Tue", label: "Lower Body", group: "Legs" },
+      { day: "Wed", label: "Rest", group: null },
+      { day: "Thu", label: "Upper Body", group: "Back" },
+      { day: "Fri", label: "Lower Body", group: "Legs" },
+      { day: "Sat", label: "Core / Cardio", group: "Core" },
+      { day: "Sun", label: "Rest", group: null },
+    ],
+    color: "from-orange-500 to-red-600",
+    badge: "🔄",
+    pros: ["Balanced frequency", "Great for strength", "Easy recovery"],
+  },
+  {
+    id: "full_body",
+    name: "Full Body",
+    desc: "Hit everything 3x per week. Perfect for beginners and busy schedules.",
+    schedule: [
+      { day: "Mon", label: "Full Body A", group: "Full Body" },
+      { day: "Tue", label: "Rest", group: null },
+      { day: "Wed", label: "Full Body B", group: "Full Body" },
+      { day: "Thu", label: "Rest", group: null },
+      { day: "Fri", label: "Full Body C", group: "Full Body" },
+      { day: "Sat", label: "Active Recovery", group: "Cardio" },
+      { day: "Sun", label: "Rest", group: null },
+    ],
+    color: "from-emerald-600 to-teal-700",
+    badge: "🔥",
+    pros: ["3x frequency", "Best for beginners", "Maximum efficiency"],
+  },
+];
 
 const muscleGroups = [
   { id: "Chest", color: "from-blue-500 to-cyan-500", emoji: "💪", image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=500&h=300&fit=crop" },
@@ -125,9 +197,29 @@ export default function WorkoutBuilder() {
   const [selectedGroup, setSelectedGroup] = useState<string>("Chest");
   const [workoutName, setWorkoutName] = useState("");
   const [expandedExId, setExpandedExId] = useState<number | null>(null);
-  const [step, setStep] = useState<"group" | "exercises">("group");
+  const [step, setStep] = useState<"splits" | "group" | "exercises">("splits");
+  const [activeSplit, setActiveSplit] = useState<string | null>(() => localStorage.getItem("fittrack_split"));
+  const [showSplitDetail, setShowSplitDetail] = useState<string | null>(null);
 
   const { data: exercises } = useGetExercises({ muscleGroup: selectedGroup });
+
+  const selectSplit = (splitId: string) => {
+    setActiveSplit(splitId);
+    localStorage.setItem("fittrack_split", splitId);
+    // Set today's muscle group from split schedule
+    const split = SPLITS.find(s => s.id === splitId);
+    if (split) {
+      const dayIndex = new Date().getDay(); // 0=Sun, 1=Mon...
+      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const todayName = dayNames[dayIndex];
+      const todaySchedule = split.schedule.find(s => s.day === todayName);
+      if (todaySchedule?.group) {
+        setSelectedGroup(todaySchedule.group);
+        setWorkoutName(`${todaySchedule.label}`);
+      }
+    }
+    setStep("group");
+  };
 
   const { mutate: createWorkout, isPending } = useCreateWorkout({
     mutation: {
