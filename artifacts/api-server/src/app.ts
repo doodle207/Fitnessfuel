@@ -1,6 +1,7 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import path from "path";
 import { authMiddleware } from "./middlewares/authMiddleware";
 import router from "./routes";
 
@@ -13,5 +14,18 @@ app.use(express.urlencoded({ extended: true }));
 app.use(authMiddleware);
 
 app.use("/api", router);
+
+if (process.env.NODE_ENV === "production") {
+  const frontendDist = path.resolve(
+    process.cwd(),
+    "artifacts/fitness-app/dist/public",
+  );
+
+  app.use(express.static(frontendDist));
+
+  app.get("*path", (_req, res) => {
+    res.sendFile(path.join(frontendDist, "index.html"));
+  });
+}
 
 export default app;
