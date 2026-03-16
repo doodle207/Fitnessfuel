@@ -10,7 +10,6 @@ modules = ["nodejs-24", "postgresql-16"]
   router = "application"
   deploymentTarget = "autoscale"
   run = ["node", "artifacts/api-server/dist/index.cjs"]
-  build = ["bash", "-c", "pnpm install && pnpm --filter @workspace/fitness-app run build && pnpm --filter @workspace/api-server run build"]
 
   [deployment.postBuild]
   args = ["pnpm", "store", "prune"]
