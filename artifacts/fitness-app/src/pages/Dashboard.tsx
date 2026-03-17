@@ -1,226 +1,376 @@
+import { useState, useEffect } from "react";
 import { useGetDashboard, useGetProfile } from "@workspace/api-client-react";
 import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
 import { format } from "date-fns";
-import { Flame, Activity, Zap, Trophy, ArrowRight, Play, Utensils, Droplets } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import {
+  Flame, Activity, Trophy, ArrowRight, Utensils, Droplets, Footprints,
+  Target, TrendingUp, Zap, ChevronRight
+} from "lucide-react";
+import {
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, Cell
+} from "recharts";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+
+const STEPS_KEY = "fittrack_steps_today";
+const STEPS_DATE_KEY = "fittrack_steps_date";
+const WATER_KEY = "fittrack_water_ml";
+const CALS_PER_STEP = 0.04;
+
+function getStepsToday(): number {
+  const d = localStorage.getItem(STEPS_DATE_KEY);
+  const today = new Date().toISOString().split("T")[0];
+  if (d !== today) {
+    localStorage.setItem(STEPS_KEY, "0");
+    localStorage.setItem(STEPS_DATE_KEY, today);
+    return 0;
+  }
+  return parseInt(localStorage.getItem(STEPS_KEY) || "0");
+}
 
 export default function Dashboard() {
   const { data: profile, isLoading: isProfileLoading } = useGetProfile();
   const { data: stats, isLoading: isStatsLoading } = useGetDashboard();
+  const [steps, setSteps] = useState(getStepsToday);
+  const [stepsInput, setStepsInput] = useState("");
+  const [showStepsInput, setShowStepsInput] = useState(false);
+  const [waterMl, setWaterMl] = useState(() => parseInt(localStorage.getItem(WATER_KEY) || "0"));
+
+  useEffect(() => {
+    localStorage.setItem(STEPS_KEY, String(steps));
+    const today = new Date().toISOString().split("T")[0];
+    localStorage.setItem(STEPS_DATE_KEY, today);
+  }, [steps]);
+
+  const handleStepsSave = () => {
+    const n = parseInt(stepsInput);
+    if (!isNaN(n) && n >= 0) setSteps(n);
+    setStepsInput("");
+    setShowStepsInput(false);
+  };
 
   if (isProfileLoading || isStatsLoading) return <LoadingState message="Loading dashboard..." />;
   if (!stats || !profile) return null;
 
+  const stepCalories = Math.round(steps * CALS_PER_STEP);
+  const todayWorkoutCalories = stats.recentWorkouts?.[0]?.caloriesBurned || 0;
+  const totalBurned = todayWorkoutCalories + stepCalories;
+  const bmr = Math.round(10 * (profile.weightKg || 70) + 6.25 * (profile.heightCm || 175) - 5 * (profile.age || 25) + (profile.gender === "female" ? -161 : 5));
+  const waterPct = Math.min(waterMl / 3000, 1);
+  const waterGlasses = Math.round(waterMl / 250);
+
+  const todayFoodCalories = parseInt(localStorage.getItem("fittrack_food_cal_today") || "0");
+  const netCalories = todayFoodCalories - totalBurned;
+
+  const macroData = [
+    { subject: "Protein", A: 72, fullMark: 100 },
+    { subject: "Carbs", A: 58, fullMark: 100 },
+    { subject: "Fat", A: 65, fullMark: 100 },
+    { subject: "Fiber", A: 40, fullMark: 100 },
+    { subject: "Sodium", A: 50, fullMark: 100 },
+  ];
+
   return (
     <PageTransition>
-      <div className="space-y-8">
-        {/* Header */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="space-y-6 max-w-5xl mx-auto">
+        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
-            <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground">
-              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">{profile.name.split(' ')[0]}</span>
+            <p className="text-muted-foreground text-sm">{format(new Date(), "EEEE, MMMM do")}</p>
+            <h1 className="text-3xl md:text-4xl font-display font-bold mt-0.5">
+              Hey, <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">{profile.name?.split(" ")[0] || "Champ"}</span> 👋
             </h1>
-            <p className="text-muted-foreground mt-1">
-              {format(new Date(), 'EEEE, MMMM do')} • Ready to crush it today?
-            </p>
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
-            <QuickAction href="/workout" icon={Play} label="Start" color="bg-primary text-white" />
-            <QuickAction href="/diet" icon={Utensils} label="Food" color="bg-card text-foreground border border-white/10" />
-            <QuickAction href="/progress" icon={Activity} label="Weight" color="bg-card text-foreground border border-white/10" />
+          <div className="flex gap-2">
+            <Link href="/workout" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors shadow-[0_0_16px_rgba(124,58,237,0.4)]">
+              <Activity className="w-4 h-4" /> Workout
+            </Link>
+            <Link href="/diet" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium hover:bg-white/10 transition-colors">
+              <Utensils className="w-4 h-4" /> Log Food
+            </Link>
           </div>
         </header>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard 
-            title="Current Streak" 
-            value={stats.currentStreak.toString()} 
-            suffix="days" 
-            icon={Flame} 
-            color="text-orange-500" 
-            delay={0.1} 
-          />
-          <StatCard 
-            title="Total Workouts" 
-            value={stats.totalWorkouts.toString()} 
-            icon={Activity} 
-            color="text-primary" 
-            delay={0.2} 
-          />
-          <StatCard 
-            title="Calories Burned" 
-            value={stats.totalCaloriesBurned.toString()} 
-            suffix="kcal" 
-            icon={Zap} 
-            color="text-accent" 
-            delay={0.3} 
-          />
-          <StatCard 
-            title="PRs Set" 
-            value={stats.personalRecords.length.toString()} 
-            icon={Trophy} 
-            color="text-yellow-400" 
-            delay={0.4} 
-          />
-        </div>
+        {/* ── ROW 1: Calories Overview ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+          className="glass-card rounded-3xl p-5 border border-white/5"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-display font-bold text-lg flex items-center gap-2"><Flame className="w-5 h-5 text-orange-500" /> Calorie Overview</h3>
+            <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">Today</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-4 text-center">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1"><Utensils className="w-3 h-3 text-green-400" /> Eaten</p>
+              <p className="text-2xl font-display font-bold text-green-400">{todayFoodCalories}</p>
+              <p className="text-xs text-muted-foreground">kcal</p>
+            </div>
+            <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4 text-center">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1"><Zap className="w-3 h-3 text-orange-400" /> Burned</p>
+              <p className="text-2xl font-display font-bold text-orange-400">{totalBurned}</p>
+              <p className="text-xs text-muted-foreground">kcal</p>
+            </div>
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 text-center">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1"><Target className="w-3 h-3 text-blue-400" /> BMR</p>
+              <p className="text-2xl font-display font-bold text-blue-400">{bmr}</p>
+              <p className="text-xs text-muted-foreground">kcal/day</p>
+            </div>
+            <button onClick={() => setShowStepsInput(v => !v)} className="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-4 text-center hover:bg-violet-500/20 transition-colors cursor-pointer">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1"><Footprints className="w-3 h-3 text-violet-400" /> Steps</p>
+              <p className="text-2xl font-display font-bold text-violet-400">{steps.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">≈ {stepCalories} kcal</p>
+            </button>
+          </div>
+          {showStepsInput && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="flex gap-2 mb-4">
+              <input
+                type="number"
+                value={stepsInput}
+                onChange={e => setStepsInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleStepsSave()}
+                placeholder="Enter today's step count"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 focus:border-violet-500 outline-none text-sm"
+              />
+              <button onClick={handleStepsSave} className="px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors">Save</button>
+            </motion.div>
+          )}
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Daily target: {bmr + 300} kcal</span>
+              <span className={netCalories > 0 ? "text-green-400" : "text-orange-400"}>{netCalories > 0 ? "+" : ""}{netCalories} kcal balance</span>
+            </div>
+            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }} animate={{ width: `${Math.min(todayFoodCalories / (bmr + 300), 1) * 100}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                className="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500"
+              />
+            </div>
+          </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Chart Area */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="glass-card rounded-3xl p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-display font-semibold text-xl">Weekly Volume</h3>
-                <span className="text-xs font-medium px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/20">
-                  Last 7 Days
-                </span>
+        {/* ── ROW 2: Streaks + Macros/Hydration ── */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
+          {/* Streaks & Workout (left square) */}
+          <motion.div
+            initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
+            className="md:col-span-2 glass-card rounded-3xl p-5 border border-white/5 space-y-4"
+          >
+            <h3 className="font-display font-bold text-lg flex items-center gap-2"><Flame className="w-5 h-5 text-orange-500" /> Streaks & Activity</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl p-4 bg-orange-500/10 border border-orange-500/20 text-center">
+                <p className="text-3xl font-display font-black text-orange-400">{stats.currentStreak}</p>
+                <p className="text-xs text-muted-foreground mt-1">Day Streak 🔥</p>
               </div>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.weeklyVolume} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                    <XAxis 
-                      dataKey="day" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: '#71717a', fontSize: 12 }} 
-                      dy={10}
-                    />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: '#71717a', fontSize: 12 }}
-                    />
-                    <Tooltip 
-                      cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                      contentStyle={{ backgroundColor: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                    />
-                    <Bar dataKey="volume" radius={[6, 6, 0, 0]}>
-                      {stats.weeklyVolume.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.volume > 0 ? 'hsl(262 83% 58%)' : 'hsl(240 4% 16%)'} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="rounded-2xl p-4 bg-violet-500/10 border border-violet-500/20 text-center">
+                <p className="text-3xl font-display font-black text-violet-400">{stats.totalWorkouts}</p>
+                <p className="text-xs text-muted-foreground mt-1">Total Workouts</p>
               </div>
             </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">This week</span>
+                <span className="text-sm font-semibold">{stats.weeklyStreak} sessions</span>
+              </div>
+              <div className="flex gap-1">
+                {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => {
+                  const filled = i < stats.weeklyStreak;
+                  return (
+                    <div key={i} className={`flex-1 h-2 rounded-full transition-all ${filled ? "bg-gradient-to-r from-violet-500 to-cyan-400 shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "bg-white/10"}`} />
+                  );
+                })}
+              </div>
+              <div className="flex gap-1 justify-between">
+                {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+                  <span key={i} className="flex-1 text-center text-[9px] text-muted-foreground">{d}</span>
+                ))}
+              </div>
+            </div>
+            <Link href="/workout" className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 group">
+              <span className="text-sm font-medium">Start Workout</span>
+              <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            </Link>
+          </motion.div>
 
-            {/* Personal Records */}
-            {stats.personalRecords.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="font-display font-semibold text-xl flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-yellow-500" /> Recent PRs
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {stats.personalRecords.map((pr, i) => (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 * i }}
-                      key={pr.exerciseId} 
-                      className="glass-card p-4 rounded-2xl flex justify-between items-center border-l-4 border-l-yellow-500"
-                    >
-                      <div>
-                        <p className="font-medium">{pr.exerciseName}</p>
-                        <p className="text-xs text-muted-foreground">{format(new Date(pr.date), 'MMM d, yyyy')}</p>
-                      </div>
-                      <div className="text-xl font-display font-bold text-yellow-500">
-                        {pr.weightKg} <span className="text-sm font-sans text-muted-foreground">kg</span>
-                      </div>
-                    </motion.div>
+          {/* Macros + Hydration Circle (right) */}
+          <motion.div
+            initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
+            className="md:col-span-3 glass-card rounded-3xl p-5 border border-white/5"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display font-bold text-lg">Macros & Hydration</h3>
+              <Link href="/diet" className="text-xs text-violet-400 hover:underline flex items-center gap-1">Diet <ArrowRight className="w-3 h-3" /></Link>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-5 items-center">
+              <div className="flex-1 w-full">
+                <div className="h-56 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={macroData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+                      <PolarGrid stroke="rgba(255,255,255,0.08)" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fill: "#71717a", fontSize: 11 }} />
+                      <Radar name="Today" dataKey="A" stroke="#7c3aed" fill="#7c3aed" fillOpacity={0.25} strokeWidth={2} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div className="flex flex-col items-center gap-3 shrink-0">
+                <div className="relative w-32 h-32 flex items-center justify-center">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" />
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="url(#waterGrad)" strokeWidth="10"
+                      strokeLinecap="round"
+                      style={{ strokeDasharray: `${2 * Math.PI * 50}`, strokeDashoffset: `${2 * Math.PI * 50 * (1 - waterPct)}`, transition: "stroke-dashoffset 1s ease" }}
+                    />
+                    <defs>
+                      <linearGradient id="waterGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#06b6d4" />
+                        <stop offset="100%" stopColor="#3b82f6" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <Droplets className="w-5 h-5 text-cyan-400 mb-0.5" />
+                    <span className="text-xl font-display font-bold text-cyan-400">{waterGlasses}</span>
+                    <span className="text-[10px] text-muted-foreground">/ 12 glasses</span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground text-center">Hydration<br /><span className="text-cyan-400 font-semibold">{waterMl} ml</span> / 3000 ml</p>
+                <div className="flex gap-2">
+                  {[250, 500].map(ml => (
+                    <button key={ml} onClick={() => {
+                      const newVal = Math.min(waterMl + ml, 3000);
+                      setWaterMl(newVal);
+                      localStorage.setItem(WATER_KEY, String(newVal));
+                    }} className="px-3 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold hover:bg-cyan-500/20 transition-colors">
+                      +{ml}ml
+                    </button>
                   ))}
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* Sidebar Area */}
-          <div className="space-y-6">
-            <div className="glass-card rounded-3xl p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-display font-semibold text-xl">Recent Workouts</h3>
-                <Link href="/workout" className="text-primary text-sm font-medium hover:underline flex items-center">
-                  View all <ArrowRight className="w-4 h-4 ml-1" />
-                </Link>
-              </div>
-              
-              <div className="space-y-4">
-                {stats.recentWorkouts.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground border border-dashed border-white/10 rounded-2xl">
-                    <p>No workouts yet.</p>
-                    <Link href="/workout" className="text-primary font-medium mt-2 inline-block hover:underline">Start your first one!</Link>
-                  </div>
-                ) : (
-                  stats.recentWorkouts.map((workout) => (
-                    <Link key={workout.id} href={`/workout/${workout.id}`} className="block group">
-                      <div className="p-4 rounded-2xl bg-black/40 border border-white/5 hover:border-primary/50 transition-colors group-hover:bg-black/60 relative overflow-hidden">
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-accent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <h4 className="font-semibold group-hover:text-primary transition-colors">{workout.name}</h4>
-                        <div className="flex justify-between items-center mt-2 text-sm text-muted-foreground">
-                          <span>{workout.muscleGroup || "Mixed"}</span>
-                          <span>{format(new Date(workout.date), 'MMM d')}</span>
-                        </div>
-                        <div className="flex gap-4 mt-3 pt-3 border-t border-white/5 text-xs font-medium">
-                          <span className="flex items-center gap-1"><Activity className="w-3 h-3 text-accent" /> {workout.exerciseCount} exercises</span>
-                          <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-yellow-500" /> {workout.caloriesBurned || 0} kcal</span>
-                        </div>
-                      </div>
-                    </Link>
-                  ))
-                )}
-              </div>
             </div>
-
-            {/* Quick Promo / Quote */}
-            <div className="rounded-3xl p-6 relative overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/20">
-              {/* Using generated hero image with overlay */}
-              <div className="absolute inset-0 z-0 opacity-20">
-                <img src={`${import.meta.env.BASE_URL}images/hero-bg.png`} alt="Background" className="w-full h-full object-cover" />
-              </div>
-              <div className="relative z-10">
-                <h3 className="font-display font-bold text-2xl mb-2 text-white neon-text-primary">Keep pushing.</h3>
-                <p className="text-white/80 text-sm">"The only bad workout is the one that didn't happen."</p>
-                <Link href="/workout" className="mt-4 inline-flex items-center justify-center px-4 py-2 bg-white text-primary font-semibold rounded-xl hover:scale-105 transition-transform text-sm">
-                  Let's Go
-                </Link>
-              </div>
-            </div>
-          </div>
+          </motion.div>
         </div>
+
+        {/* ── ROW 3: PRs + Weekly Volume ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* Personal Records */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+            className="glass-card rounded-3xl p-5 border border-white/5"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display font-bold text-lg flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-yellow-500" /> Personal Records
+              </h3>
+              <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">{stats.personalRecords.length} PRs</span>
+            </div>
+            {stats.personalRecords.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Trophy className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                <p className="text-sm">Log workouts to track your PRs</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {stats.personalRecords.slice(0, 4).map((pr, i) => (
+                  <motion.div key={pr.exerciseId} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 * i }}
+                    className="flex items-center justify-between p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/10 hover:border-yellow-500/30 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+                        <TrendingUp className="w-4 h-4 text-yellow-500" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm">{pr.exerciseName}</p>
+                        <p className="text-xs text-muted-foreground">{format(new Date(pr.date), "MMM d, yyyy")}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-display font-bold text-yellow-500 text-lg">{pr.weightKg}</p>
+                      <p className="text-xs text-muted-foreground">kg</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+
+          {/* Weekly Volume Polygon Bar */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+            className="glass-card rounded-3xl p-5 border border-white/5"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display font-bold text-lg flex items-center gap-2">
+                <Activity className="w-5 h-5 text-violet-400" /> Weekly Volume
+              </h3>
+              <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">Last 7 Days</span>
+            </div>
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.weeklyVolume} barSize={28} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 11 }} dy={8} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 11 }} />
+                  <Tooltip
+                    cursor={{ fill: "rgba(255,255,255,0.04)" }}
+                    contentStyle={{ backgroundColor: "#18181b", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "14px", fontSize: "12px" }}
+                  />
+                  <Bar dataKey="volume" radius={[8, 8, 2, 2]} label={false}>
+                    {stats.weeklyVolume.map((entry, index) => (
+                      <Cell key={`cell-${index}`}
+                        fill={entry.volume > 0 ? "url(#barGrad)" : "rgba(255,255,255,0.05)"}
+                        stroke={entry.volume > 0 ? "rgba(124,58,237,0.3)" : "transparent"}
+                      />
+                    ))}
+                  </Bar>
+                  <defs>
+                    <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#7c3aed" />
+                      <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.7} />
+                    </linearGradient>
+                  </defs>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* ── Recent Workouts ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+          className="glass-card rounded-3xl p-5 border border-white/5"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-display font-bold text-lg">Recent Workouts</h3>
+            <Link href="/workout" className="text-xs text-violet-400 hover:underline flex items-center gap-1">See all <ArrowRight className="w-3 h-3" /></Link>
+          </div>
+          {stats.recentWorkouts.length === 0 ? (
+            <div className="text-center py-8 border border-dashed border-white/10 rounded-2xl text-muted-foreground">
+              <p className="text-sm">No workouts yet.</p>
+              <Link href="/workout" className="text-violet-400 text-sm font-medium mt-2 inline-block hover:underline">Start your first workout!</Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {stats.recentWorkouts.slice(0, 3).map((workout, i) => (
+                <Link key={workout.id} href={`/workout/active/${workout.id}`} className="block group">
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}
+                    className="p-4 rounded-2xl bg-black/40 border border-white/5 hover:border-violet-500/30 transition-all group-hover:bg-black/60 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <p className="text-xs text-muted-foreground mb-1">{format(new Date(workout.date), "MMM d")}</p>
+                    <h4 className="font-semibold group-hover:text-violet-400 transition-colors">{workout.name}</h4>
+                    <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> {workout.exerciseCount} exercises</span>
+                      <span className="flex items-center gap-1"><Flame className="w-3 h-3 text-orange-500" /> {workout.caloriesBurned || 0} kcal</span>
+                    </div>
+                    <div className="mt-2">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">{workout.muscleGroup || "Mixed"}</span>
+                    </div>
+                  </motion.div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </motion.div>
       </div>
     </PageTransition>
-  );
-}
-
-function StatCard({ title, value, suffix, icon: Icon, color, delay }: any) {
-  return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay }}
-      className="glass-card p-5 rounded-3xl relative overflow-hidden group hover:border-white/20 transition-colors"
-    >
-      <div className={`absolute -right-4 -top-4 w-20 h-20 bg-current opacity-5 rounded-full blur-xl group-hover:opacity-10 transition-opacity ${color}`} />
-      <div className="flex justify-between items-start mb-4">
-        <p className="text-sm font-medium text-muted-foreground">{title}</p>
-        <div className={`p-2 rounded-lg bg-black/50 ${color}`}>
-          <Icon className="w-4 h-4" />
-        </div>
-      </div>
-      <div className="flex items-baseline gap-1">
-        <h4 className="text-3xl font-display font-bold">{value}</h4>
-        {suffix && <span className="text-sm text-muted-foreground font-medium mb-1">{suffix}</span>}
-      </div>
-    </motion.div>
-  );
-}
-
-function QuickAction({ href, icon: Icon, label, color }: any) {
-  return (
-    <Link href={href} className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl whitespace-nowrap transition-transform hover:scale-105 active:scale-95 ${color}`}>
-      <Icon className="w-4 h-4" />
-      <span className="font-medium text-sm">{label}</span>
-    </Link>
   );
 }
