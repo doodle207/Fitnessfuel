@@ -31,11 +31,13 @@ function getOrigin(req: Request): string {
   return `${proto}://${host}`;
 }
 
+const crossOrigin = process.env.CROSS_ORIGIN_AUTH === "true";
+
 function setSessionCookie(res: Response, sid: string) {
   res.cookie(SESSION_COOKIE, sid, {
     httpOnly: true,
     secure: true,
-    sameSite: "lax",
+    sameSite: crossOrigin ? "none" : "lax",
     path: "/",
     maxAge: SESSION_TTL,
   });
@@ -45,17 +47,18 @@ function setOidcCookie(res: Response, name: string, value: string) {
   res.cookie(name, value, {
     httpOnly: true,
     secure: true,
-    sameSite: "lax",
+    sameSite: crossOrigin ? "none" : "lax",
     path: "/",
     maxAge: OIDC_COOKIE_TTL,
   });
 }
 
 function getSafeReturnTo(value: unknown): string {
-  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) {
-    return "/";
-  }
-  return value;
+  if (typeof value !== "string") return "/";
+  if (value.startsWith("/") && !value.startsWith("//")) return value;
+  const trusted = process.env.FRONTEND_URL;
+  if (trusted && value.startsWith(trusted)) return value;
+  return "/";
 }
 
 async function upsertUser(claims: Record<string, unknown>) {

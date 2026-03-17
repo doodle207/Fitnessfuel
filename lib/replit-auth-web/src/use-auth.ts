@@ -8,7 +8,20 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: () => void;
+  loginWithGoogle: () => void;
   logout: () => void;
+}
+
+const apiBase: string =
+  (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL ?? "";
+
+function buildReturnTo(): string {
+  const base =
+    (import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL?.replace(
+      /\/+$/,
+      "",
+    ) ?? "";
+  return apiBase ? `${window.location.origin}${base || "/"}` : base || "/";
 }
 
 export function useAuth(): AuthState {
@@ -18,7 +31,7 @@ export function useAuth(): AuthState {
   useEffect(() => {
     let cancelled = false;
 
-    fetch("/api/auth/user", { credentials: "include" })
+    fetch(`${apiBase}/api/auth/user`, { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<{ user: AuthUser | null }>;
@@ -42,12 +55,17 @@ export function useAuth(): AuthState {
   }, []);
 
   const login = useCallback(() => {
-    const base = import.meta.env.BASE_URL.replace(/\/+$/, "") || "/";
-    window.location.href = `/api/login?returnTo=${encodeURIComponent(base)}`;
+    const returnTo = buildReturnTo();
+    window.location.href = `${apiBase}/api/login?returnTo=${encodeURIComponent(returnTo)}`;
+  }, []);
+
+  const loginWithGoogle = useCallback(() => {
+    const returnTo = buildReturnTo();
+    window.location.href = `${apiBase}/api/auth/google/login?returnTo=${encodeURIComponent(returnTo)}`;
   }, []);
 
   const logout = useCallback(() => {
-    window.location.href = "/api/logout";
+    window.location.href = `${apiBase}/api/logout`;
   }, []);
 
   return {
@@ -55,6 +73,7 @@ export function useAuth(): AuthState {
     isLoading,
     isAuthenticated: !!user,
     login,
+    loginWithGoogle,
     logout,
   };
 }

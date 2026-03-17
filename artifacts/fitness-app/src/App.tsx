@@ -34,7 +34,7 @@ function GoogleIcon() {
 }
 
 function LoginScreen() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
 
   return (
     <div className="min-h-screen bg-[#080810] flex flex-col items-center justify-center relative overflow-hidden px-4">
@@ -85,9 +85,10 @@ function LoginScreen() {
 
         <div className="space-y-3">
           <motion.button
+            type="button"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={login}
+            onClick={loginWithGoogle}
             className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-semibold text-base text-[#1a1a2e] bg-white hover:bg-white/95 transition-all shadow-lg"
           >
             <GoogleIcon />
@@ -95,12 +96,13 @@ function LoginScreen() {
           </motion.button>
 
           <motion.button
+            type="button"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={login}
             className="w-full py-4 rounded-2xl font-semibold text-base text-white/80 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all"
           >
-            Continue with Email
+            Sign in with Replit
           </motion.button>
         </div>
 
