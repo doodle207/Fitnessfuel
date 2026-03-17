@@ -7,11 +7,61 @@ import {
   Target, TrendingUp, Zap, ChevronRight
 } from "lucide-react";
 import {
-  RadarChart, Radar, PolarGrid, PolarAngleAxis, BarChart, Bar, XAxis, YAxis, Tooltip,
+  BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, Cell
 } from "recharts";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+interface MacroRingProps {
+  label: string;
+  emoji: string;
+  current: number;
+  target: number;
+  stroke: string;
+  track: string;
+}
+
+function MacroRing({ label, emoji, current, target, stroke, track }: MacroRingProps) {
+  const r = 36;
+  const circumference = 2 * Math.PI * r;
+  const arcPct = 0.75; // 270° open-bottom arc
+  const arcLen = circumference * arcPct;
+  const gapLen = circumference - arcLen;
+  const pct = Math.min(current / Math.max(target, 1), 1);
+  const filled = arcLen * pct;
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="relative w-24 h-24">
+        <svg viewBox="0 0 100 100" className="w-full h-full" style={{ transform: "rotate(135deg)" }}>
+          {/* Track ring */}
+          <circle cx="50" cy="50" r={r} fill="none"
+            stroke={track} strokeWidth="9"
+            strokeDasharray={`${arcLen} ${gapLen}`}
+            strokeLinecap="round"
+          />
+          {/* Progress ring */}
+          <circle cx="50" cy="50" r={r} fill="none"
+            stroke={stroke} strokeWidth="9"
+            strokeDasharray={`${filled} ${circumference - filled}`}
+            strokeLinecap="round"
+            style={{ transition: "stroke-dasharray 1s ease-out" }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center pb-2">
+          <span className="text-2xl select-none">{emoji}</span>
+        </div>
+      </div>
+      <div className="text-center leading-snug">
+        <p className="text-xs text-muted-foreground font-medium">{label}</p>
+        <p className="text-xs font-bold text-white/90">{current}/{target}g</p>
+      </div>
+    </div>
+  );
+}
 
 const STEPS_KEY = "fittrack_steps_today";
 const STEPS_DATE_KEY = "fittrack_steps_date";
@@ -36,12 +86,35 @@ export default function Dashboard() {
   const [stepsInput, setStepsInput] = useState("");
   const [showStepsInput, setShowStepsInput] = useState(false);
   const [waterMl, setWaterMl] = useState(() => parseInt(localStorage.getItem(WATER_KEY) || "0"));
+  const [macroTotals, setMacroTotals] = useState({ proteinG: 0, carbsG: 0, fatG: 0 });
 
   useEffect(() => {
     localStorage.setItem(STEPS_KEY, String(steps));
     const today = new Date().toISOString().split("T")[0];
     localStorage.setItem(STEPS_DATE_KEY, today);
   }, [steps]);
+
+  useEffect(() => {
+    fetch(`${BASE}/api/diet/food-log`, { credentials: "include" })
+      .then(r => r.json())
+      .then((logs: any[]) => {
+        if (!Array.isArray(logs)) return;
+        const totals = logs.reduce(
+          (acc, l) => ({
+            proteinG: acc.proteinG + (l.proteinG || 0),
+            carbsG: acc.carbsG + (l.carbsG || 0),
+            fatG: acc.fatG + (l.fatG || 0),
+          }),
+          { proteinG: 0, carbsG: 0, fatG: 0 }
+        );
+        setMacroTotals({
+          proteinG: Math.round(totals.proteinG),
+          carbsG: Math.round(totals.carbsG),
+          fatG: Math.round(totals.fatG),
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   const handleStepsSave = () => {
     const n = parseInt(stepsInput);
@@ -63,13 +136,12 @@ export default function Dashboard() {
   const todayFoodCalories = parseInt(localStorage.getItem("fittrack_food_cal_today") || "0");
   const netCalories = todayFoodCalories - totalBurned;
 
-  const macroData = [
-    { subject: "Protein", A: 72, fullMark: 100 },
-    { subject: "Carbs", A: 58, fullMark: 100 },
-    { subject: "Fat", A: 65, fullMark: 100 },
-    { subject: "Fiber", A: 40, fullMark: 100 },
-    { subject: "Sodium", A: 50, fullMark: 100 },
-  ];
+  // Macro targets from profile
+  const weightKg = profile.weightKg || 70;
+  const calTarget = bmr + 300;
+  const proteinTarget = Math.round(weightKg * 2.2);
+  const fatTarget = Math.round(weightKg * 0.9);
+  const carbsTarget = Math.round((calTarget - proteinTarget * 4 - fatTarget * 9) / 4);
 
   return (
     <PageTransition>
