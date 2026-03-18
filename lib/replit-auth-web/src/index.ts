@@ -39,9 +39,8 @@ function toAuthUser(user: User | null): AuthUser | null {
 }
 
 const SITE_URL =
-  typeof window !== "undefined"
-    ? window.location.origin
-    : "https://godiddygo.netlify.app";
+  ((import.meta as any).env?.VITE_SITE_URL as string | undefined) ||
+  (typeof window !== "undefined" ? window.location.origin : "");
 
 export function useAuth(): UseAuthReturn {
   const [user, setUser] = useState<AuthUser | null>(null);
