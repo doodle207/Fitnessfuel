@@ -5,9 +5,6 @@
 [build.environment]
   BASE_PATH = "/"
   NODE_VERSION = "24"
-  # Set VITE_API_URL in your Netlify dashboard (Site settings → Environment variables)
-  # to point to your deployed Replit backend, e.g.:
-  #   VITE_API_URL = https://your-backend.replit.app
 
 [[redirects]]
   from = "/*"

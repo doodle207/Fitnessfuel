@@ -1,4 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
+import { createClient, type User, type Session } from "@supabase/supabase-js";
+
+const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL as string;
+const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string;
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+export type { User };
 
 export interface AuthUser {
   id: string;
@@ -10,6 +18,7 @@ export interface AuthUser {
 
 export interface UseAuthReturn {
   user: AuthUser | null;
+  session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: () => void;
@@ -17,53 +26,67 @@ export interface UseAuthReturn {
   logout: () => void;
 }
 
-function getApiBase(): string {
-  const base = (import.meta as any).env?.BASE_URL ?? "/";
-  return base.endsWith("/") ? base.slice(0, -1) : base;
+function toAuthUser(user: User | null): AuthUser | null {
+  if (!user) return null;
+  const meta = user.user_metadata ?? {};
+  return {
+    id: user.id,
+    email: user.email ?? null,
+    firstName: meta.given_name ?? meta.full_name?.split(" ")[0] ?? meta.name?.split(" ")[0] ?? null,
+    lastName: meta.family_name ?? meta.full_name?.split(" ").slice(1).join(" ") ?? null,
+    profileImageUrl: meta.avatar_url ?? meta.picture ?? null,
+  };
 }
+
+const SITE_URL =
+  typeof window !== "undefined"
+    ? window.location.origin
+    : "https://godiddygo.netlify.app";
 
 export function useAuth(): UseAuthReturn {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchUser = useCallback(async () => {
-    try {
-      const res = await fetch(`${getApiBase()}/api/auth/user`, {
-        credentials: "include",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.user ?? null);
-      } else {
-        setUser(null);
-      }
-    } catch {
-      setUser(null);
-    } finally {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setUser(toAuthUser(data.session?.user ?? null));
       setIsLoading(false);
-    }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        setSession(newSession);
+        setUser(toAuthUser(newSession?.user ?? null));
+        setIsLoading(false);
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
-
   const login = useCallback(() => {
-    const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.href = `${getApiBase()}/api/login?returnTo=${returnTo}`;
+    supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: SITE_URL },
+    });
   }, []);
 
   const loginWithGoogle = useCallback(() => {
-    const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.href = `${getApiBase()}/api/auth/google/login?returnTo=${returnTo}`;
+    supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: SITE_URL },
+    });
   }, []);
 
-  const logout = useCallback(() => {
-    window.location.href = `${getApiBase()}/api/logout`;
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
   }, []);
 
   return {
     user,
+    session,
     isAuthenticated: user !== null,
     isLoading,
     login,
