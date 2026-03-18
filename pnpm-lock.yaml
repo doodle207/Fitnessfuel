@@ -632,14 +632,13 @@ importers:
         version: 0.31.9
 
   lib/replit-auth-web:
-    dependencies:
-      '@workspace/api-client-react':
-        specifier: workspace:*
-        version: link:../api-client-react
     devDependencies:
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.14
+      react:
+        specifier: 'catalog:'
+        version: 19.1.0
 
   scripts:
     dependencies:
