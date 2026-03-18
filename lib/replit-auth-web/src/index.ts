@@ -1,8 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient, type User, type Session } from "@supabase/supabase-js";
 
-const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL as string;
-const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string;
+const supabaseUrl =
+  ((import.meta as any).env?.VITE_SUPABASE_URL as string | undefined) ??
+  "https://placeholder.supabase.co";
+
+const supabaseAnonKey =
+  ((import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string | undefined) ??
+  "placeholder-key";
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -32,8 +37,15 @@ function toAuthUser(user: User | null): AuthUser | null {
   return {
     id: user.id,
     email: user.email ?? null,
-    firstName: meta.given_name ?? meta.full_name?.split(" ")[0] ?? meta.name?.split(" ")[0] ?? null,
-    lastName: meta.family_name ?? meta.full_name?.split(" ").slice(1).join(" ") ?? null,
+    firstName:
+      meta.given_name ??
+      meta.full_name?.split(" ")[0] ??
+      meta.name?.split(" ")[0] ??
+      null,
+    lastName:
+      meta.family_name ??
+      meta.full_name?.split(" ").slice(1).join(" ") ??
+      null,
     profileImageUrl: meta.avatar_url ?? meta.picture ?? null,
   };
 }
@@ -54,13 +66,13 @@ export function useAuth(): UseAuthReturn {
       setIsLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
-        setSession(newSession);
-        setUser(toAuthUser(newSession?.user ?? null));
-        setIsLoading(false);
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      setUser(toAuthUser(newSession?.user ?? null));
+      setIsLoading(false);
+    });
 
     return () => subscription.unsubscribe();
   }, []);
