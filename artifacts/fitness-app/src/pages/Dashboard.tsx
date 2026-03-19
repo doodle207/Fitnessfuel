@@ -8,7 +8,8 @@ import {
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, Cell
+  ResponsiveContainer, Cell,
+  RadarChart, PolarGrid, PolarAngleAxis, Radar,
 } from "recharts";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
@@ -124,24 +125,41 @@ export default function Dashboard() {
   };
 
   if (isProfileLoading || isStatsLoading) return <LoadingState message="Loading dashboard..." />;
-  if (!stats || !profile) return null;
+
+  const safeProfile = profile && typeof profile === "object" && !Array.isArray(profile) ? profile as any : {};
+  const safeStats = stats && typeof stats === "object" && !Array.isArray(stats) ? stats as any : {
+    currentStreak: 0,
+    totalWorkouts: 0,
+    weeklyStreak: 0,
+    recentWorkouts: [],
+    personalRecords: [],
+    weeklyVolume: [
+      { day: "Mon", volume: 0 }, { day: "Tue", volume: 0 }, { day: "Wed", volume: 0 },
+      { day: "Thu", volume: 0 }, { day: "Fri", volume: 0 }, { day: "Sat", volume: 0 }, { day: "Sun", volume: 0 },
+    ],
+  };
 
   const stepCalories = Math.round(steps * CALS_PER_STEP);
-  const todayWorkoutCalories = stats.recentWorkouts?.[0]?.caloriesBurned || 0;
+  const todayWorkoutCalories = safeStats.recentWorkouts?.[0]?.caloriesBurned || 0;
   const totalBurned = todayWorkoutCalories + stepCalories;
-  const bmr = Math.round(10 * (profile.weightKg || 70) + 6.25 * (profile.heightCm || 175) - 5 * (profile.age || 25) + (profile.gender === "female" ? -161 : 5));
+  const bmr = Math.round(10 * (safeProfile.weightKg || 70) + 6.25 * (safeProfile.heightCm || 175) - 5 * (safeProfile.age || 25) + (safeProfile.gender === "female" ? -161 : 5));
   const waterPct = Math.min(waterMl / 3000, 1);
   const waterGlasses = Math.round(waterMl / 250);
 
   const todayFoodCalories = parseInt(localStorage.getItem("fittrack_food_cal_today") || "0");
   const netCalories = todayFoodCalories - totalBurned;
 
-  // Macro targets from profile
-  const weightKg = profile.weightKg || 70;
+  const weightKg = safeProfile.weightKg || 70;
   const calTarget = bmr + 300;
   const proteinTarget = Math.round(weightKg * 2.2);
   const fatTarget = Math.round(weightKg * 0.9);
   const carbsTarget = Math.round((calTarget - proteinTarget * 4 - fatTarget * 9) / 4);
+
+  const macroData = [
+    { subject: "Protein", A: Math.round((macroTotals.proteinG / Math.max(proteinTarget, 1)) * 100) },
+    { subject: "Carbs", A: Math.round((macroTotals.carbsG / Math.max(carbsTarget, 1)) * 100) },
+    { subject: "Fat", A: Math.round((macroTotals.fatG / Math.max(fatTarget, 1)) * 100) },
+  ];
 
   return (
     <PageTransition>
@@ -150,7 +168,7 @@ export default function Dashboard() {
           <div>
             <p className="text-muted-foreground text-sm">{format(new Date(), "EEEE, MMMM do")}</p>
             <h1 className="text-3xl md:text-4xl font-display font-bold mt-0.5">
-              Hey, <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">{profile.name?.split(" ")[0] || "Champ"}</span> 👋
+              Hey, <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">{safeProfile.name?.split(" ")[0] || "Champ"}</span> 👋
             </h1>
           </div>
           <div className="flex gap-2">
@@ -232,22 +250,22 @@ export default function Dashboard() {
             <h3 className="font-display font-bold text-lg flex items-center gap-2"><Flame className="w-5 h-5 text-orange-500" /> Streaks & Activity</h3>
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-2xl p-4 bg-orange-500/10 border border-orange-500/20 text-center">
-                <p className="text-3xl font-display font-black text-orange-400">{stats.currentStreak}</p>
+                <p className="text-3xl font-display font-black text-orange-400">{safeStats.currentStreak}</p>
                 <p className="text-xs text-muted-foreground mt-1">Day Streak 🔥</p>
               </div>
               <div className="rounded-2xl p-4 bg-violet-500/10 border border-violet-500/20 text-center">
-                <p className="text-3xl font-display font-black text-violet-400">{stats.totalWorkouts}</p>
+                <p className="text-3xl font-display font-black text-violet-400">{safeStats.totalWorkouts}</p>
                 <p className="text-xs text-muted-foreground mt-1">Total Workouts</p>
               </div>
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">This week</span>
-                <span className="text-sm font-semibold">{stats.weeklyStreak} sessions</span>
+                <span className="text-sm font-semibold">{safeStats.weeklyStreak} sessions</span>
               </div>
               <div className="flex gap-1">
                 {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => {
-                  const filled = i < stats.weeklyStreak;
+                  const filled = i < safeStats.weeklyStreak;
                   return (
                     <div key={i} className={`flex-1 h-2 rounded-full transition-all ${filled ? "bg-gradient-to-r from-violet-500 to-cyan-400 shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "bg-white/10"}`} />
                   );
@@ -335,16 +353,16 @@ export default function Dashboard() {
               <h3 className="font-display font-bold text-lg flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-yellow-500" /> Personal Records
               </h3>
-              <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">{stats.personalRecords.length} PRs</span>
+              <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">{safeStats.personalRecords.length} PRs</span>
             </div>
-            {stats.personalRecords.length === 0 ? (
+            {safeStats.personalRecords.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Trophy className="w-10 h-10 mx-auto mb-3 opacity-20" />
                 <p className="text-sm">Log workouts to track your PRs</p>
               </div>
             ) : (
               <div className="space-y-2">
-                {stats.personalRecords.slice(0, 4).map((pr, i) => (
+                {safeStats.personalRecords.slice(0, 4).map((pr, i) => (
                   <motion.div key={pr.exerciseId} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 * i }}
                     className="flex items-center justify-between p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/10 hover:border-yellow-500/30 transition-colors">
                     <div className="flex items-center gap-3">
@@ -379,7 +397,7 @@ export default function Dashboard() {
             </div>
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats.weeklyVolume} barSize={28} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
+                <BarChart data={safeStats.weeklyVolume} barSize={28} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
                   <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 11 }} dy={8} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 11 }} />
                   <Tooltip
@@ -387,7 +405,7 @@ export default function Dashboard() {
                     contentStyle={{ backgroundColor: "#18181b", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "14px", fontSize: "12px" }}
                   />
                   <Bar dataKey="volume" radius={[8, 8, 2, 2]} label={false}>
-                    {stats.weeklyVolume.map((entry, index) => (
+                    {safeStats.weeklyVolume.map((entry, index) => (
                       <Cell key={`cell-${index}`}
                         fill={entry.volume > 0 ? "url(#barGrad)" : "rgba(255,255,255,0.05)"}
                         stroke={entry.volume > 0 ? "rgba(124,58,237,0.3)" : "transparent"}
@@ -415,14 +433,14 @@ export default function Dashboard() {
             <h3 className="font-display font-bold text-lg">Recent Workouts</h3>
             <Link href="/workout" className="text-xs text-violet-400 hover:underline flex items-center gap-1">See all <ArrowRight className="w-3 h-3" /></Link>
           </div>
-          {stats.recentWorkouts.length === 0 ? (
+          {safeStats.recentWorkouts.length === 0 ? (
             <div className="text-center py-8 border border-dashed border-white/10 rounded-2xl text-muted-foreground">
               <p className="text-sm">No workouts yet.</p>
               <Link href="/workout" className="text-violet-400 text-sm font-medium mt-2 inline-block hover:underline">Start your first workout!</Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {stats.recentWorkouts.slice(0, 3).map((workout, i) => (
+              {safeStats.recentWorkouts.slice(0, 3).map((workout, i) => (
                 <Link key={workout.id} href={`/workout/active/${workout.id}`} className="block group">
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}
                     className="p-4 rounded-2xl bg-black/40 border border-white/5 hover:border-violet-500/30 transition-all group-hover:bg-black/60 relative overflow-hidden">
