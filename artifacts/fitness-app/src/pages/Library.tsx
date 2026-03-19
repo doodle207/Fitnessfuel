@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useGetExercises, useToggleFavoriteExercise } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
-import { Search, Heart, Dumbbell, X, Target, Timer, Zap, Info, Sparkles, ChevronRight } from "lucide-react";
+import { Search, Heart, Dumbbell, X, Target, Timer, Zap, Info, ChevronRight, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const groups = ["All", "Chest", "Back", "Legs", "Shoulders", "Arms", "Core", "Cardio", "Full Body"];
@@ -51,14 +51,13 @@ function ExerciseModal({ exercise, onClose }: { exercise: Exercise; onClose: () 
         transition={{ type: "spring", damping: 28, stiffness: 300 }}
         onClick={e => e.stopPropagation()}
         className="bg-[#0a0a12] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-xl max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl">
-        {/* Gradient header */}
         <div className={`h-28 bg-gradient-to-br ${gc.from} ${gc.to} relative overflow-hidden rounded-t-3xl`}>
           <div className="absolute inset-0 bg-black/30" />
           <div className="absolute inset-0 flex items-end p-5">
             <div className="flex items-end justify-between w-full">
               <div>
                 <div className="flex flex-wrap gap-1.5 mb-2">
-                  <span className={`text-[10px] border rounded-full px-2 py-0.5 ${diffColor}`}>{exercise.difficulty}</span>
+                  <span className={`text-[10px] border rounded-full px-2 py-0.5 ${diffColor}`}>{exercise.difficulty || "Beginner"}</span>
                   {exercise.equipment && <span className="text-[10px] bg-black/40 text-white/80 border border-white/20 rounded-full px-2 py-0.5">{exercise.equipment}</span>}
                 </div>
                 <h2 className="font-display font-black text-2xl text-white drop-shadow-lg">{exercise.name}</h2>
@@ -71,9 +70,8 @@ function ExerciseModal({ exercise, onClose }: { exercise: Exercise; onClose: () 
         </div>
 
         <div className="p-5 space-y-5">
-          {/* Muscle tags */}
           <div className="flex flex-wrap gap-2">
-            <span className={`flex items-center gap-1 text-xs bg-violet-500/15 text-violet-400 border border-violet-500/20 rounded-full px-3 py-1`}>
+            <span className="flex items-center gap-1 text-xs bg-violet-500/15 text-violet-400 border border-violet-500/20 rounded-full px-3 py-1">
               <Target className="w-3 h-3" /> {exercise.muscleGroup}
             </span>
             {exercise.secondaryMuscles?.split(",").slice(0, 3).map(m => (
@@ -81,7 +79,6 @@ function ExerciseModal({ exercise, onClose }: { exercise: Exercise; onClose: () 
             ))}
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: "Sets", value: scheme.sets, icon: null },
@@ -97,7 +94,6 @@ function ExerciseModal({ exercise, onClose }: { exercise: Exercise; onClose: () 
             ))}
           </div>
 
-          {/* Hypertrophy tip */}
           <div className="bg-gradient-to-r from-violet-500/12 to-cyan-500/12 border border-violet-500/25 rounded-2xl p-4">
             <p className="text-xs font-bold text-violet-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
               <Zap className="w-3 h-3" /> Hypertrophy Focus
@@ -106,7 +102,6 @@ function ExerciseModal({ exercise, onClose }: { exercise: Exercise; onClose: () 
             <p className="text-xs text-cyan-400 mt-1.5 font-semibold">Tempo: {scheme.tempo} — time under tension</p>
           </div>
 
-          {/* Instructions */}
           {steps.length > 0 && (
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
@@ -135,7 +130,7 @@ export default function Library() {
   const [expandedEx, setExpandedEx] = useState<Exercise | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: exercises, isLoading } = useGetExercises({
+  const { data: rawExercises, isLoading, error } = useGetExercises({
     search: search || undefined,
     muscleGroup: filterGroup !== "All" ? filterGroup : undefined,
   });
@@ -144,10 +139,12 @@ export default function Library() {
     mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/exercises"] }) }
   });
 
-  if (isLoading && !exercises) return <LoadingState message="Loading library..." />;
+  const exercises: Exercise[] = Array.isArray(rawExercises) ? rawExercises : [];
 
-  const displayed = activeTab === "favorites" ? (exercises?.filter(e => e.isFavorite) ?? []) : (exercises ?? []);
-  const favCount = exercises?.filter(e => e.isFavorite).length ?? 0;
+  if (isLoading && exercises.length === 0) return <LoadingState message="Loading library..." />;
+
+  const displayed = activeTab === "favorites" ? exercises.filter(e => e.isFavorite) : exercises;
+  const favCount = exercises.filter(e => e.isFavorite).length;
 
   return (
     <PageTransition>
@@ -162,7 +159,13 @@ export default function Library() {
           <p className="text-muted-foreground mt-1 text-sm">Discover movements, perfect your form, save favourites.</p>
         </header>
 
-        {/* Tabs */}
+        {error && exercises.length === 0 && (
+          <div className="flex items-center gap-3 p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-sm">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>Exercise library is unavailable right now. Check your connection and try again.</span>
+          </div>
+        )}
+
         <div className="flex gap-2">
           <button onClick={() => setActiveTab("all")}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all ${activeTab === "all" ? "bg-violet-600 text-white shadow-[0_0_16px_rgba(124,58,237,0.35)]" : "bg-white/5 border border-white/10 text-muted-foreground hover:bg-white/10"}`}>
@@ -176,7 +179,6 @@ export default function Library() {
           </button>
         </div>
 
-        {/* Search + Group filters */}
         <div className="space-y-3">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -201,7 +203,6 @@ export default function Library() {
           </div>
         </div>
 
-        {/* Grid */}
         {displayed.length === 0 ? (
           <div className="py-20 text-center text-muted-foreground">
             {activeTab === "favorites" ? (
@@ -213,7 +214,8 @@ export default function Library() {
             ) : (
               <>
                 <Dumbbell className="w-14 h-14 mx-auto mb-4 opacity-15" />
-                <p className="font-medium">No exercises found</p>
+                <p className="font-medium">{error ? "Could not load exercises" : "No exercises found"}</p>
+                {error && <p className="text-sm mt-1 opacity-60">The server is unreachable. Try refreshing.</p>}
               </>
             )}
           </div>
@@ -231,7 +233,6 @@ export default function Library() {
                   className="group relative glass-card rounded-2xl overflow-hidden cursor-pointer hover:border-white/15 border border-white/5 transition-all hover:-translate-y-1 hover:shadow-xl"
                   onClick={() => setExpandedEx(exercise)}
                 >
-                  {/* Top gradient accent */}
                   <div className={`h-1 w-full bg-gradient-to-r ${gc.from} ${gc.to} opacity-80`} />
 
                   <div className="p-5">
@@ -247,28 +248,26 @@ export default function Library() {
                       </button>
                     </div>
 
-                    <h3 className={`font-display font-bold text-base mb-2 transition-colors group-hover:${gc.light}`}>{exercise.name}</h3>
+                    <h3 className="font-display font-bold text-base mb-2">{exercise.name}</h3>
 
                     <div className="flex flex-wrap gap-1.5 mb-3">
-                      <span className={`text-[11px] px-2.5 py-1 rounded-xl font-semibold ${gc.light} bg-current/10`} style={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
-                        <span className={gc.light}>{exercise.muscleGroup}</span>
+                      <span className={`text-[11px] px-2.5 py-1 rounded-xl font-semibold ${gc.light}`} style={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
+                        {exercise.muscleGroup}
                       </span>
                       {exercise.equipment && (
                         <span className="text-[11px] px-2.5 py-1 rounded-xl bg-white/5 text-muted-foreground">{exercise.equipment}</span>
                       )}
-                      <span className={`text-[11px] px-2.5 py-1 rounded-xl ${diffBadge}`}>{exercise.difficulty}</span>
+                      <span className={`text-[11px] px-2.5 py-1 rounded-xl ${diffBadge}`}>{exercise.difficulty || "Beginner"}</span>
                     </div>
 
                     <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{exercise.instructions}</p>
                   </div>
 
                   <div className="px-5 pb-4">
-                    <div className={`w-full py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all border ${gc.light} bg-white/5 border-white/8 group-hover:bg-gradient-to-r group-hover:text-white group-hover:border-transparent group-hover:shadow-md`}
-                      style={{}}>
+                    <div className={`w-full py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all border ${gc.light} bg-white/5 border-white/8 group-hover:bg-gradient-to-r group-hover:text-white group-hover:border-transparent group-hover:shadow-md`}>
                       <Info className="w-3 h-3" />
-                      <span className="group-hover:hidden">View Details</span>
-                      <span className="hidden group-hover:inline">View Details & Steps</span>
-                      <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      View Details & Steps
+                      <ChevronRight className="w-3 h-3" />
                     </div>
                   </div>
                 </motion.div>

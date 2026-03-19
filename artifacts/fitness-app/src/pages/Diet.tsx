@@ -146,62 +146,122 @@ export default function Diet() {
     setShowCountryPicker(false);
   };
 
+  const buildLocalPlan = (c: string) => {
+    const foods = COUNTRY_FOODS[c] || COUNTRY_FOODS.USA;
+    const bf = foods.filter(f => f.mealType === "breakfast").slice(0, 2);
+    const ln = foods.filter(f => f.mealType === "lunch").slice(0, 2);
+    const dn = foods.filter(f => f.mealType === "dinner").slice(0, 2);
+    const sum = (arr: typeof bf, key: keyof typeof bf[0]) => arr.reduce((s, f) => s + (Number(f[key]) || 0), 0);
+    const all = [...bf, ...ln, ...dn];
+    return {
+      dailyCalories: sum(all, "calories"),
+      proteinG: sum(all, "proteinG"),
+      carbsG: sum(all, "carbsG"),
+      fatG: sum(all, "fatG"),
+      meals: [
+        { id: 1, mealType: "breakfast", name: "Breakfast", calories: sum(bf, "calories"), proteinG: sum(bf, "proteinG"), foods: bf.map(f => ({ name: f.name, amount: f.amount, calories: f.calories })) },
+        { id: 2, mealType: "lunch",     name: "Lunch",     calories: sum(ln, "calories"), proteinG: sum(ln, "proteinG"), foods: ln.map(f => ({ name: f.name, amount: f.amount, calories: f.calories })) },
+        { id: 3, mealType: "dinner",    name: "Dinner",    calories: sum(dn, "calories"), proteinG: sum(dn, "proteinG"), foods: dn.map(f => ({ name: f.name, amount: f.amount, calories: f.calories })) },
+      ]
+    };
+  };
+
   const generatePlan = async () => {
     setIsGenerating(true);
     try {
       const r = await fetch(`${BASE}/api/diet/meal-plan`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ country }) });
       const d = await r.json();
-      if (d.meals) setMealPlan(d);
-    } finally { setIsGenerating(false); }
+      if (d && d.meals) {
+        setMealPlan(d);
+      } else {
+        setMealPlan(buildLocalPlan(country));
+      }
+    } catch {
+      setMealPlan(buildLocalPlan(country));
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const addFoodToLog = (entry: FoodLogEntry) => {
+    setFoodLog(prev => {
+      const next = [...prev, entry];
+      localStorage.setItem("fittrack_food_cal_today", String(next.reduce((s, f) => s + f.calories, 0)));
+      return next;
+    });
   };
 
   const logFood = async (food: any, mealType: string) => {
     const today = new Date().toISOString().split("T")[0];
-    const r = await fetch(`${BASE}/api/diet/food-log`, {
-      method: "POST", credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: today, foodName: food.name, calories: food.calories, proteinG: food.proteinG, carbsG: food.carbsG, fatG: food.fatG, fiberG: food.fiberG, sodiumMg: food.sodiumMg, servingSize: food.amount, mealType }),
-    });
-    const d = await r.json();
-    if (d.id) {
-      setFoodLog(prev => [...prev, d]);
-      const totalCal = [...foodLog, d].reduce((s, f) => s + f.calories, 0);
-      localStorage.setItem("fittrack_food_cal_today", String(totalCal));
-    }
+    const tempId = Date.now();
+    const tempEntry: FoodLogEntry = {
+      id: tempId, foodName: food.name, calories: food.calories,
+      proteinG: food.proteinG ?? 0, carbsG: food.carbsG ?? 0, fatG: food.fatG ?? 0,
+      fiberG: food.fiberG ?? 0, sodiumMg: food.sodiumMg ?? 0,
+      mealType, loggedAt: today,
+    };
+    addFoodToLog(tempEntry);
     setShowFoodModal(false);
+    try {
+      const r = await fetch(`${BASE}/api/diet/food-log`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: today, foodName: food.name, calories: food.calories, proteinG: food.proteinG, carbsG: food.carbsG, fatG: food.fatG, fiberG: food.fiberG, sodiumMg: food.sodiumMg, servingSize: food.amount, mealType }),
+      });
+      const d = await r.json();
+      if (d && d.id) {
+        setFoodLog(prev => prev.map(e => e.id === tempId ? d : e));
+      }
+    } catch {}
   };
 
   const logCustomFood = async () => {
     const today = new Date().toISOString().split("T")[0];
     if (!customFood.name || !customFood.calories) return;
-    const r = await fetch(`${BASE}/api/diet/food-log`, {
-      method: "POST", credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: today, foodName: customFood.name, calories: parseInt(customFood.calories) || 0, proteinG: parseFloat(customFood.proteinG) || 0, carbsG: parseFloat(customFood.carbsG) || 0, fatG: parseFloat(customFood.fatG) || 0, mealType: activeMealTab }),
-    });
-    const d = await r.json();
-    if (d.id) {
-      setFoodLog(prev => [...prev, d]);
-      const totalCal = [...foodLog, d].reduce((s, f) => s + f.calories, 0);
-      localStorage.setItem("fittrack_food_cal_today", String(totalCal));
-      setShowFoodModal(false);
-      setCustomFood({ name: "", calories: "", proteinG: "", carbsG: "", fatG: "" });
-    }
+    const tempId = Date.now();
+    const tempEntry: FoodLogEntry = {
+      id: tempId, foodName: customFood.name,
+      calories: parseInt(customFood.calories) || 0,
+      proteinG: parseFloat(customFood.proteinG) || 0,
+      carbsG: parseFloat(customFood.carbsG) || 0,
+      fatG: parseFloat(customFood.fatG) || 0,
+      mealType: activeMealTab, loggedAt: today,
+    };
+    addFoodToLog(tempEntry);
+    setShowFoodModal(false);
+    setCustomFood({ name: "", calories: "", proteinG: "", carbsG: "", fatG: "" });
+    try {
+      const r = await fetch(`${BASE}/api/diet/food-log`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: today, foodName: customFood.name, calories: parseInt(customFood.calories) || 0, proteinG: parseFloat(customFood.proteinG) || 0, carbsG: parseFloat(customFood.carbsG) || 0, fatG: parseFloat(customFood.fatG) || 0, mealType: activeMealTab }),
+      });
+      const d = await r.json();
+      if (d && d.id) {
+        setFoodLog(prev => prev.map(e => e.id === tempId ? d : e));
+      }
+    } catch {}
   };
 
   const deleteFood = async (id: number) => {
-    await fetch(`${BASE}/api/diet/food-log/${id}`, { method: "DELETE", credentials: "include" });
-    const newLog = foodLog.filter(f => f.id !== id);
-    setFoodLog(newLog);
-    const totalCal = newLog.reduce((s, f) => s + f.calories, 0);
-    localStorage.setItem("fittrack_food_cal_today", String(totalCal));
+    setFoodLog(prev => {
+      const next = prev.filter(f => f.id !== id);
+      localStorage.setItem("fittrack_food_cal_today", String(next.reduce((s, f) => s + f.calories, 0)));
+      return next;
+    });
+    try {
+      await fetch(`${BASE}/api/diet/food-log/${id}`, { method: "DELETE", credentials: "include" });
+    } catch {}
   };
 
   const logWater = async (ml: number) => {
-    const today = new Date().toISOString().split("T")[0];
-    const r = await fetch(`${BASE}/api/progress/water`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amountMl: ml, date: today }) });
-    const d = await r.json();
-    if (d.totalMl !== undefined) setWaterData(d);
+    setWaterData(prev => ({ ...prev, totalMl: prev.totalMl + ml }));
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const r = await fetch(`${BASE}/api/progress/water`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amountMl: ml, date: today }) });
+      const d = await r.json();
+      if (d && d.totalMl !== undefined) setWaterData(d);
+    } catch {}
   };
 
   const eatenCalories = foodLog.reduce((s, l) => s + l.calories, 0);

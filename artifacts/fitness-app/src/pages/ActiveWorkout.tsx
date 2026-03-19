@@ -5,10 +5,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
 import {
   Dumbbell, Plus, Check, X, Timer, ChevronDown,
-  Target, Zap, RotateCcw, Info, TrendingUp, Search, Flame
+  Target, Zap, Info, TrendingUp, Search, ArrowLeft
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 const repSchemes: Record<string, { sets: string; reps: string; rest: string; focus: string; tempo: string; rom: string }> = {
   Beginner:     { sets: "3", reps: "12–15", rest: "60 sec",    focus: "Learn the movement. Light weight, perfect form.", tempo: "2-0-2", rom: "Full range — slow and controlled every rep." },
@@ -36,7 +37,7 @@ function ExerciseInfoPanel({ exercise }: { exercise: Exercise }) {
   return (
     <div className="p-4 space-y-3 bg-black/20 border-b border-white/5">
       <div className="flex flex-wrap gap-2">
-        <span className={`text-xs border rounded-full px-2 py-0.5 ${diffColor}`}>{exercise.difficulty}</span>
+        <span className={`text-xs border rounded-full px-2 py-0.5 ${diffColor}`}>{exercise.difficulty || "Beginner"}</span>
         <span className="text-xs bg-violet-500/15 text-violet-400 border border-violet-500/20 rounded-full px-2 py-0.5 flex items-center gap-1">
           <Target className="w-3 h-3" /> {exercise.muscleGroup}
         </span>
@@ -92,10 +93,13 @@ export default function ActiveWorkout() {
   const queryClient = useQueryClient();
   const startTimeRef = useRef(Date.now());
   const [elapsed, setElapsed] = useState(0);
+  const { toast } = useToast();
 
-  const { data: workout, isLoading: isWorkoutLoading } = useGetWorkout(workoutId);
-  const { data: allExercises, isLoading: isExLoading } = useGetExercises();
+  const { data: workout, isLoading: isWorkoutLoading, error: workoutError } = useGetWorkout(workoutId);
+  const { data: rawExercises, isLoading: isExLoading } = useGetExercises();
+  const allExercises: Exercise[] = Array.isArray(rawExercises) ? rawExercises : [];
 
+  const [pendingExerciseIds, setPendingExerciseIds] = useState<number[]>([]);
   const [expandedExId, setExpandedExId] = useState<number | null>(null);
   const [showInfoFor, setShowInfoFor] = useState<number | null>(null);
   const [showSelector, setShowSelector] = useState(false);
@@ -113,20 +117,46 @@ export default function ActiveWorkout() {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: [`/api/workouts/${workoutId}`] });
+      },
+      onError: () => {
+        toast({ title: "Couldn't log set", description: "Server unavailable. Try again.", variant: "destructive" });
       }
     }
   });
 
   if (isWorkoutLoading || isExLoading) return <LoadingState message="Loading session..." />;
-  if (!workout) return <div>Workout not found</div>;
 
-  const setsByExercise = workout.sets.reduce((acc, set) => {
+  if (!workout || workoutError || !isNaN(workoutId) === false || workoutId === 0) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8">
+        <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
+          <Dumbbell className="w-8 h-8 text-muted-foreground opacity-40" />
+        </div>
+        <h2 className="text-xl font-display font-bold mb-2">Workout Not Found</h2>
+        <p className="text-muted-foreground text-sm mb-6 max-w-xs">
+          This workout session doesn't exist or the server is unavailable.
+        </p>
+        <button
+          onClick={() => setLocation("/workout")}
+          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 text-white font-semibold hover:bg-violet-500 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Workout
+        </button>
+      </div>
+    );
+  }
+
+  const workoutData = workout as any;
+  const sets: any[] = Array.isArray(workoutData.sets) ? workoutData.sets : [];
+
+  const setsByExercise = sets.reduce((acc: Record<number, any[]>, set: any) => {
     if (!acc[set.exerciseId]) acc[set.exerciseId] = [];
     acc[set.exerciseId].push(set);
     return acc;
-  }, {} as Record<number, typeof workout.sets>);
+  }, {} as Record<number, any[]>);
 
   const exercisedIds = Object.keys(setsByExercise).map(Number);
+  const allDisplayIds = [...new Set([...exercisedIds, ...pendingExerciseIds])];
 
   const handleAddSet = (exerciseId: number) => {
     const weight = parseFloat(weightMap[exerciseId] || "");
@@ -146,33 +176,32 @@ export default function ActiveWorkout() {
   };
 
   const muscleGroups = ["All", "Chest", "Back", "Shoulders", "Arms", "Legs", "Core", "Cardio", "Full Body"];
-  const filteredSelector = allExercises?.filter(ex => {
+  const filteredSelector = allExercises.filter(ex => {
     const matchGroup = selectorGroup === "All" || ex.muscleGroup === selectorGroup;
     const matchSearch = !search || ex.name.toLowerCase().includes(search.toLowerCase());
-    return matchGroup && matchSearch && !exercisedIds.includes(ex.id);
-  }) ?? [];
+    return matchGroup && matchSearch && !allDisplayIds.includes(ex.id);
+  });
 
   const mins = Math.floor(elapsed / 60);
   const secs = elapsed % 60;
-  const totalSets = workout.sets.length;
+  const totalSets = sets.length;
 
   return (
     <PageTransition>
       <div className="max-w-3xl mx-auto space-y-4 pb-28">
-        {/* Sticky Header */}
         <div className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-white/5 pb-3 pt-2 -mx-4 px-4 md:mx-0 md:px-0">
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-                <h1 className="text-xl font-display font-bold">{workout.name}</h1>
+                <h1 className="text-xl font-display font-bold">{workoutData.name}</h1>
               </div>
               <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1 text-violet-400 font-semibold">
                   <Timer className="w-3 h-3" /> {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
                 </span>
                 <span className="flex items-center gap-1">
-                  <Dumbbell className="w-3 h-3" /> {exercisedIds.length} exercises
+                  <Dumbbell className="w-3 h-3" /> {allDisplayIds.length} exercises
                 </span>
                 <span className="flex items-center gap-1">
                   <Check className="w-3 h-3 text-green-400" /> {totalSets} sets
@@ -188,8 +217,7 @@ export default function ActiveWorkout() {
           </div>
         </div>
 
-        {/* No exercises yet */}
-        {exercisedIds.length === 0 && (
+        {allDisplayIds.length === 0 && (
           <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-3xl text-muted-foreground">
             <Dumbbell className="w-10 h-10 mx-auto mb-3 opacity-20" />
             <p className="text-sm font-medium">No exercises yet</p>
@@ -197,16 +225,15 @@ export default function ActiveWorkout() {
           </div>
         )}
 
-        {/* Exercise Cards */}
         <div className="space-y-3">
-          {exercisedIds.map(exId => {
-            const sets = setsByExercise[exId];
-            const exercise = allExercises?.find(e => e.id === exId);
+          {allDisplayIds.map(exId => {
+            const exSets = setsByExercise[exId] || [];
+            const exercise = allExercises.find(e => e.id === exId);
             if (!exercise) return null;
 
             const isExpanded = expandedExId === exId;
             const showInfo = showInfoFor === exId;
-            const lastSet = sets[sets.length - 1];
+            const lastSet = exSets[exSets.length - 1];
             const currentWeight = weightMap[exId] ?? "";
             const currentReps = repsMap[exId] ?? "";
             const diffColor = exercise.difficulty === "Advanced" ? "text-red-400"
@@ -225,7 +252,7 @@ export default function ActiveWorkout() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-sm">{exercise.name}</h3>
-                      <p className="text-xs text-muted-foreground">{sets.length} sets · <span className={diffColor}>{exercise.difficulty}</span></p>
+                      <p className="text-xs text-muted-foreground">{exSets.length} sets · <span className={diffColor}>{exercise.difficulty || "Beginner"}</span></p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -234,6 +261,13 @@ export default function ActiveWorkout() {
                       className={`p-1.5 rounded-lg transition-colors ${showInfo ? "bg-violet-500/20 text-violet-400" : "hover:bg-white/10 text-muted-foreground"}`}
                     >
                       <Info className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); setPendingExerciseIds(prev => prev.filter(id => id !== exId)); }}
+                      className="p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-400 text-muted-foreground transition-colors"
+                      title="Remove exercise"
+                    >
+                      <X className="w-4 h-4" />
                     </button>
                     <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                   </div>
@@ -245,7 +279,7 @@ export default function ActiveWorkout() {
                       {showInfo && <ExerciseInfoPanel exercise={exercise} />}
 
                       <div className="p-4 space-y-2.5 bg-black/10">
-                        {lastSet && sets.length > 0 && sets.length === sets.filter(s => s.setNumber === 1).length + sets.length - 1 && (
+                        {lastSet && exSets.length > 0 && (
                           <ProgressionHint lastWeight={lastSet.weightKg} lastReps={lastSet.reps} />
                         )}
 
@@ -256,7 +290,7 @@ export default function ActiveWorkout() {
                           <div className="w-8" />
                         </div>
 
-                        {sets.map((set) => (
+                        {exSets.map((set: any) => (
                           <div key={set.id} className="flex items-center bg-white/5 rounded-xl py-2 px-3 border border-white/5 gap-2">
                             <div className="w-10 text-center font-bold text-violet-400 text-sm">{set.setNumber}</div>
                             <div className="flex-1 text-center font-semibold text-sm">{set.weightKg}</div>
@@ -267,9 +301,8 @@ export default function ActiveWorkout() {
                           </div>
                         ))}
 
-                        {/* New set input - no auto-fill */}
                         <div className="flex items-center bg-violet-500/10 rounded-xl py-2 px-3 border border-violet-500/20 gap-2">
-                          <div className="w-10 text-center font-bold text-violet-400 text-sm">{sets.length + 1}</div>
+                          <div className="w-10 text-center font-bold text-violet-400 text-sm">{exSets.length + 1}</div>
                           <div className="flex-1 px-1">
                             <input
                               type="number"
@@ -308,7 +341,6 @@ export default function ActiveWorkout() {
           })}
         </div>
 
-        {/* Add Exercise Panel */}
         {!showSelector ? (
           <button
             onClick={() => setShowSelector(true)}
@@ -341,13 +373,17 @@ export default function ActiveWorkout() {
               ))}
             </div>
             <div className="max-h-64 overflow-y-auto px-4 pb-4 space-y-1.5 custom-scrollbar">
-              {filteredSelector.length === 0 && <p className="text-center text-sm text-muted-foreground py-8">No exercises found</p>}
+              {filteredSelector.length === 0 && (
+                <p className="text-center text-sm text-muted-foreground py-8">
+                  {allExercises.length === 0 ? "No exercises available (server offline)" : "No exercises found"}
+                </p>
+              )}
               {filteredSelector.map(ex => (
                 <button key={ex.id}
                   onClick={() => {
+                    setPendingExerciseIds(prev => [...prev, ex.id]);
                     setExpandedExId(ex.id);
                     setShowSelector(false);
-                    handleAddSet(ex.id);
                   }}
                   className="w-full flex items-center justify-between p-3 bg-black/40 hover:bg-violet-500/10 border border-white/5 hover:border-violet-500/30 rounded-xl transition-all text-left group">
                   <div className="flex items-center gap-3">

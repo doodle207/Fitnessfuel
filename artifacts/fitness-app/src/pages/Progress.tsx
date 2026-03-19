@@ -6,6 +6,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { format } from "date-fns";
 import { Scale, Plus, Award, Camera, Trash2, TrendingUp, X, BarChart2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -37,10 +38,22 @@ export default function Progress() {
   const [weight, setWeight] = useState("");
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
-  const { data: weightLogs, isLoading } = useGetBodyweightLogs();
+  const { data: rawWeightLogs, isLoading } = useGetBodyweightLogs();
+  const weightLogs = Array.isArray(rawWeightLogs) ? rawWeightLogs : [];
+
   const { mutate: logWeight, isPending: isLogging } = useAddBodyweightLog({
-    mutation: { onSuccess: () => { setWeight(""); queryClient.invalidateQueries({ queryKey: [`/api/progress/bodyweight`] }); } }
+    mutation: {
+      onSuccess: () => {
+        setWeight("");
+        queryClient.invalidateQueries({ queryKey: [`/api/progress/bodyweight`] });
+        toast({ title: "Weight logged!", description: "Your weight has been recorded." });
+      },
+      onError: () => {
+        toast({ title: "Couldn't log weight", description: "Server unavailable. Try again later.", variant: "destructive" });
+      }
+    }
   });
 
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -51,9 +64,12 @@ export default function Progress() {
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>(["Chest", "Back", "Legs"]);
 
   useEffect(() => {
-    fetch(`${BASE}/api/progress/photos`, { credentials: "include" }).then(r => r.json()).then(d => Array.isArray(d) && setPhotos(d)).catch(() => {});
-    fetch(`${BASE}/api/progress/strength`, { credentials: "include" }).then(r => r.json()).then(d => d && setStrengthData(d)).catch(() => {});
-    fetch(`${BASE}/api/achievements`, { credentials: "include" }).then(r => r.json()).then(d => Array.isArray(d) && setAchievements(d)).catch(() => {});
+    fetch(`${BASE}/api/progress/photos`, { credentials: "include" })
+      .then(r => r.json()).then(d => Array.isArray(d) && setPhotos(d)).catch(() => {});
+    fetch(`${BASE}/api/progress/strength`, { credentials: "include" })
+      .then(r => r.json()).then(d => d && typeof d === "object" && !Array.isArray(d) && setStrengthData(d)).catch(() => {});
+    fetch(`${BASE}/api/achievements`, { credentials: "include" })
+      .then(r => r.json()).then(d => Array.isArray(d) && setAchievements(d)).catch(() => {});
   }, []);
 
   const handleLogWeight = (e: React.FormEvent) => {
@@ -69,34 +85,52 @@ export default function Progress() {
     reader.onload = async (ev) => {
       const dataUrl = ev.target?.result as string;
       const today = new Date().toISOString().split("T")[0];
-      const r = await fetch(`${BASE}/api/progress/photos`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ photoDataUrl: dataUrl, label: photoLabel || format(new Date(), "MMM d, yyyy"), date: today }) });
-      const d = await r.json();
-      if (d.id) setPhotos(prev => [d, ...prev]);
+      try {
+        const r = await fetch(`${BASE}/api/progress/photos`, {
+          method: "POST", credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ photoDataUrl: dataUrl, label: photoLabel || format(new Date(), "MMM d, yyyy"), date: today })
+        });
+        const d = await r.json();
+        if (d.id) setPhotos(prev => [d, ...prev]);
+        else {
+          const tempPhoto: Photo = { id: Date.now(), photoDataUrl: dataUrl, label: photoLabel || format(new Date(), "MMM d, yyyy"), date: today };
+          setPhotos(prev => [tempPhoto, ...prev]);
+        }
+      } catch {
+        const tempPhoto: Photo = { id: Date.now(), photoDataUrl: dataUrl, label: photoLabel || format(new Date(), "MMM d, yyyy"), date: today };
+        setPhotos(prev => [tempPhoto, ...prev]);
+      }
       setPhotoLabel("");
     };
     reader.readAsDataURL(file);
   };
 
   const deletePhoto = async (id: number) => {
-    await fetch(`${BASE}/api/progress/photos/${id}`, { method: "DELETE", credentials: "include" });
     setPhotos(prev => prev.filter(p => p.id !== id));
+    try {
+      await fetch(`${BASE}/api/progress/photos/${id}`, { method: "DELETE", credentials: "include" });
+    } catch {}
   };
 
   if (isLoading) return <LoadingState message="Loading progress..." />;
 
-  // Prepare frequency polygon bodyweight data
-  const chartData = [...(weightLogs || [])].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(log => ({
-    ...log, date: log.date.toString(),
-    displayDate: format(new Date(log.date), 'MMM d')
-  }));
+  const chartData = [...weightLogs]
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .map(log => ({
+      ...log,
+      date: log.date.toString(),
+      displayDate: (() => { try { return format(new Date(log.date), 'MMM d'); } catch { return String(log.date); } })()
+    }));
 
-  // Strength chart - merge all dates across selected muscles
   const allDates = [...new Set(
     selectedMuscles.flatMap(mg => (strengthData[mg] || []).map(e => e.date))
   )].sort();
 
   const strengthChartData = allDates.map(date => {
-    const row: Record<string, string | number> = { date: format(new Date(date), "MMM d") };
+    const row: Record<string, string | number> = {
+      date: (() => { try { return format(new Date(date), "MMM d"); } catch { return date; } })()
+    };
     for (const mg of selectedMuscles) {
       const entry = (strengthData[mg] || []).find(e => e.date === date);
       if (entry) row[mg] = entry.maxWeight;
@@ -114,7 +148,6 @@ export default function Progress() {
           <p className="text-muted-foreground mt-1">Track your transformation over time.</p>
         </header>
 
-        {/* Tabs */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar">
           {([["weight", "⚖️ Body Weight"], ["strength", "💪 Strength"], ["photos", "📸 Photos"], ["badges", "🏆 Badges"]] as const).map(([tab, label]) => (
             <button key={tab} onClick={() => setActiveTab(tab)} className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === tab ? 'bg-primary text-white shadow-[0_0_12px_rgba(124,58,237,0.4)]' : 'bg-card border border-white/10 text-muted-foreground hover:bg-white/5'}`}>
@@ -124,7 +157,6 @@ export default function Progress() {
         </div>
 
         <AnimatePresence mode="wait">
-          {/* Body Weight Tab */}
           {activeTab === "weight" && (
             <motion.div key="weight" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-5">
               <div className="glass-card rounded-3xl p-6">
@@ -177,7 +209,6 @@ export default function Progress() {
             </motion.div>
           )}
 
-          {/* Strength Chart Tab */}
           {activeTab === "strength" && (
             <motion.div key="strength" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-5">
               <div className="glass-card rounded-3xl p-6">
@@ -186,7 +217,6 @@ export default function Progress() {
                   <span className="text-xs text-muted-foreground">Max weight per muscle group</span>
                 </div>
 
-                {/* Muscle filter */}
                 <div className="flex flex-wrap gap-2 mb-5">
                   {Object.keys(MUSCLE_COLORS).map(mg => (
                     <button key={mg} onClick={() => setSelectedMuscles(prev => prev.includes(mg) ? prev.filter(m => m !== mg) : [...prev, mg])}
@@ -222,7 +252,6 @@ export default function Progress() {
             </motion.div>
           )}
 
-          {/* Photos Tab */}
           {activeTab === "photos" && (
             <motion.div key="photos" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-5">
               <div className="glass-card rounded-3xl p-6">
@@ -248,7 +277,7 @@ export default function Progress() {
                         <img src={photo.photoDataUrl} alt={photo.label || ""} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
                           <p className="text-sm font-medium text-white">{photo.label}</p>
-                          <p className="text-xs text-white/60">{format(new Date(photo.date), 'MMM d, yyyy')}</p>
+                          <p className="text-xs text-white/60">{(() => { try { return format(new Date(photo.date), 'MMM d, yyyy'); } catch { return photo.date; } })()}</p>
                           <button onClick={() => deletePhoto(photo.id)} className="mt-2 w-full py-1.5 bg-red-500/80 rounded-lg text-xs font-medium text-white flex items-center justify-center gap-1 hover:bg-red-500 transition-colors">
                             <Trash2 className="w-3 h-3" /> Delete
                           </button>
@@ -261,7 +290,6 @@ export default function Progress() {
             </motion.div>
           )}
 
-          {/* Badges Tab */}
           {activeTab === "badges" && (
             <motion.div key="badges" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-5">
               <div className="glass-card rounded-3xl p-6">

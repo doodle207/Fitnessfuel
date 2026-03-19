@@ -4,7 +4,8 @@ import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
 import { useCreateWorkout, useGetExercises, useGetWorkouts } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
-import { Dumbbell, Play, Calendar, ChevronDown, X, Target, Info, RotateCcw, Zap, Timer, Search } from "lucide-react";
+import { Dumbbell, Play, Calendar, X, Target, Info, Zap, Timer, Search, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const muscleGroups = [
   { id: "Chest", color: "from-blue-500/80 to-cyan-500/80", emoji: "💪", image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=220&fit=crop" },
@@ -85,14 +86,33 @@ export default function WorkoutBuilder() {
   const [selectedGroup, setSelectedGroup] = useState<string>("Chest");
   const [expandedTip, setExpandedTip] = useState<number | null>(null);
   const [search, setSearch] = useState("");
+  const { toast } = useToast();
 
-  const { data: exercises, isLoading: exLoading } = useGetExercises({ muscleGroup: selectedGroup });
-  const { data: recentWorkouts } = useGetWorkouts();
+  const { data: rawExercises, isLoading: exLoading } = useGetExercises({ muscleGroup: selectedGroup });
+  const { data: rawWorkouts } = useGetWorkouts();
+
+  const exercises: Exercise[] = Array.isArray(rawExercises) ? rawExercises : [];
+  const recentWorkouts = Array.isArray(rawWorkouts) ? rawWorkouts : [];
 
   const { mutate: createWorkout, isPending } = useCreateWorkout({
     mutation: {
-      onSuccess: (data) => {
-        setLocation(`/workout/active/${data.id}`);
+      onSuccess: (data: any) => {
+        if (data && typeof data === "object" && data.id) {
+          setLocation(`/workout/active/${data.id}`);
+        } else {
+          toast({
+            title: "Backend unavailable",
+            description: "Workout tracking requires the server. Run the API server to save workouts.",
+            variant: "destructive",
+          });
+        }
+      },
+      onError: () => {
+        toast({
+          title: "Couldn't start workout",
+          description: "Unable to connect to the server. Check that the API is running.",
+          variant: "destructive",
+        });
       }
     }
   });
@@ -123,7 +143,7 @@ export default function WorkoutBuilder() {
     });
   };
 
-  const filteredExercises = (exercises || []).filter(ex =>
+  const filteredExercises = exercises.filter(ex =>
     !search || ex.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -142,7 +162,6 @@ export default function WorkoutBuilder() {
           </p>
         </header>
 
-        {/* Muscle Group Horizontal Scroll */}
         <div>
           <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Muscle Group</p>
           <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
@@ -171,7 +190,6 @@ export default function WorkoutBuilder() {
           </div>
         </div>
 
-        {/* Exercise List */}
         <div className="glass-card rounded-3xl overflow-hidden border border-white/5">
           <div className="p-4 border-b border-white/5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -207,7 +225,10 @@ export default function WorkoutBuilder() {
             {exLoading ? (
               <div className="py-12 text-center text-muted-foreground text-sm">Loading exercises...</div>
             ) : filteredExercises.length === 0 ? (
-              <div className="py-12 text-center text-muted-foreground text-sm">No exercises found</div>
+              <div className="py-12 text-center space-y-2">
+                <AlertCircle className="w-8 h-8 mx-auto text-muted-foreground opacity-30" />
+                <p className="text-muted-foreground text-sm">No exercises found</p>
+              </div>
             ) : (
               filteredExercises.map((ex, idx) => {
                 const isExpanded = expandedTip === ex.id;
@@ -221,7 +242,7 @@ export default function WorkoutBuilder() {
                         <p className="font-semibold text-sm">{ex.name}</p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-xs text-muted-foreground">{ex.muscleGroup}</span>
-                          <span className={`text-[10px] border rounded-full px-2 py-0 ${diffColor(ex.difficulty)}`}>{ex.difficulty}</span>
+                          <span className={`text-[10px] border rounded-full px-2 py-0 ${diffColor(ex.difficulty)}`}>{ex.difficulty || "Beginner"}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
@@ -251,19 +272,18 @@ export default function WorkoutBuilder() {
           </div>
         </div>
 
-        {/* Recent Workouts */}
-        {recentWorkouts && recentWorkouts.length > 0 && (
+        {recentWorkouts.length > 0 && (
           <div>
             <h3 className="font-display font-semibold text-base text-muted-foreground uppercase tracking-wider mb-3">Recent Workouts</h3>
             <div className="space-y-2">
-              {recentWorkouts.slice(0, 5).map((workout) => (
+              {recentWorkouts.slice(0, 5).map((workout: any) => (
                 <motion.div key={workout.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                   className="flex items-center justify-between p-4 rounded-2xl bg-black/30 border border-white/5 hover:border-violet-500/20 transition-colors group cursor-pointer"
                   onClick={() => setLocation(`/workout/active/${workout.id}`)}
                 >
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm group-hover:text-violet-400 transition-colors">{workout.name}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(workout.date), "MMM d, yyyy")}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{(() => { try { return format(new Date(workout.date), "MMM d, yyyy"); } catch { return workout.date; } })()}</p>
                   </div>
                   <span className="shrink-0 text-xs px-2.5 py-1 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">
                     {workout.muscleGroup || "Mixed"}
