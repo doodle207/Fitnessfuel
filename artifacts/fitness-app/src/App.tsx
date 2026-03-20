@@ -91,7 +91,10 @@ function LoginScreen() {
 
         {urlError && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
-            {urlError === "google_auth_failed" ? "Google sign-in failed. Please try again." : "Sign-in error. Please try again."}
+            {urlError === "google_auth_failed" && "Google sign-in failed. Please try again."}
+            {urlError === "auth_session_expired" && "Login session expired. Please try signing in again."}
+            {urlError === "auth_failed" && "Authentication failed. Please try again."}
+            {!["google_auth_failed","auth_session_expired","auth_failed"].includes(urlError) && "Sign-in error. Please try again."}
           </div>
         )}
 
