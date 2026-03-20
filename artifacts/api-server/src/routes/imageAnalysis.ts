@@ -189,9 +189,16 @@ router.post(
       return;
     }
 
-    console.log("[analyze-image] Looking up macros for:", foodNames);
-    const macroResults = await Promise.all(foodNames.map(name => getMacrosForFood(name)));
-    console.log("[analyze-image] Macro results:", macroResults);
+    let macroResults: FoodMacros[];
+    try {
+      console.log("[analyze-image] Looking up macros for:", foodNames);
+      macroResults = await Promise.all(foodNames.map(name => getMacrosForFood(name)));
+      console.log("[analyze-image] Macro results:", macroResults);
+    } catch (err: any) {
+      console.error("[analyze-image] Macro lookup error:", err?.message ?? err);
+      res.status(502).json({ error: `Failed to look up nutrition data: ${err?.message ?? "Unknown error"}` });
+      return;
+    }
 
     const total = macroResults.reduce(
       (acc, item) => ({
@@ -227,13 +234,27 @@ router.post("/diet/save-analyzed-food", async (req, res) => {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  const body = SaveAnalyzedFoodBody.parse(req.body);
-  const inserted = await db
-    .insert(foodLogsTable)
-    .values({ userId: req.user.id, ...body })
-    .returning();
-  const l = inserted[0];
-  res.status(201).json({ ...l, date: l.date.toString(), loggedAt: l.loggedAt.toISOString() });
+
+  let body: ReturnType<typeof SaveAnalyzedFoodBody.parse>;
+  try {
+    body = SaveAnalyzedFoodBody.parse(req.body);
+  } catch (err: any) {
+    console.error("[save-analyzed-food] Validation error:", err?.message ?? err);
+    res.status(400).json({ error: "Invalid request body." });
+    return;
+  }
+
+  try {
+    const inserted = await db
+      .insert(foodLogsTable)
+      .values({ userId: req.user.id, ...body })
+      .returning();
+    const l = inserted[0];
+    res.status(201).json({ ...l, date: l.date.toString(), loggedAt: l.loggedAt.toISOString() });
+  } catch (err: any) {
+    console.error("[save-analyzed-food] Database error:", err?.message ?? err);
+    res.status(500).json({ error: "Failed to save food log." });
+  }
 });
 
 export default router;
