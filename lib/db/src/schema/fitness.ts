@@ -13,6 +13,7 @@ export const userProfilesTable = pgTable("user_profiles", {
   fitnessGoal: text("fitness_goal").notNull(),
   experienceLevel: text("experience_level").notNull(),
   activityLevel: text("activity_level").notNull(),
+  dietPreference: text("diet_preference").notNull().default("non-veg"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
