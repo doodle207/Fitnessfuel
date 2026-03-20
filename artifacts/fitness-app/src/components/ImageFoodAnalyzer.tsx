@@ -72,9 +72,19 @@ export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose
         credentials: "include",
         body: formData,
       });
-      const data = await res.json();
+      console.log("[ImageFoodAnalyzer] Response status:", res.status);
+      let data: any;
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        console.error("[ImageFoodAnalyzer] Failed to parse response as JSON:", jsonErr);
+        setErrorMsg("Server returned an unexpected response. Please try again.");
+        setPhase("error");
+        return;
+      }
       if (!res.ok) {
-        setErrorMsg(data.error || "Failed to analyze image.");
+        console.error("[ImageFoodAnalyzer] Server error:", res.status, data);
+        setErrorMsg(data?.error || `Server error (${res.status}). Please try again.`);
         setPhase("error");
         return;
       }
@@ -87,8 +97,9 @@ export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose
         fatG: data.total.fatG,
       });
       setPhase("result");
-    } catch {
-      setErrorMsg("Network error. Please check your connection.");
+    } catch (err) {
+      console.error("[ImageFoodAnalyzer] Network error:", err);
+      setErrorMsg("Could not reach the server. Please check your connection and try again.");
       setPhase("error");
     }
   };
