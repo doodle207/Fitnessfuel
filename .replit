@@ -55,5 +55,5 @@ expertMode = true
 [userenv.shared]
 VITE_SUPABASE_URL = "https://bgbjdsplrmvctqazttze.supabase.co"
 VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnYmpkc3Bscm12Y3RxYXp0dHplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjQzNzksImV4cCI6MjA4OTI0MDM3OX0.qzrxej237vqkoEV3eWh-5hI5sJFSslin-ZrVYfGmrTY"
-GEMINI_API_KEY = "AIzaSyCsXS-Ujq1iFGKtAca71YGgXZPGJcTU4Hw"
+GEMINI_API_KEY = "AIzaSyAv4TQLficvGLAavmXfRQ7CQNgpElzdz6s"
   
