@@ -131,11 +131,23 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     query: { enabled: isAuthenticated }
   });
 
-  const needsOnboarding =
-    isAuthenticated && !isProfileLoading && (profileError as any)?.status === 404;
+  // Check if user needs onboarding: authenticated, loaded, and got 404
+  const needsOnboarding = isAuthenticated && !isProfileLoading && profileError && (profileError as any).status === 404;
+
+  // Debug: log the state for troubleshooting
+  console.log("[AuthGuard] State:", {
+    isAuthenticated,
+    isProfileLoading,
+    hasProfile: !!profile,
+    hasError: !!profileError,
+    errorStatus: (profileError as any)?.status,
+    needsOnboarding,
+    location,
+  });
 
   useEffect(() => {
     if (needsOnboarding && location !== "/onboarding") {
+      console.log("[AuthGuard] Redirecting to onboarding");
       setLocation("/onboarding");
     }
   }, [needsOnboarding, location, setLocation]);
