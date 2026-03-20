@@ -19,7 +19,17 @@ import Progress from "@/pages/Progress";
 import Diet from "@/pages/Diet";
 import Profile from "@/pages/Profile";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Never retry 4xx client errors — a 404 means "no profile", not a transient failure
+      retry: (failureCount, error: any) => {
+        if (error?.status >= 400 && error?.status < 500) return false;
+        return failureCount < 2;
+      },
+    },
+  },
+});
 
 function GoogleIcon() {
   return (
@@ -121,13 +131,14 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     query: { enabled: isAuthenticated }
   });
 
+  const needsOnboarding =
+    isAuthenticated && !isProfileLoading && (profileError as any)?.status === 404;
+
   useEffect(() => {
-    if (isAuthenticated && !isProfileLoading && location !== "/onboarding") {
-      if (profileError && (profileError as any)?.status === 404) {
-        setLocation("/onboarding");
-      }
+    if (needsOnboarding && location !== "/onboarding") {
+      setLocation("/onboarding");
     }
-  }, [isAuthenticated, isProfileLoading, profileError, location, setLocation]);
+  }, [needsOnboarding, location, setLocation]);
 
   if (isAuthLoading || (isAuthenticated && isProfileLoading)) {
     return (
@@ -141,6 +152,9 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) return <LoginScreen />;
+
+  // Block render until the redirect fires — prevents a flash of the dashboard
+  if (needsOnboarding && location !== "/onboarding") return null;
 
   if (location === "/onboarding") return <>{children}</>;
 
