@@ -25,7 +25,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 
 async function identifyFoodsFromImage(imageBuffer: Buffer, mimeType: string): Promise<string[]> {
   const genAI = getGemini();
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
   const prompt = `You are a food recognition expert. Analyze this image and identify all distinct food items visible.
 Return ONLY a JSON array of food names as plain strings. Be specific but concise.
@@ -98,7 +98,7 @@ async function fetchFromOpenFoodFacts(foodName: string): Promise<FoodMacros | nu
 
 async function estimateMacrosWithGemini(foodName: string): Promise<FoodMacros> {
   const genAI = getGemini();
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
   const prompt = `Estimate the nutritional macros for a standard home-cooked serving of "${foodName}".
 Consider a typical portion size (e.g., 1 bowl, 1 cup, 1 serving).
