@@ -88,6 +88,7 @@ export default function Dashboard() {
   const [showStepsInput, setShowStepsInput] = useState(false);
   const [waterMl, setWaterMl] = useState(() => parseInt(localStorage.getItem(WATER_KEY) || "0"));
   const [macroTotals, setMacroTotals] = useState({ proteinG: 0, carbsG: 0, fatG: 0 });
+  const [todayFoodCalories, setTodayFoodCalories] = useState(0);
 
   useEffect(() => {
     localStorage.setItem(STEPS_KEY, String(steps));
@@ -102,12 +103,14 @@ export default function Dashboard() {
         if (!Array.isArray(logs)) return;
         const totals = logs.reduce(
           (acc, l) => ({
+            calories: acc.calories + (l.calories || 0),
             proteinG: acc.proteinG + (l.proteinG || 0),
             carbsG: acc.carbsG + (l.carbsG || 0),
             fatG: acc.fatG + (l.fatG || 0),
           }),
-          { proteinG: 0, carbsG: 0, fatG: 0 }
+          { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 }
         );
+        setTodayFoodCalories(Math.round(totals.calories));
         setMacroTotals({
           proteinG: Math.round(totals.proteinG),
           carbsG: Math.round(totals.carbsG),
@@ -140,20 +143,37 @@ export default function Dashboard() {
   };
 
   const stepCalories = Math.round(steps * CALS_PER_STEP);
-  const todayWorkoutCalories = safeStats.recentWorkouts?.[0]?.caloriesBurned || 0;
+  const today = new Date().toISOString().split("T")[0];
+  const todayWorkoutCalories = safeStats.recentWorkouts
+    ?.filter((w: any) => w.date === today)
+    .reduce((s: number, w: any) => s + (w.caloriesBurned || 0), 0) || 0;
   const totalBurned = todayWorkoutCalories + stepCalories;
-  const bmr = Math.round(10 * (safeProfile.weightKg || 70) + 6.25 * (safeProfile.heightCm || 175) - 5 * (safeProfile.age || 25) + (safeProfile.gender === "female" ? -161 : 5));
-  const waterPct = Math.min(waterMl / 3000, 1);
-  const waterGlasses = Math.round(waterMl / 250);
-
-  const todayFoodCalories = parseInt(localStorage.getItem("fittrack_food_cal_today") || "0");
-  const netCalories = todayFoodCalories - totalBurned;
 
   const weightKg = safeProfile.weightKg || 70;
-  const calTarget = bmr + 300;
+  const heightCm = safeProfile.heightCm || 170;
+  const age = safeProfile.age || 25;
+  const gender = safeProfile.gender || "male";
+  const activityLevel = safeProfile.activityLevel || "moderate";
+  const fitnessGoal = safeProfile.fitnessGoal || "maintenance";
+
+  const bmr = Math.round(
+    10 * weightKg + 6.25 * heightCm - 5 * age + (gender === "female" ? -161 : 5)
+  );
+  const activityMultipliers: Record<string, number> = {
+    sedentary: 1.2, light: 1.375, moderate: 1.55, "very active": 1.725,
+  };
+  const tdee = Math.round(bmr * (activityMultipliers[activityLevel] ?? 1.55));
+  const calTarget = fitnessGoal === "weight loss" ? Math.round(tdee - 500)
+    : fitnessGoal === "muscle gain" ? Math.round(tdee + 300)
+    : tdee;
+
   const proteinTarget = Math.round(weightKg * 2.2);
   const fatTarget = Math.round(weightKg * 0.9);
-  const carbsTarget = Math.round((calTarget - proteinTarget * 4 - fatTarget * 9) / 4);
+  const carbsTarget = Math.max(0, Math.round((calTarget - proteinTarget * 4 - fatTarget * 9) / 4));
+
+  const waterPct = Math.min(waterMl / 3000, 1);
+  const waterGlasses = Math.round(waterMl / 250);
+  const netCalories = todayFoodCalories - totalBurned;
 
   const macroData = [
     { subject: "Protein", A: Math.round((macroTotals.proteinG / Math.max(proteinTarget, 1)) * 100) },
@@ -202,9 +222,9 @@ export default function Dashboard() {
               <p className="text-xs text-muted-foreground">kcal</p>
             </div>
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 text-center">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1"><Target className="w-3 h-3 text-blue-400" /> BMR</p>
-              <p className="text-2xl font-display font-bold text-blue-400">{bmr}</p>
-              <p className="text-xs text-muted-foreground">kcal/day</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1"><Target className="w-3 h-3 text-blue-400" /> Goal</p>
+              <p className="text-2xl font-display font-bold text-blue-400">{calTarget}</p>
+              <p className="text-xs text-muted-foreground">kcal target</p>
             </div>
             <button onClick={() => setShowStepsInput(v => !v)} className="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-4 text-center hover:bg-violet-500/20 transition-colors cursor-pointer">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1"><Footprints className="w-3 h-3 text-violet-400" /> Steps</p>
@@ -227,12 +247,12 @@ export default function Dashboard() {
           )}
           <div className="space-y-2">
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Daily target: {bmr + 300} kcal</span>
-              <span className={netCalories > 0 ? "text-green-400" : "text-orange-400"}>{netCalories > 0 ? "+" : ""}{netCalories} kcal balance</span>
+              <span>Daily target: <span className="text-white/60 font-semibold">{calTarget} kcal</span> · {fitnessGoal === "weight loss" ? "Cut" : fitnessGoal === "muscle gain" ? "Bulk" : "Maintain"}</span>
+              <span className={netCalories > 0 ? "text-green-400" : "text-orange-400"}>{netCalories > 0 ? "+" : ""}{netCalories} kcal net</span>
             </div>
             <div className="h-2 bg-white/5 rounded-full overflow-hidden">
               <motion.div
-                initial={{ width: 0 }} animate={{ width: `${Math.min(todayFoodCalories / (bmr + 300), 1) * 100}%` }}
+                initial={{ width: 0 }} animate={{ width: `${Math.min(todayFoodCalories / Math.max(calTarget, 1), 1) * 100}%` }}
                 transition={{ duration: 1, ease: "easeOut" }}
                 className="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500"
               />

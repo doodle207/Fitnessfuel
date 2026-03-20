@@ -14,6 +14,15 @@ function getGemini() {
   return new GoogleGenerativeAI(key);
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
 async function identifyFoodsFromImage(imageBuffer: Buffer, mimeType: string): Promise<string[]> {
   const genAI = getGemini();
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -24,10 +33,14 @@ Examples: ["dal tadka", "steamed rice", "roti"] or ["chicken curry", "naan"] or 
 If no food is detected, return an empty array [].
 Do not include any explanation, just the JSON array.`;
 
-  const result = await model.generateContent([
-    { inlineData: { data: imageBuffer.toString("base64"), mimeType } },
-    prompt,
-  ]);
+  const result = await withTimeout(
+    model.generateContent([
+      { inlineData: { data: imageBuffer.toString("base64"), mimeType } },
+      prompt,
+    ]),
+    30000,
+    "Gemini image identification"
+  );
 
   const text = result.response.text().trim();
   const jsonMatch = text.match(/\[[\s\S]*\]/);
@@ -93,7 +106,11 @@ Return ONLY a JSON object with these exact keys (numbers only, no units):
 {"calories": number, "proteinG": number, "carbsG": number, "fatG": number}
 Be realistic for Indian/regional cuisines. No explanation, just JSON.`;
 
-  const result = await model.generateContent(prompt);
+  const result = await withTimeout(
+    model.generateContent(prompt),
+    20000,
+    "Gemini macro estimation"
+  );
   const text = result.response.text().trim();
   const jsonMatch = text.match(/\{[\s\S]*?\}/);
   if (!jsonMatch) {
