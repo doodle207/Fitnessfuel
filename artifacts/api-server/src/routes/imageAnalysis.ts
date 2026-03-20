@@ -141,17 +141,22 @@ router.post(
   "/diet/analyze-image",
   upload.single("image"),
   async (req, res) => {
+    console.log("[analyze-image] Incoming request, authenticated:", req.isAuthenticated());
+
     if (!req.isAuthenticated()) {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
 
     if (!req.file) {
+      console.log("[analyze-image] No file in request");
       res.status(400).json({ error: "No image uploaded" });
       return;
     }
 
     const mimeType = req.file.mimetype || "image/jpeg";
+    console.log("[analyze-image] File received:", req.file.originalname, mimeType, req.file.size, "bytes");
+
     if (!mimeType.startsWith("image/")) {
       res.status(400).json({ error: "File must be an image" });
       return;
@@ -159,22 +164,28 @@ router.post(
 
     let foodNames: string[];
     try {
+      console.log("[analyze-image] Calling Gemini to identify foods...");
       foodNames = await identifyFoodsFromImage(req.file.buffer, mimeType);
+      console.log("[analyze-image] Gemini identified foods:", foodNames);
     } catch (err: any) {
+      console.error("[analyze-image] Gemini identification error:", err?.message ?? err);
       if (err.message?.includes("GEMINI_API_KEY")) {
         res.status(503).json({ error: "Gemini API key not configured" });
         return;
       }
-      res.status(502).json({ error: "Failed to analyze image. Please try again." });
+      res.status(502).json({ error: `Failed to analyze image: ${err?.message ?? "Unknown error"}` });
       return;
     }
 
     if (foodNames.length === 0) {
+      console.log("[analyze-image] No food detected in image");
       res.status(422).json({ error: "No food detected in the image. Please try a clearer photo." });
       return;
     }
 
+    console.log("[analyze-image] Looking up macros for:", foodNames);
     const macroResults = await Promise.all(foodNames.map(name => getMacrosForFood(name)));
+    console.log("[analyze-image] Macro results:", macroResults);
 
     const total = macroResults.reduce(
       (acc, item) => ({
@@ -186,6 +197,7 @@ router.post(
       { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 }
     );
 
+    console.log("[analyze-image] Sending response, total:", total);
     res.json({
       items: macroResults,
       total,
