@@ -91,6 +91,7 @@ export const CreateProfileBody = zod.object({
   fitnessGoal: zod.string(),
   experienceLevel: zod.string(),
   activityLevel: zod.string(),
+  dietPreference: zod.string(),
 });
 
 export const CreateProfileResponse = zod.object({
@@ -104,6 +105,7 @@ export const CreateProfileResponse = zod.object({
   fitnessGoal: zod.string(),
   experienceLevel: zod.string(),
   activityLevel: zod.string(),
+  dietPreference: zod.string(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
