@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, jsonb, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
+import { index, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const sessionsTable = pgTable(
@@ -25,3 +25,18 @@ export const usersTable = pgTable("users", {
 
 export type UpsertUser = typeof usersTable.$inferInsert;
 export type User = typeof usersTable.$inferSelect;
+
+// Stores PKCE state server-side in DB so all server processes can share it
+export const oauthStatesTable = pgTable(
+  "oauth_states",
+  {
+    state: varchar("state").primaryKey(),
+    provider: varchar("provider").notNull().default("replit"),
+    codeVerifier: text("code_verifier").notNull(),
+    nonce: text("nonce").notNull(),
+    returnTo: text("return_to").notNull().default("/"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    expiresAt: timestamp("expires_at").notNull(),
+  },
+  (table) => [index("IDX_oauth_states_expires").on(table.expiresAt)],
+);

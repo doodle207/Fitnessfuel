@@ -6,8 +6,8 @@ import {
   ExchangeMobileAuthorizationCodeResponse,
   LogoutMobileSessionResponse,
 } from "@workspace/api-zod";
-import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, usersTable, oauthStatesTable } from "@workspace/db";
+import { eq, lt } from "drizzle-orm";
 import {
   clearSession,
   getOidcConfig,
@@ -20,34 +20,22 @@ import {
   type SessionData,
 } from "../lib/auth";
 
-const OIDC_STATE_TTL = 10 * 60 * 1000; // 10 minutes
+const OIDC_STATE_TTL_MINUTES = 10;
 
-interface PkceState {
-  codeVerifier: string;
-  nonce: string;
-  returnTo: string;
-  createdAt: number;
+// DB-backed PKCE store — works across all server processes (no in-memory split-brain)
+async function storePkce(state: string, provider: string, codeVerifier: string, nonce: string, returnTo: string) {
+  const expiresAt = new Date(Date.now() + OIDC_STATE_TTL_MINUTES * 60 * 1000);
+  // Purge stale entries while we're here
+  await db.delete(oauthStatesTable).where(lt(oauthStatesTable.expiresAt, new Date()));
+  await db.insert(oauthStatesTable).values({ state, provider, codeVerifier, nonce, returnTo, expiresAt });
 }
 
-// Server-side store for PKCE state — avoids relying on cookies through proxy
-const pkceStore = new Map<string, PkceState>();
-const googlePkceStore = new Map<string, PkceState>();
-
-function storePkce(store: Map<string, PkceState>, state: string, data: PkceState) {
-  // Purge expired entries
-  const now = Date.now();
-  for (const [k, v] of store.entries()) {
-    if (now - v.createdAt > OIDC_STATE_TTL) store.delete(k);
-  }
-  store.set(state, data);
-}
-
-function consumePkce(store: Map<string, PkceState>, state: string): PkceState | null {
-  const entry = store.get(state);
-  if (!entry) return null;
-  store.delete(state);
-  if (Date.now() - entry.createdAt > OIDC_STATE_TTL) return null;
-  return entry;
+async function consumePkce(state: string): Promise<{ codeVerifier: string; nonce: string; returnTo: string } | null> {
+  const [row] = await db.select().from(oauthStatesTable).where(eq(oauthStatesTable.state, state));
+  if (!row) return null;
+  await db.delete(oauthStatesTable).where(eq(oauthStatesTable.state, state));
+  if (row.expiresAt < new Date()) return null;
+  return { codeVerifier: row.codeVerifier, nonce: row.nonce, returnTo: row.returnTo };
 }
 
 const router: IRouter = Router();
@@ -75,15 +63,6 @@ function setSessionCookie(res: Response, sid: string) {
   });
 }
 
-function setOidcCookie(res: Response, name: string, value: string) {
-  res.cookie(name, value, {
-    httpOnly: true,
-    secure: true,
-    sameSite: crossOrigin ? "none" : "lax",
-    path: "/",
-    maxAge: OIDC_COOKIE_TTL,
-  });
-}
 
 function getSafeReturnTo(value: unknown): string {
   if (typeof value !== "string") return "/";
@@ -206,8 +185,8 @@ router.get("/login", async (req: Request, res: Response) => {
   const codeVerifier = oidc.randomPKCECodeVerifier();
   const codeChallenge = await oidc.calculatePKCECodeChallenge(codeVerifier);
 
-  // Store PKCE data server-side — avoids cookie-through-proxy reliability issues
-  storePkce(pkceStore, state, { codeVerifier, nonce, returnTo, createdAt: Date.now() });
+  // Store PKCE data in DB — shared across all server processes
+  await storePkce(state, "replit", codeVerifier, nonce, returnTo);
 
   const redirectTo = oidc.buildAuthorizationUrl(config, {
     redirect_uri: callbackUrl,
@@ -227,7 +206,7 @@ router.get("/callback", async (req: Request, res: Response) => {
   const callbackUrl = `${getOrigin(req)}/api/callback`;
 
   const stateParam = req.query.state as string | undefined;
-  const pkce = stateParam ? consumePkce(pkceStore, stateParam) : null;
+  const pkce = stateParam ? await consumePkce(stateParam) : null;
 
   console.log("[callback] state lookup:", { stateParam: !!stateParam, pkceFound: !!pkce, callbackUrl });
 
@@ -311,8 +290,8 @@ router.get("/auth/google/login", async (req: Request, res: Response) => {
     nonce,
   });
 
-  // Store PKCE data server-side
-  storePkce(googlePkceStore, state, { codeVerifier, nonce, returnTo, createdAt: Date.now() });
+  // Store PKCE data in DB — shared across all server processes
+  await storePkce(state, "google", codeVerifier, nonce, returnTo);
 
   res.redirect(redirectTo.href);
 });
@@ -326,7 +305,7 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
 
   const callbackUrl = `${getOrigin(req)}/api/auth/google/callback`;
   const stateParam = req.query.state as string | undefined;
-  const pkce = stateParam ? consumePkce(googlePkceStore, stateParam) : null;
+  const pkce = stateParam ? await consumePkce(stateParam) : null;
 
   console.log("[google/callback] state lookup:", { stateParam: !!stateParam, pkceFound: !!pkce });
 
