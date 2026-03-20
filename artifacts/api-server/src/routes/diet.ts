@@ -179,20 +179,51 @@ function calculateMacros(profile: { weightKg: number; heightCm: number; age: num
   return { dailyCalories, proteinG, carbsG, fatG };
 }
 
-function buildMeals(country: string, dailyCalories: number, proteinG: number, carbsG: number, fatG: number) {
+function buildMeals(country: string, dailyCalories: number, proteinG: number, carbsG: number, fatG: number, dietPreference?: string) {
   const foods = getCountryFoods(country);
-  const fractions = { breakfast: 0.25, lunch: 0.35, snack: 0.15, dinner: 0.25 };
+  const fractions: Record<string, number> = { breakfast: 0.25, lunch: 0.35, snack: 0.15, dinner: 0.25 };
+
   return Object.entries(fractions).map(([type, frac], i) => {
-    const mealFoods = foods[type] ?? [];
+    const target = Math.round(dailyCalories * frac);
+    let mealFoods = (foods[type] ?? []).slice();
+
+    // Filter for diet preference if applicable
+    if (dietPreference === "vegetarian" || dietPreference === "vegan") {
+      const meatKeywords = /chicken|beef|lamb|fish|salmon|tuna|prawn|pork|turkey|meat|egg|seafood/i;
+      const filtered = mealFoods.filter(f => !meatKeywords.test(f.name));
+      if (filtered.length > 0) mealFoods = filtered;
+    }
+
+    // Greedily pick foods to approach the calorie target
+    const picked: FoodItem[] = [];
+    let accCal = 0;
+    // Shuffle for variety by mixing order based on current day
+    const dayOffset = new Date().getDate() % mealFoods.length || 0;
+    const rotated = [...mealFoods.slice(dayOffset), ...mealFoods.slice(0, dayOffset)];
+
+    for (const food of rotated) {
+      if (accCal + food.calories <= target * 1.15) {
+        picked.push(food);
+        accCal += food.calories;
+      }
+      if (accCal >= target * 0.85) break;
+    }
+    if (picked.length === 0 && mealFoods.length > 0) picked.push(mealFoods[0]);
+
+    const actualCal = picked.reduce((s, f) => s + f.calories, 0) || Math.round(dailyCalories * frac);
+    const actualProtein = picked.reduce((s, f) => s + f.proteinG, 0) || Math.round(proteinG * frac);
+    const actualCarbs = picked.reduce((s, f) => s + f.carbsG, 0) || Math.round(carbsG * frac);
+    const actualFat = picked.reduce((s, f) => s + f.fatG, 0) || Math.round(fatG * frac);
+
     return {
       id: i + 1,
       mealType: type,
-      name: `${type.charAt(0).toUpperCase() + type.slice(1)} (${country})`,
-      calories: Math.round(dailyCalories * frac),
-      proteinG: Math.round(proteinG * frac),
-      carbsG: Math.round(carbsG * frac),
-      fatG: Math.round(fatG * frac),
-      foods: mealFoods.slice(0, 5).map(f => ({ name: f.name, amount: f.amount, calories: f.calories })),
+      name: `${type.charAt(0).toUpperCase() + type.slice(1)} — ${country}`,
+      calories: actualCal,
+      proteinG: Math.round(actualProtein),
+      carbsG: Math.round(actualCarbs),
+      fatG: Math.round(actualFat),
+      foods: picked.map(f => ({ name: f.name, amount: f.amount, calories: f.calories })),
     };
   });
 }
@@ -219,7 +250,7 @@ router.post("/diet/meal-plan", async (req, res) => {
   const { dailyCalories, proteinG, carbsG, fatG } = calculateMacros(profile[0]);
   const planInserted = await db.insert(mealPlansTable).values({ userId: req.user.id, dailyCalories, proteinG, carbsG, fatG }).returning();
   const plan = planInserted[0];
-  const meals = buildMeals(country, dailyCalories, proteinG, carbsG, fatG);
+  const meals = buildMeals(country, dailyCalories, proteinG, carbsG, fatG, profile[0].dietPreference);
   const mealRows = await db.insert(mealsTable).values(
     meals.map(m => ({ mealPlanId: plan.id, mealType: m.mealType, name: m.name, calories: m.calories, proteinG: m.proteinG, carbsG: m.carbsG, fatG: m.fatG, foods: JSON.stringify(m.foods) }))
   ).returning();

@@ -142,10 +142,22 @@ export default function Diet() {
       }).catch(() => {});
   }, []);
 
-  const saveCountry = (c: string) => {
+  const saveCountry = async (c: string) => {
     setCountry(c);
     localStorage.setItem("fittrack_country", c);
     setShowCountryPicker(false);
+    // Auto-regenerate the meal plan for the new country
+    setIsGenerating(true);
+    try {
+      const r = await fetch(`${BASE}/api/diet/meal-plan`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ country: c }) });
+      const d = await r.json();
+      if (d && d.meals) setMealPlan(d);
+      else setMealPlan(buildLocalPlan(c));
+    } catch {
+      setMealPlan(buildLocalPlan(c));
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const buildLocalPlan = (c: string) => {
@@ -267,7 +279,13 @@ export default function Diet() {
   };
 
   const eatenCalories = foodLog.reduce((s, l) => s + l.calories, 0);
+  const eatenProtein = Math.round(foodLog.reduce((s, l) => s + (l.proteinG || 0), 0));
+  const eatenCarbs = Math.round(foodLog.reduce((s, l) => s + (l.carbsG || 0), 0));
+  const eatenFat = Math.round(foodLog.reduce((s, l) => s + (l.fatG || 0), 0));
   const targetCal = mealPlan?.dailyCalories || 2200;
+  const targetProtein = mealPlan?.proteinG || 0;
+  const targetCarbs = mealPlan?.carbsG || 0;
+  const targetFat = mealPlan?.fatG || 0;
   const waterPct = Math.min(waterData.totalMl / WATER_GOAL, 1);
   const countryFoods = COUNTRY_FOODS[country] || COUNTRY_FOODS.USA;
   const filteredFoods = countryFoods.filter(f =>
@@ -312,6 +330,28 @@ export default function Diet() {
             />
           </div>
           <p className="text-xs text-muted-foreground mt-1.5">Target: {targetCal} kcal/day</p>
+
+          {/* Macro progress bars */}
+          {targetProtein > 0 && (
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              {[
+                { label: "Protein", eaten: eatenProtein, target: targetProtein, color: "bg-blue-400", text: "text-blue-400" },
+                { label: "Carbs", eaten: eatenCarbs, target: targetCarbs, color: "bg-green-400", text: "text-green-400" },
+                { label: "Fat", eaten: eatenFat, target: targetFat, color: "bg-orange-400", text: "text-orange-400" },
+              ].map(({ label, eaten, target, color, text }) => (
+                <div key={label}>
+                  <div className="flex justify-between text-[10px] mb-1">
+                    <span className={`font-semibold ${text}`}>{label}</span>
+                    <span className="text-muted-foreground">{eaten}/{target}g</span>
+                  </div>
+                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${color} transition-all duration-1000`}
+                      style={{ width: `${Math.min(eaten / Math.max(target, 1), 1) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

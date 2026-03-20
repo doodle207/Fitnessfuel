@@ -75,7 +75,7 @@ export default function Progress() {
   const handleLogWeight = (e: React.FormEvent) => {
     e.preventDefault();
     if (!weight) return;
-    logWeight({ data: { weightKg: parseFloat(weight), date: new Date().toISOString() } });
+    logWeight({ data: { weightKg: parseFloat(weight), date: new Date().toISOString().split("T")[0] } });
   };
 
   const uploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {

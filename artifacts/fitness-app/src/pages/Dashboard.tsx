@@ -9,7 +9,6 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, Cell,
-  RadarChart, PolarGrid, PolarAngleAxis, Radar,
 } from "recharts";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
@@ -86,7 +85,7 @@ export default function Dashboard() {
   const [steps, setSteps] = useState(getStepsToday);
   const [stepsInput, setStepsInput] = useState("");
   const [showStepsInput, setShowStepsInput] = useState(false);
-  const [waterMl, setWaterMl] = useState(() => parseInt(localStorage.getItem(WATER_KEY) || "0"));
+  const [waterMl, setWaterMl] = useState(0);
   const [macroTotals, setMacroTotals] = useState({ proteinG: 0, carbsG: 0, fatG: 0 });
   const [todayFoodCalories, setTodayFoodCalories] = useState(0);
 
@@ -118,6 +117,12 @@ export default function Dashboard() {
         });
       })
       .catch(() => {});
+    // Fetch water from API (same source as Diet page)
+    const today = new Date().toISOString().split("T")[0];
+    fetch(`${BASE}/api/progress/water?date=${today}`, { credentials: "include" })
+      .then(r => r.json())
+      .then(d => { if (d && d.totalMl !== undefined) setWaterMl(d.totalMl); })
+      .catch(() => { setWaterMl(parseInt(localStorage.getItem(WATER_KEY) || "0")); });
   }, []);
 
   const handleStepsSave = () => {
@@ -174,12 +179,6 @@ export default function Dashboard() {
   const waterPct = Math.min(waterMl / 3000, 1);
   const waterGlasses = Math.round(waterMl / 250);
   const netCalories = todayFoodCalories - totalBurned;
-
-  const macroData = [
-    { subject: "Protein", A: Math.round((macroTotals.proteinG / Math.max(proteinTarget, 1)) * 100) },
-    { subject: "Carbs", A: Math.round((macroTotals.carbsG / Math.max(carbsTarget, 1)) * 100) },
-    { subject: "Fat", A: Math.round((macroTotals.fatG / Math.max(fatTarget, 1)) * 100) },
-  ];
 
   return (
     <PageTransition>
@@ -260,14 +259,84 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        {/* ── ROW 2: Streaks + Macros/Hydration ── */}
+        {/* ── ROW 2: Macros+Hydration (left) | Workout+Streaks (right) ── */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
-          {/* Streaks & Workout (left square) */}
+
+          {/* LEFT: Macros + Hydration */}
           <motion.div
             initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
+            className="md:col-span-3 glass-card rounded-3xl p-5 border border-white/5 space-y-5"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-display font-bold text-lg">Macros & Hydration</h3>
+              <Link href="/diet" className="text-xs text-violet-400 hover:underline flex items-center gap-1">Diet <ArrowRight className="w-3 h-3" /></Link>
+            </div>
+
+            {/* Macro Rings row */}
+            <div className="grid grid-cols-3 gap-2">
+              <MacroRing label="Protein" emoji="🥩" current={macroTotals.proteinG} target={proteinTarget} stroke="#4A90D9" track="rgba(74,144,217,0.15)" />
+              <MacroRing label="Carbs" emoji="🌾" current={macroTotals.carbsG} target={carbsTarget} stroke="#34C759" track="rgba(52,199,89,0.15)" />
+              <MacroRing label="Fat" emoji="🥑" current={macroTotals.fatG} target={fatTarget} stroke="#FF9500" track="rgba(255,149,0,0.15)" />
+            </div>
+
+            {/* Hydration */}
+            <div className="rounded-2xl bg-cyan-500/5 border border-cyan-500/15 p-4">
+              <div className="flex items-center gap-4">
+                <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
+                    <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(6,182,212,0.12)" strokeWidth="8" />
+                    <circle cx="40" cy="40" r="32" fill="none" stroke="url(#waterGrad2)" strokeWidth="8"
+                      strokeLinecap="round"
+                      style={{ strokeDasharray: `${2 * Math.PI * 32}`, strokeDashoffset: `${2 * Math.PI * 32 * (1 - waterPct)}`, transition: "stroke-dashoffset 1s ease" }}
+                    />
+                    <defs>
+                      <linearGradient id="waterGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#06b6d4" />
+                        <stop offset="100%" stopColor="#3b82f6" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <Droplets className="w-4 h-4 text-cyan-400 mb-0.5" />
+                    <span className="text-base font-display font-bold text-cyan-400">{waterGlasses}</span>
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline justify-between mb-1">
+                    <span className="text-sm font-semibold text-cyan-400">Hydration</span>
+                    <span className="text-xs text-muted-foreground">{waterMl} / 3000 ml</span>
+                  </div>
+                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mb-3">
+                    <div className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-1000"
+                      style={{ width: `${waterPct * 100}%` }} />
+                  </div>
+                  <div className="flex gap-2">
+                    {[250, 500].map(ml => (
+                      <button key={ml} onClick={async () => {
+                        const newVal = Math.min(waterMl + ml, 3000);
+                        setWaterMl(newVal);
+                        try {
+                          const today = new Date().toISOString().split("T")[0];
+                          const r = await fetch(`${BASE}/api/progress/water`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amountMl: ml, date: today }) });
+                          const d = await r.json();
+                          if (d && d.totalMl !== undefined) setWaterMl(d.totalMl);
+                        } catch {}
+                      }} className="px-3 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold hover:bg-cyan-500/20 active:scale-95 transition-all">
+                        +{ml}ml
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* RIGHT: Workout + Streaks */}
+          <motion.div
+            initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
             className="md:col-span-2 glass-card rounded-3xl p-5 border border-white/5 space-y-4"
           >
-            <h3 className="font-display font-bold text-lg flex items-center gap-2"><Flame className="w-5 h-5 text-orange-500" /> Streaks & Activity</h3>
+            <h3 className="font-display font-bold text-lg flex items-center gap-2"><Flame className="w-5 h-5 text-orange-500" /> Workout & Streaks</h3>
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-2xl p-4 bg-orange-500/10 border border-orange-500/20 text-center">
                 <p className="text-3xl font-display font-black text-orange-400">{safeStats.currentStreak}</p>
@@ -297,68 +366,10 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
-            <Link href="/workout" className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 group">
-              <span className="text-sm font-medium">Start Workout</span>
-              <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            <Link href="/workout" className="flex items-center justify-between p-3 rounded-xl bg-violet-600/20 hover:bg-violet-600/30 transition-colors border border-violet-500/20 group">
+              <span className="text-sm font-semibold text-violet-300">Start Workout</span>
+              <ChevronRight className="w-4 h-4 text-violet-400 group-hover:translate-x-1 transition-transform" />
             </Link>
-          </motion.div>
-
-          {/* Macros + Hydration Circle (right) */}
-          <motion.div
-            initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
-            className="md:col-span-3 glass-card rounded-3xl p-5 border border-white/5"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display font-bold text-lg">Macros & Hydration</h3>
-              <Link href="/diet" className="text-xs text-violet-400 hover:underline flex items-center gap-1">Diet <ArrowRight className="w-3 h-3" /></Link>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-5 items-center">
-              <div className="flex-1 w-full">
-                <div className="h-56 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={macroData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
-                      <PolarGrid stroke="rgba(255,255,255,0.08)" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: "#71717a", fontSize: 11 }} />
-                      <Radar name="Today" dataKey="A" stroke="#7c3aed" fill="#7c3aed" fillOpacity={0.25} strokeWidth={2} />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-              <div className="flex flex-col items-center gap-3 shrink-0">
-                <div className="relative w-32 h-32 flex items-center justify-center">
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
-                    <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" />
-                    <circle cx="60" cy="60" r="50" fill="none" stroke="url(#waterGrad)" strokeWidth="10"
-                      strokeLinecap="round"
-                      style={{ strokeDasharray: `${2 * Math.PI * 50}`, strokeDashoffset: `${2 * Math.PI * 50 * (1 - waterPct)}`, transition: "stroke-dashoffset 1s ease" }}
-                    />
-                    <defs>
-                      <linearGradient id="waterGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#06b6d4" />
-                        <stop offset="100%" stopColor="#3b82f6" />
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <Droplets className="w-5 h-5 text-cyan-400 mb-0.5" />
-                    <span className="text-xl font-display font-bold text-cyan-400">{waterGlasses}</span>
-                    <span className="text-[10px] text-muted-foreground">/ 12 glasses</span>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground text-center">Hydration<br /><span className="text-cyan-400 font-semibold">{waterMl} ml</span> / 3000 ml</p>
-                <div className="flex gap-2">
-                  {[250, 500].map(ml => (
-                    <button key={ml} onClick={() => {
-                      const newVal = Math.min(waterMl + ml, 3000);
-                      setWaterMl(newVal);
-                      localStorage.setItem(WATER_KEY, String(newVal));
-                    }} className="px-3 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold hover:bg-cyan-500/20 transition-colors">
-                      +{ml}ml
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
           </motion.div>
         </div>
 

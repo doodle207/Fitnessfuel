@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useCreateProfile } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@workspace/replit-auth-web";
@@ -153,6 +154,7 @@ interface FormData {
 export default function Onboarding() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -173,7 +175,11 @@ export default function Onboarding() {
 
   const { mutate: createProfile, isPending } = useCreateProfile({
     mutation: {
-      onSuccess: () => setLocation("/"),
+      onSuccess: () => {
+        // Clear the cached 404 so AuthGuard knows the profile now exists
+        queryClient.removeQueries({ queryKey: ["/api/profile"] });
+        setLocation("/");
+      },
       onError: () => setError("Failed to save. Please try again."),
     },
   });
