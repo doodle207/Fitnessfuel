@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 const navItems = [
   { href: "/", label: "Dashboard", icon: Activity },
   { href: "/workout", label: "Workout", icon: Dumbbell },
-  { href: "/library", label: "Library", icon: Grid },
   { href: "/progress", label: "Progress", icon: LineChart },
   { href: "/diet", label: "Diet", icon: Apple },
   { href: "/profile", label: "Profile", icon: User },

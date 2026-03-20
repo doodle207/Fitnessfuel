@@ -283,7 +283,14 @@ export default function WorkoutBuilder() {
                 >
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm group-hover:text-violet-400 transition-colors">{workout.name}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{(() => { try { return format(new Date(workout.date), "MMM d, yyyy"); } catch { return workout.date; } })()}</p>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <p className="text-xs text-muted-foreground">{(() => { try { return format(new Date(workout.date), "EEE, MMM d, yyyy"); } catch { return workout.date; } })()}</p>
+                      {workout.caloriesBurned > 0 && (
+                        <span className="text-xs text-orange-400 flex items-center gap-1">
+                          🔥 {workout.caloriesBurned} kcal
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <span className="shrink-0 text-xs px-2.5 py-1 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">
                     {workout.muscleGroup || "Mixed"}

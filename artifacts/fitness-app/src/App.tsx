@@ -15,7 +15,6 @@ import Onboarding from "@/pages/Onboarding";
 import Dashboard from "@/pages/Dashboard";
 import WorkoutBuilder from "@/pages/WorkoutBuilder";
 import ActiveWorkout from "@/pages/ActiveWorkout";
-import Library from "@/pages/Library";
 import Progress from "@/pages/Progress";
 import Diet from "@/pages/Diet";
 import Profile from "@/pages/Profile";
@@ -156,7 +155,7 @@ function Router() {
         <Route path="/" component={Dashboard} />
         <Route path="/workout" component={WorkoutBuilder} />
         <Route path="/workout/active/:id" component={ActiveWorkout} />
-        <Route path="/library" component={Library} />
+
         <Route path="/progress" component={Progress} />
         <Route path="/diet" component={Diet} />
         <Route path="/profile" component={Profile} />

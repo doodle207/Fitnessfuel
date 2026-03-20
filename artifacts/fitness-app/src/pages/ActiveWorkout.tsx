@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
 import {
   Dumbbell, Plus, Check, X, Timer, ChevronDown,
-  Target, Zap, Info, TrendingUp, Search, ArrowLeft
+  Target, Zap, Info, TrendingUp, Search, ArrowLeft, Flame
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
@@ -107,6 +107,8 @@ export default function ActiveWorkout() {
   const [selectorGroup, setSelectorGroup] = useState("All");
   const [repsMap, setRepsMap] = useState<Record<number, string>>({});
   const [weightMap, setWeightMap] = useState<Record<number, string>>({});
+  const [isFinishing, setIsFinishing] = useState(false);
+  const [finishSummary, setFinishSummary] = useState<{ caloriesBurned: number; durationMinutes: number } | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000)), 1000);
@@ -157,6 +159,23 @@ export default function ActiveWorkout() {
 
   const exercisedIds = Object.keys(setsByExercise).map(Number);
   const allDisplayIds = [...new Set([...exercisedIds, ...pendingExerciseIds])];
+
+  const handleFinishWorkout = async () => {
+    setIsFinishing(true);
+    try {
+      const res = await fetch(`/api/workouts/${workoutId}/finish`, { method: "PATCH", credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setFinishSummary(data);
+      } else {
+        setLocation("/workout");
+      }
+    } catch {
+      setLocation("/workout");
+    } finally {
+      setIsFinishing(false);
+    }
+  };
 
   const handleAddSet = (exerciseId: number) => {
     const weight = parseFloat(weightMap[exerciseId] || "");
@@ -209,10 +228,11 @@ export default function ActiveWorkout() {
               </div>
             </div>
             <button
-              onClick={() => setLocation("/")}
-              className="px-4 py-2 bg-green-500/15 border border-green-500/30 text-green-400 hover:bg-green-500/25 rounded-xl text-sm font-semibold transition-colors"
+              onClick={handleFinishWorkout}
+              disabled={isFinishing}
+              className="px-4 py-2 bg-green-500/15 border border-green-500/30 text-green-400 hover:bg-green-500/25 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
             >
-              Finish ✓
+              {isFinishing ? "Saving..." : "Finish ✓"}
             </button>
           </div>
         </div>
@@ -406,6 +426,59 @@ export default function ActiveWorkout() {
           For reference only. Consult a healthcare professional before starting any program.
         </p>
       </div>
+
+      {/* Post-workout summary modal */}
+      <AnimatePresence>
+        {finishSummary && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.85, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 28 }}
+              className="w-full max-w-sm bg-[#111] border border-white/10 rounded-3xl overflow-hidden shadow-2xl"
+            >
+              <div className="bg-gradient-to-br from-violet-600/20 via-transparent to-green-600/10 p-6 text-center space-y-1 border-b border-white/5">
+                <div className="w-16 h-16 rounded-2xl bg-green-500/20 border border-green-500/30 flex items-center justify-center mx-auto mb-3">
+                  <Check className="w-8 h-8 text-green-400" />
+                </div>
+                <h2 className="text-2xl font-display font-bold">Workout Complete!</h2>
+                <p className="text-sm text-muted-foreground">{format(new Date(), "EEEE, MMMM d, yyyy · h:mm a")}</p>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-white/5 rounded-2xl p-3 text-center border border-white/8">
+                    <Timer className="w-5 h-5 text-violet-400 mx-auto mb-1" />
+                    <p className="text-lg font-bold">{finishSummary.durationMinutes}</p>
+                    <p className="text-[10px] text-muted-foreground">Minutes</p>
+                  </div>
+                  <div className="bg-white/5 rounded-2xl p-3 text-center border border-white/8">
+                    <Flame className="w-5 h-5 text-orange-400 mx-auto mb-1" />
+                    <p className="text-lg font-bold text-orange-400">{finishSummary.caloriesBurned}</p>
+                    <p className="text-[10px] text-muted-foreground">Cal Burned</p>
+                  </div>
+                  <div className="bg-white/5 rounded-2xl p-3 text-center border border-white/8">
+                    <Dumbbell className="w-5 h-5 text-cyan-400 mx-auto mb-1" />
+                    <p className="text-lg font-bold">{totalSets}</p>
+                    <p className="text-[10px] text-muted-foreground">Total Sets</p>
+                  </div>
+                </div>
+                <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-2xl p-3 flex items-center gap-3">
+                  <Flame className="w-5 h-5 text-orange-400 shrink-0" />
+                  <p className="text-sm text-orange-300 font-medium"><span className="font-bold text-orange-400">{finishSummary.caloriesBurned} kcal</span> added to today's calories burned</p>
+                </div>
+                <button
+                  onClick={() => setLocation("/workout")}
+                  className="w-full py-3 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm transition-colors shadow-[0_0_16px_rgba(124,58,237,0.4)]"
+                >
+                  View Recent Workouts
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </PageTransition>
   );
 }
