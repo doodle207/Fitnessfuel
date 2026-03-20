@@ -20,7 +20,35 @@ import {
   type SessionData,
 } from "../lib/auth";
 
-const OIDC_COOKIE_TTL = 10 * 60 * 1000;
+const OIDC_STATE_TTL = 10 * 60 * 1000; // 10 minutes
+
+interface PkceState {
+  codeVerifier: string;
+  nonce: string;
+  returnTo: string;
+  createdAt: number;
+}
+
+// Server-side store for PKCE state — avoids relying on cookies through proxy
+const pkceStore = new Map<string, PkceState>();
+const googlePkceStore = new Map<string, PkceState>();
+
+function storePkce(store: Map<string, PkceState>, state: string, data: PkceState) {
+  // Purge expired entries
+  const now = Date.now();
+  for (const [k, v] of store.entries()) {
+    if (now - v.createdAt > OIDC_STATE_TTL) store.delete(k);
+  }
+  store.set(state, data);
+}
+
+function consumePkce(store: Map<string, PkceState>, state: string): PkceState | null {
+  const entry = store.get(state);
+  if (!entry) return null;
+  store.delete(state);
+  if (Date.now() - entry.createdAt > OIDC_STATE_TTL) return null;
+  return entry;
+}
 
 const router: IRouter = Router();
 
@@ -178,6 +206,9 @@ router.get("/login", async (req: Request, res: Response) => {
   const codeVerifier = oidc.randomPKCECodeVerifier();
   const codeChallenge = await oidc.calculatePKCECodeChallenge(codeVerifier);
 
+  // Store PKCE data server-side — avoids cookie-through-proxy reliability issues
+  storePkce(pkceStore, state, { codeVerifier, nonce, returnTo, createdAt: Date.now() });
+
   const redirectTo = oidc.buildAuthorizationUrl(config, {
     redirect_uri: callbackUrl,
     scope: "openid email profile offline_access",
@@ -188,11 +219,6 @@ router.get("/login", async (req: Request, res: Response) => {
     nonce,
   });
 
-  setOidcCookie(res, "code_verifier", codeVerifier);
-  setOidcCookie(res, "nonce", nonce);
-  setOidcCookie(res, "state", state);
-  setOidcCookie(res, "return_to", returnTo);
-
   res.redirect(redirectTo.href);
 });
 
@@ -200,12 +226,14 @@ router.get("/callback", async (req: Request, res: Response) => {
   const config = await getOidcConfig();
   const callbackUrl = `${getOrigin(req)}/api/callback`;
 
-  const codeVerifier = req.cookies?.code_verifier;
-  const nonce = req.cookies?.nonce;
-  const expectedState = req.cookies?.state;
+  const stateParam = req.query.state as string | undefined;
+  const pkce = stateParam ? consumePkce(pkceStore, stateParam) : null;
 
-  if (!codeVerifier || !expectedState) {
-    res.redirect("/api/login");
+  console.log("[callback] state lookup:", { stateParam: !!stateParam, pkceFound: !!pkce, callbackUrl });
+
+  if (!pkce) {
+    console.log("[callback] FAIL: no PKCE state found for state param");
+    res.redirect("/?error=auth_session_expired");
     return;
   }
 
@@ -216,26 +244,22 @@ router.get("/callback", async (req: Request, res: Response) => {
   let tokens: oidc.TokenEndpointResponse & oidc.TokenEndpointResponseHelpers;
   try {
     tokens = await oidc.authorizationCodeGrant(config, currentUrl, {
-      pkceCodeVerifier: codeVerifier,
-      expectedNonce: nonce,
-      expectedState,
+      pkceCodeVerifier: pkce.codeVerifier,
+      expectedNonce: pkce.nonce,
+      expectedState: stateParam,
       idTokenExpected: true,
     });
-  } catch {
-    res.redirect("/api/login");
+  } catch (err) {
+    console.error("[callback] FAIL: authorizationCodeGrant error:", err);
+    res.redirect("/?error=auth_failed");
     return;
   }
 
-  const returnTo = getSafeReturnTo(req.cookies?.return_to);
-
-  res.clearCookie("code_verifier", { path: "/" });
-  res.clearCookie("nonce", { path: "/" });
-  res.clearCookie("state", { path: "/" });
-  res.clearCookie("return_to", { path: "/" });
+  const returnTo = pkce.returnTo;
 
   const claims = tokens.claims();
   if (!claims) {
-    res.redirect("/api/login");
+    res.redirect("/?error=auth_failed");
     return;
   }
 
@@ -258,6 +282,7 @@ router.get("/callback", async (req: Request, res: Response) => {
   };
 
   const sid = await createSession(sessionData);
+  console.log("[callback] SUCCESS: session created, redirecting to", returnTo);
   setSessionCookie(res, sid);
   res.redirect(returnTo);
 });
@@ -286,10 +311,8 @@ router.get("/auth/google/login", async (req: Request, res: Response) => {
     nonce,
   });
 
-  setOidcCookie(res, "g_code_verifier", codeVerifier);
-  setOidcCookie(res, "g_nonce", nonce);
-  setOidcCookie(res, "g_state", state);
-  setOidcCookie(res, "g_return_to", returnTo);
+  // Store PKCE data server-side
+  storePkce(googlePkceStore, state, { codeVerifier, nonce, returnTo, createdAt: Date.now() });
 
   res.redirect(redirectTo.href);
 });
@@ -302,13 +325,13 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
   }
 
   const callbackUrl = `${getOrigin(req)}/api/auth/google/callback`;
-  const codeVerifier = req.cookies?.g_code_verifier;
-  const nonce = req.cookies?.g_nonce;
-  const expectedState = req.cookies?.g_state;
-  const returnTo = getSafeReturnTo(req.cookies?.g_return_to);
+  const stateParam = req.query.state as string | undefined;
+  const pkce = stateParam ? consumePkce(googlePkceStore, stateParam) : null;
 
-  if (!codeVerifier || !expectedState) {
-    res.redirect("/api/auth/google/login");
+  console.log("[google/callback] state lookup:", { stateParam: !!stateParam, pkceFound: !!pkce });
+
+  if (!pkce) {
+    res.redirect("/?error=auth_session_expired");
     return;
   }
 
@@ -318,16 +341,11 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
 
   try {
     const tokens = await oidc.authorizationCodeGrant(config, currentUrl, {
-      pkceCodeVerifier: codeVerifier,
-      expectedNonce: nonce,
-      expectedState,
+      pkceCodeVerifier: pkce.codeVerifier,
+      expectedNonce: pkce.nonce,
+      expectedState: stateParam,
       idTokenExpected: true,
     });
-
-    res.clearCookie("g_code_verifier", { path: "/" });
-    res.clearCookie("g_nonce", { path: "/" });
-    res.clearCookie("g_state", { path: "/" });
-    res.clearCookie("g_return_to", { path: "/" });
 
     const claims = tokens.claims();
     if (!claims) {
@@ -354,8 +372,9 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
     };
 
     const sid = await createSession(sessionData);
+    console.log("[google/callback] SUCCESS: session created");
     setSessionCookie(res, sid);
-    res.redirect(returnTo);
+    res.redirect(pkce.returnTo);
   } catch (err) {
     console.error("Google auth error:", err);
     res.redirect("/?error=google_auth_failed");
