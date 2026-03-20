@@ -121,13 +121,15 @@ export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose
         credentials: "include",
         body: formData,
       });
-      console.log("[ImageFoodAnalyzer] Response status:", res.status);
+      console.log("[ImageFoodAnalyzer] Response status:", res.status, "Content-Type:", res.headers.get("content-type"));
+      const rawText = await res.text();
+      console.log("[ImageFoodAnalyzer] Raw response body:", rawText);
       let data: any;
       try {
-        data = await res.json();
+        data = JSON.parse(rawText);
       } catch (jsonErr) {
-        console.error("[ImageFoodAnalyzer] Failed to parse response as JSON:", jsonErr);
-        setErrorMsg("Server returned an unexpected response. Please try again.");
+        console.error("[ImageFoodAnalyzer] Response is not JSON. Raw body:", rawText);
+        setErrorMsg(`Unexpected server response (status ${res.status}). Please try again.`);
         setPhase("error");
         return;
       }

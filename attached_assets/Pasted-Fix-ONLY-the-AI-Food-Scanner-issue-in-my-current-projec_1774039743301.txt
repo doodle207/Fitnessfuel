@@ -1,0 +1,97 @@
+Fix ONLY the AI Food Scanner issue in my current project. Do NOT rewrite the whole app. Make minimal changes and keep existing UI/flow intact.
+
+Current problem:
+The scanner no longer shows "Network error". Now it shows:
+"Server returned an unexpected response."
+
+That means the request reaches the backend, but the backend response format is wrong or the Gemini result is not being parsed correctly.
+
+Your job:
+1. Trace the full flow:
+   frontend image upload -> request to backend/Supabase function -> Gemini API -> backend response -> frontend UI
+2. Find the exact broken point.
+3. Add clear logs so I can see what is happening at each step.
+4. Fix the issue so the scanner returns clean JSON that the frontend can understand.
+
+Important rules:
+- Do NOT rewrite unrelated files
+- Do NOT change the whole app
+- Change only the broken scanner code
+- Keep existing design and UI
+- Show me exactly which files you changed and why
+- Explain the root cause clearly after fixing
+
+Step 1: Debug frontend
+- Find the food scanner upload/camera code
+- Log:
+  - selected file name
+  - file type
+  - file size
+  - request payload size
+  - API response status
+  - response body text
+- Make sure frontend sends a valid JSON body
+
+Step 2: Debug backend / Supabase Edge Function
+- Find the function receiving the image
+- Log the incoming request
+- Parse request using await req.json()
+- Validate that image exists
+- If image is missing, return a clear JSON error
+- Do not return plain text or HTML errors
+
+Step 3: Fix Gemini API call
+- Use the correct Gemini model:
+  gemini-1.5-flash
+- Send the image in the correct format
+- If image is base64, ensure the backend extracts only the raw base64 data if needed
+- Log the full Gemini response
+- If Gemini fails, log the error and return a JSON error
+
+Step 4: Fix response parsing
+- Safely extract the AI text from Gemini response
+- Do NOT assume the response shape is always valid
+- Parse the returned text into a JSON object
+- If parsing fails, return:
+  {
+    success: false,
+    error: "Invalid AI response"
+  }
+
+Step 5: Ensure backend always returns valid JSON
+Return only one of these formats:
+
+Success:
+{
+  success: true,
+  calories: number,
+  protein: number,
+  carbs: number,
+  fats: number
+}
+
+Failure:
+{
+  success: false,
+  error: "some clear error message"
+}
+
+Step 6: Fix frontend handling of response
+- Parse response as JSON
+- If response.success is false, show response.error
+- If response is invalid or missing fields, show a useful error message
+- Replace "Server returned an unexpected response" with the real error message
+
+Step 7: Add safety checks
+- Ensure API key is only in backend environment variables
+- Remove any key from frontend code
+- Ensure CORS is configured correctly if needed
+- If the uploaded image is HEIC/HEIF, convert it to JPEG before sending
+
+Step 8: Final output
+When done, give me:
+- exact files changed
+- exact root cause
+- exact code changes
+- how to test it
+- confirmation that the response is now valid JSON
