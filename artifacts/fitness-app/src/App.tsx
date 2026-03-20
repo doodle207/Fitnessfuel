@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useGetProfile } from "@workspace/api-client-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Dumbbell, Activity, Zap, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -44,6 +44,16 @@ function GoogleIcon() {
 
 function LoginScreen() {
   const { login, loginWithGoogle } = useAuth();
+  const [googleEnabled, setGoogleEnabled] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/providers", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => setGoogleEnabled(!!d?.google))
+      .catch(() => setGoogleEnabled(false));
+  }, []);
+
+  const urlError = new URLSearchParams(window.location.search).get("error");
 
   return (
     <div className="min-h-screen bg-[#080810] flex flex-col items-center justify-center relative overflow-hidden px-4">
@@ -79,6 +89,12 @@ function LoginScreen() {
           <p className="text-white/50 text-base mt-2">Your elite fitness & nutrition companion</p>
         </div>
 
+        {urlError && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
+            {urlError === "google_auth_failed" ? "Google sign-in failed. Please try again." : "Sign-in error. Please try again."}
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-3 mb-8">
           {[
             { icon: Activity, label: "Smart Tracking" },
@@ -93,16 +109,18 @@ function LoginScreen() {
         </div>
 
         <div className="space-y-3">
-          <motion.button
-            type="button"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={loginWithGoogle}
-            className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-semibold text-base text-[#1a1a2e] bg-white hover:bg-white/95 transition-all shadow-lg"
-          >
-            <GoogleIcon />
-            Sign in with Google
-          </motion.button>
+          {googleEnabled && (
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={loginWithGoogle}
+              className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-semibold text-base text-[#1a1a2e] bg-white hover:bg-white/95 transition-all shadow-lg"
+            >
+              <GoogleIcon />
+              Sign in with Google
+            </motion.button>
+          )}
 
           <motion.button
             type="button"

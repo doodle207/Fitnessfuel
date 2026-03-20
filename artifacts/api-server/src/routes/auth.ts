@@ -24,11 +24,15 @@ const OIDC_COOKIE_TTL = 10 * 60 * 1000;
 
 const router: IRouter = Router();
 
-function getOrigin(req: Request): string {
-  const proto = req.headers["x-forwarded-proto"] || "https";
-  const host =
-    req.headers["x-forwarded-host"] || req.headers["host"] || "localhost";
-  return `${proto}://${host}`;
+function getOrigin(_req: Request): string {
+  // REPLIT_DOMAINS is set in both dev and production Replit environments
+  // and gives us the correct public-facing domain, bypassing proxy header issues.
+  if (process.env.REPLIT_DOMAINS) {
+    const domain = process.env.REPLIT_DOMAINS.split(",")[0].trim();
+    return `https://${domain}`;
+  }
+  // Local non-Replit fallback
+  return `http://localhost:${process.env.PORT || 3000}`;
 }
 
 const crossOrigin = process.env.CROSS_ORIGIN_AUTH === "true";
