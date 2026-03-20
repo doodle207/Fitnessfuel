@@ -4,6 +4,36 @@ import { Camera, X, Upload, Edit2, Check, Loader2, AlertCircle, Sparkles, Chevro
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+function isHeic(file: File): boolean {
+  const type = file.type.toLowerCase();
+  if (type === "image/heic" || type === "image/heif" ||
+      type === "image/heic-sequence" || type === "image/heif-sequence") {
+    return true;
+  }
+  const name = file.name.toLowerCase();
+  return name.endsWith(".heic") || name.endsWith(".heif");
+}
+
+async function normalizeToJpeg(file: File): Promise<File> {
+  if (!isHeic(file)) return file;
+  console.log("[ImageFoodAnalyzer] Detected HEIC/HEIF, converting to JPEG...");
+  try {
+    const heic2any = (await import("heic2any")).default;
+    const blob = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
+    const outputBlob = Array.isArray(blob) ? blob[0] : blob;
+    const converted = new File(
+      [outputBlob],
+      file.name.replace(/\.(heic|heif)$/i, ".jpg"),
+      { type: "image/jpeg" }
+    );
+    console.log("[ImageFoodAnalyzer] HEIC converted to JPEG:", converted.size, "bytes");
+    return converted;
+  } catch (err) {
+    console.error("[ImageFoodAnalyzer] HEIC conversion failed:", err);
+    throw new Error("Could not convert HEIC image. Please use a JPG or PNG file instead.");
+  }
+}
+
 interface MacroItem {
   foodName: string;
   calories: number;
@@ -42,6 +72,7 @@ interface Props {
 
 export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose }: Props) {
   const [phase, setPhase] = useState<"upload" | "loading" | "result" | "error">("upload");
+  const [loadingStep, setLoadingStep] = useState<"converting" | "analyzing">("analyzing");
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [editMode, setEditMode] = useState(false);
@@ -54,17 +85,35 @@ export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      setErrorMsg("Please upload a valid image file.");
+    const isImage = file.type.startsWith("image/") || isHeic(file);
+    if (!isImage) {
+      setErrorMsg("Please upload a valid image file (JPG, PNG, WEBP, or HEIC).");
       setPhase("error");
       return;
     }
-    const objectUrl = URL.createObjectURL(file);
-    setPreview(objectUrl);
+
     setPhase("loading");
 
+    let uploadFile: File;
+    try {
+      if (isHeic(file)) {
+        setLoadingStep("converting");
+      } else {
+        setLoadingStep("analyzing");
+      }
+      uploadFile = await normalizeToJpeg(file);
+    } catch (err: any) {
+      setErrorMsg(err?.message ?? "Failed to process the image. Please try a different format.");
+      setPhase("error");
+      return;
+    }
+
+    setLoadingStep("analyzing");
+    const objectUrl = URL.createObjectURL(uploadFile);
+    setPreview(objectUrl);
+
     const formData = new FormData();
-    formData.append("image", file);
+    formData.append("image", uploadFile);
 
     try {
       const res = await fetch(`${BASE}/api/diet/analyze-image`, {
@@ -167,6 +216,7 @@ export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose
 
   const reset = () => {
     setPhase("upload");
+    setLoadingStep("analyzing");
     setPreview(null);
     setResult(null);
     setEditable(null);
@@ -240,7 +290,7 @@ export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose
                   <Upload className="w-6 h-6 text-violet-400" />
                 </div>
                 <p className="font-semibold text-sm text-white mb-1">Drop an image or click to browse</p>
-                <p className="text-xs text-muted-foreground">Supports JPG, PNG, WEBP · Max 10MB</p>
+                <p className="text-xs text-muted-foreground">Supports JPG, PNG, WEBP, HEIC (iPhone) · Max 10MB</p>
               </div>
 
               {/* Camera capture button */}
@@ -261,7 +311,7 @@ export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose
           {/* Loading Phase */}
           {phase === "loading" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-6 text-center space-y-4">
-              {preview && (
+              {preview ? (
                 <div className="relative w-32 h-32 mx-auto">
                   <img src={preview} alt="Analyzing" className="w-full h-full object-cover rounded-2xl opacity-60" />
                   <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/40 backdrop-blur-sm">
@@ -271,13 +321,32 @@ export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose
                     </div>
                   </div>
                 </div>
+              ) : (
+                <div className="w-32 h-32 mx-auto rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full border-2 border-violet-500/30 border-t-violet-500 animate-spin" />
+                    <Sparkles className="w-5 h-5 text-violet-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                  </div>
+                </div>
               )}
               <div>
-                <p className="font-semibold text-sm">Analyzing your meal...</p>
-                <p className="text-xs text-muted-foreground mt-1">AI is detecting food items and calculating macros</p>
+                {loadingStep === "converting" ? (
+                  <>
+                    <p className="font-semibold text-sm">Converting HEIC image...</p>
+                    <p className="text-xs text-muted-foreground mt-1">Converting to JPEG for analysis</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold text-sm">Analyzing your meal...</p>
+                    <p className="text-xs text-muted-foreground mt-1">AI is detecting food items and calculating macros</p>
+                  </>
+                )}
               </div>
               <div className="flex justify-center gap-2">
-                {["Detecting food", "Looking up nutrition", "Calculating totals"].map((step, i) => (
+                {(loadingStep === "converting"
+                  ? ["Reading file", "Converting format", "Preparing upload"]
+                  : ["Detecting food", "Looking up nutrition", "Calculating totals"]
+                ).map((step, i) => (
                   <motion.div
                     key={step}
                     initial={{ opacity: 0.3 }}
