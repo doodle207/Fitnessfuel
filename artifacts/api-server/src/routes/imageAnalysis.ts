@@ -154,11 +154,17 @@ router.post(
       return;
     }
 
-    const mimeType = req.file.mimetype || "image/jpeg";
+    const rawMime = req.file.mimetype || "";
+    const mimeType = rawMime.startsWith("image/") ? rawMime : "image/jpeg";
     console.log("[analyze-image] File received:", req.file.originalname, mimeType, req.file.size, "bytes");
 
-    if (!mimeType.startsWith("image/")) {
-      res.status(400).json({ error: "File must be an image" });
+    if (!req.file.buffer || req.file.buffer.length === 0) {
+      res.status(400).json({ error: "Image data is empty. Please try again." });
+      return;
+    }
+
+    if (!rawMime.startsWith("image/")) {
+      res.status(400).json({ error: "File must be an image (JPG, PNG, WEBP, or HEIC)." });
       return;
     }
 
