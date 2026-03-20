@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
-import { Apple, Flame, Droplets, Plus, RefreshCw, X, Globe, Trash2, ChevronDown, Sparkles, UtensilsCrossed, Coffee, Sun, Moon, Sandwich } from "lucide-react";
+import { Apple, Flame, Droplets, Plus, RefreshCw, X, Globe, Trash2, ChevronDown, Sparkles, UtensilsCrossed, Coffee, Sun, Moon, Sandwich, Camera } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
+import ImageFoodAnalyzer from "@/components/ImageFoodAnalyzer";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -123,6 +124,7 @@ export default function Diet() {
   const [mealPlan, setMealPlan] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [caloriesBurned, setCaloriesBurned] = useState(0);
+  const [showImageAnalyzer, setShowImageAnalyzer] = useState(false);
 
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
@@ -325,6 +327,14 @@ export default function Diet() {
                 <Globe className="w-4 h-4 text-violet-400" /> {country} <ChevronDown className="w-3 h-3 text-muted-foreground" />
               </button>
               <button
+                onClick={() => setShowImageAnalyzer(true)}
+                className="relative flex items-center justify-center w-10 h-10 rounded-xl border border-violet-500/30 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 hover:border-violet-500/50 transition-all shadow-[0_0_12px_rgba(124,58,237,0.2)] backdrop-blur-sm"
+                title="Scan food with AI"
+              >
+                <Camera className="w-4 h-4" />
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 shadow-[0_0_6px_rgba(124,58,237,0.6)]" />
+              </button>
+              <button
                 onClick={() => { setShowFoodModal(true); setShowCustomForm(false); }}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors shadow-[0_0_10px_rgba(124,58,237,0.3)]"
               >
@@ -499,6 +509,19 @@ export default function Diet() {
             </div>
           </div>
         </div>
+
+        {/* Image Food Analyzer */}
+        <AnimatePresence>
+          {showImageAnalyzer && (
+            <ImageFoodAnalyzer
+              activeMealTab={activeMealTab}
+              onFoodLogged={(entry) => {
+                addFoodToLog(entry);
+              }}
+              onClose={() => setShowImageAnalyzer(false)}
+            />
+          )}
+        </AnimatePresence>
 
         {/* Food Log Modal */}
         <AnimatePresence>
