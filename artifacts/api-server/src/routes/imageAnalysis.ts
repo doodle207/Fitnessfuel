@@ -174,12 +174,21 @@ router.post(
       foodNames = await identifyFoodsFromImage(req.file.buffer, mimeType);
       console.log("[analyze-image] Gemini identified foods:", foodNames);
     } catch (err: any) {
-      console.error("[analyze-image] Gemini identification error:", err?.message ?? err);
-      if (err.message?.includes("GEMINI_API_KEY")) {
-        res.status(503).json({ error: "Gemini API key not configured" });
+      const msg: string = err?.message ?? String(err);
+      console.error("[analyze-image] Gemini identification error:", msg);
+      if (msg.includes("GEMINI_API_KEY")) {
+        res.status(503).json({ error: "Gemini API key not configured on the server." });
         return;
       }
-      res.status(502).json({ error: `Failed to analyze image: ${err?.message ?? "Unknown error"}` });
+      if (msg.includes("quota") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("429")) {
+        res.status(429).json({ error: "Gemini API quota exceeded. Please enable billing at aistudio.google.com or wait for the quota to reset." });
+        return;
+      }
+      if (msg.includes("API_KEY_INVALID") || msg.includes("PERMISSION_DENIED") || msg.includes("403")) {
+        res.status(403).json({ error: "Gemini API key is invalid or has been revoked. Please provide a new key." });
+        return;
+      }
+      res.status(502).json({ error: `AI analysis failed: ${msg}` });
       return;
     }
 
