@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useGetDashboard, useGetProfile } from "@workspace/api-client-react";
 import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
-import { format } from "date-fns";
+import { format, startOfWeek, addDays } from "date-fns";
 import {
   Flame, Activity, Trophy, ArrowRight, Utensils, Droplets, Footprints,
   Target, TrendingUp, Zap, ChevronRight
@@ -15,35 +15,40 @@ import { motion } from "framer-motion";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+// Macro icon positions in the combined PNG (3 equal columns)
+const MACRO_ICON_POS: Record<string, string> = {
+  Protein: "0%",
+  Carbs: "50%",
+  Fat: "100%",
+};
+
 interface MacroRingProps {
   label: string;
-  emoji: string;
   current: number;
   target: number;
   stroke: string;
   track: string;
 }
 
-function MacroRing({ label, emoji, current, target, stroke, track }: MacroRingProps) {
+function MacroRing({ label, current, target, stroke, track }: MacroRingProps) {
   const r = 36;
   const circumference = 2 * Math.PI * r;
-  const arcPct = 0.75; // 270° open-bottom arc
+  const arcPct = 0.75;
   const arcLen = circumference * arcPct;
   const gapLen = circumference - arcLen;
   const pct = Math.min(current / Math.max(target, 1), 1);
   const filled = arcLen * pct;
+  const iconPos = MACRO_ICON_POS[label] ?? "0%";
 
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="relative w-24 h-24">
         <svg viewBox="0 0 100 100" className="w-full h-full" style={{ transform: "rotate(135deg)" }}>
-          {/* Track ring */}
           <circle cx="50" cy="50" r={r} fill="none"
             stroke={track} strokeWidth="9"
             strokeDasharray={`${arcLen} ${gapLen}`}
             strokeLinecap="round"
           />
-          {/* Progress ring */}
           <circle cx="50" cy="50" r={r} fill="none"
             stroke={stroke} strokeWidth="9"
             strokeDasharray={`${filled} ${circumference - filled}`}
@@ -52,7 +57,13 @@ function MacroRing({ label, emoji, current, target, stroke, track }: MacroRingPr
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center pb-2">
-          <span className="text-2xl select-none">{emoji}</span>
+          <div style={{
+            width: 34, height: 34,
+            backgroundImage: "url(/images/macro-icons.png)",
+            backgroundSize: "300% auto",
+            backgroundPosition: `${iconPos} 50%`,
+            backgroundRepeat: "no-repeat",
+          }} />
         </div>
       </div>
       <div className="text-center leading-snug">
@@ -209,45 +220,61 @@ export default function Dashboard() {
             <h3 className="font-display font-bold text-lg flex items-center gap-2"><Flame className="w-5 h-5 text-orange-500" /> Calorie Overview</h3>
             <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">Today</span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+
+          {/* Cross layout: 2×2 grid + floating center circle */}
+          <div className="relative grid grid-cols-2 gap-3 mb-4">
+            {/* Eaten – top-left */}
             <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-4 text-center">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1"><Utensils className="w-3 h-3 text-green-400" /> Eaten</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
+                <Utensils className="w-3 h-3 text-green-400" /> Eaten
+              </p>
               <p className="text-2xl font-display font-bold text-green-400">{todayFoodCalories}</p>
-              <p className="text-xs text-muted-foreground">kcal</p>
+              <p className="text-[10px] text-muted-foreground">kcal</p>
             </div>
+            {/* Burned – top-right */}
             <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4 text-center">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1"><Zap className="w-3 h-3 text-orange-400" /> Burned</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
+                <Zap className="w-3 h-3 text-orange-400" /> Burned
+              </p>
               <p className="text-2xl font-display font-bold text-orange-400">{totalBurned}</p>
-              <p className="text-xs text-muted-foreground">kcal</p>
+              <p className="text-[10px] text-muted-foreground">kcal</p>
             </div>
+            {/* Goal – bottom-left */}
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 text-center">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1"><Target className="w-3 h-3 text-blue-400" /> Goal</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
+                <Target className="w-3 h-3 text-blue-400" /> Goal
+              </p>
               <p className="text-2xl font-display font-bold text-blue-400">{calTarget}</p>
-              <p className="text-xs text-muted-foreground">kcal target</p>
+              <p className="text-[10px] text-muted-foreground">{fitnessGoal === "weight loss" ? "Cut" : fitnessGoal === "muscle gain" ? "Bulk" : "Maintain"}</p>
             </div>
-            <button onClick={() => setShowStepsInput(v => !v)} className="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-4 text-center hover:bg-violet-500/20 transition-colors cursor-pointer">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1"><Footprints className="w-3 h-3 text-violet-400" /> Steps</p>
-              <p className="text-2xl font-display font-bold text-violet-400">{steps.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">≈ {stepCalories} kcal</p>
-            </button>
+            {/* Maintenance – bottom-right */}
+            <div className="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-4 text-center">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
+                <Activity className="w-3 h-3 text-violet-400" /> Maint.
+              </p>
+              <p className="text-2xl font-display font-bold text-violet-400">{tdee}</p>
+              <p className="text-[10px] text-muted-foreground">body maint.</p>
+            </div>
+
+            {/* Center floating circle – Net calories */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className={`w-[86px] h-[86px] rounded-full flex flex-col items-center justify-center border-2 shadow-lg z-10 ${netCalories <= 0 ? "bg-[#0d1117] border-orange-500/60 shadow-orange-500/20" : "bg-[#0d1117] border-green-500/60 shadow-green-500/20"}`}>
+                <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold leading-none mb-0.5">Net cal</p>
+                <p className={`text-lg font-display font-black leading-none ${netCalories <= 0 ? "text-orange-400" : "text-green-400"}`}>
+                  {netCalories > 0 ? "+" : ""}{netCalories}
+                </p>
+                <p className={`text-[9px] font-semibold mt-0.5 ${netCalories <= 0 ? "text-orange-400/70" : "text-green-400/70"}`}>
+                  {netCalories <= 0 ? "deficit" : "surplus"}
+                </p>
+              </div>
+            </div>
           </div>
-          {showStepsInput && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="flex gap-2 mb-4">
-              <input
-                type="number"
-                value={stepsInput}
-                onChange={e => setStepsInput(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleStepsSave()}
-                placeholder="Enter today's step count"
-                className="flex-1 px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 focus:border-violet-500 outline-none text-sm"
-              />
-              <button onClick={handleStepsSave} className="px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors">Save</button>
-            </motion.div>
-          )}
-          <div className="space-y-2">
+
+          {/* Daily target bar */}
+          <div className="space-y-1.5 mb-3">
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Daily target: <span className="text-white/60 font-semibold">{calTarget} kcal</span> · {fitnessGoal === "weight loss" ? "Cut" : fitnessGoal === "muscle gain" ? "Bulk" : "Maintain"}</span>
-              <span className={netCalories > 0 ? "text-green-400" : "text-orange-400"}>{netCalories > 0 ? "+" : ""}{netCalories} kcal net</span>
+              <span>Daily target: <span className="text-white/60 font-semibold">{calTarget} kcal</span></span>
+              <span>{Math.round(Math.min(todayFoodCalories / Math.max(calTarget, 1), 1) * 100)}%</span>
             </div>
             <div className="h-2 bg-white/5 rounded-full overflow-hidden">
               <motion.div
@@ -257,6 +284,28 @@ export default function Dashboard() {
               />
             </div>
           </div>
+
+          {/* Step count */}
+          <button onClick={() => setShowStepsInput(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-violet-500/8 border border-violet-500/20 hover:bg-violet-500/15 transition-colors">
+            <span className="flex items-center gap-2 text-sm font-semibold text-violet-300">
+              <Footprints className="w-4 h-4 text-violet-400" /> Step Count
+            </span>
+            <span className="text-sm font-display font-bold text-violet-400">{steps.toLocaleString()} <span className="text-xs text-muted-foreground font-normal">≈ {stepCalories} kcal</span></span>
+          </button>
+          {showStepsInput && (
+            <div className="flex gap-2 mt-2">
+              <input
+                type="number"
+                value={stepsInput}
+                onChange={e => setStepsInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleStepsSave()}
+                placeholder="Enter today's step count"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 focus:border-violet-500 outline-none text-sm"
+              />
+              <button onClick={handleStepsSave} className="px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors">Save</button>
+            </div>
+          )}
         </motion.div>
 
         {/* ── ROW 2: Macros+Hydration (left) | Workout+Streaks (right) ── */}
@@ -274,9 +323,9 @@ export default function Dashboard() {
 
             {/* Macro Rings row */}
             <div className="grid grid-cols-3 gap-2">
-              <MacroRing label="Protein" emoji="🥩" current={macroTotals.proteinG} target={proteinTarget} stroke="#4A90D9" track="rgba(74,144,217,0.15)" />
-              <MacroRing label="Carbs" emoji="🌾" current={macroTotals.carbsG} target={carbsTarget} stroke="#34C759" track="rgba(52,199,89,0.15)" />
-              <MacroRing label="Fat" emoji="🥑" current={macroTotals.fatG} target={fatTarget} stroke="#FF9500" track="rgba(255,149,0,0.15)" />
+              <MacroRing label="Protein" current={macroTotals.proteinG} target={proteinTarget} stroke="#4A90D9" track="rgba(74,144,217,0.15)" />
+              <MacroRing label="Carbs" current={macroTotals.carbsG} target={carbsTarget} stroke="#34C759" track="rgba(52,199,89,0.15)" />
+              <MacroRing label="Fat" current={macroTotals.fatG} target={fatTarget} stroke="#FF9500" track="rgba(255,149,0,0.15)" />
             </div>
 
             {/* Hydration */}
@@ -347,25 +396,43 @@ export default function Dashboard() {
                 <p className="text-xs text-muted-foreground mt-1">Total Workouts</p>
               </div>
             </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">This week</span>
-                <span className="text-sm font-semibold">{safeStats.weeklyStreak} sessions</span>
-              </div>
-              <div className="flex gap-1">
-                {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => {
-                  const filled = i < safeStats.weeklyStreak;
-                  return (
-                    <div key={i} className={`flex-1 h-2 rounded-full transition-all ${filled ? "bg-gradient-to-r from-violet-500 to-cyan-400 shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "bg-white/10"}`} />
-                  );
-                })}
-              </div>
-              <div className="flex gap-1 justify-between">
-                {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
-                  <span key={i} className="flex-1 text-center text-[9px] text-muted-foreground">{d}</span>
-                ))}
-              </div>
-            </div>
+            {(() => {
+              // Build a set of workout dates this week (Mon–Sun)
+              const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+              const workoutDateSet = new Set(
+                (safeStats.recentWorkouts || []).map((w: any) =>
+                  (w.date || "").split("T")[0]
+                )
+              );
+              const dayLabels = ["M", "T", "W", "T", "F", "S", "S"];
+              const weekDays = dayLabels.map((lbl, i) => ({
+                lbl,
+                dateStr: format(addDays(weekStart, i), "yyyy-MM-dd"),
+                isToday: format(addDays(weekStart, i), "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd"),
+              }));
+              const sessionCount = weekDays.filter(d => workoutDateSet.has(d.dateStr)).length;
+              return (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">This week</span>
+                    <span className="text-sm font-semibold">{sessionCount} sessions</span>
+                  </div>
+                  <div className="flex gap-1">
+                    {weekDays.map(({ dateStr, isToday }, i) => {
+                      const done = workoutDateSet.has(dateStr);
+                      return (
+                        <div key={i} className={`flex-1 h-2 rounded-full transition-all ${done ? "bg-gradient-to-r from-violet-500 to-cyan-400 shadow-[0_0_8px_rgba(124,58,237,0.5)]" : isToday ? "bg-white/20" : "bg-white/10"}`} />
+                      );
+                    })}
+                  </div>
+                  <div className="flex gap-1 justify-between">
+                    {weekDays.map(({ lbl, isToday }, i) => (
+                      <span key={i} className={`flex-1 text-center text-[9px] ${isToday ? "text-violet-400 font-semibold" : "text-muted-foreground"}`}>{lbl}</span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
             <Link href="/workout" className="flex items-center justify-between p-3 rounded-xl bg-violet-600/20 hover:bg-violet-600/30 transition-colors border border-violet-500/20 group">
               <span className="text-sm font-semibold text-violet-300">Start Workout</span>
               <ChevronRight className="w-4 h-4 text-violet-400 group-hover:translate-x-1 transition-transform" />

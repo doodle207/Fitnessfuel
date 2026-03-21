@@ -169,6 +169,9 @@ export default function Onboarding() {
     experienceLevel: "beginner",
     dietPreference:  "non-veg",
   });
+  // Local string states so the user can clear the fields without them snapping back
+  const [heightStr, setHeightStr] = useState("170");
+  const [weightStr, setWeightStr] = useState("70");
 
   const set = <K extends keyof FormData>(key: K, val: FormData[K]) =>
     setForm(prev => ({ ...prev, [key]: val }));
@@ -351,9 +354,14 @@ export default function Onboarding() {
                         <label className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-2 block">Height</label>
                         <div className="relative">
                           <input
-                            type="number" min={100} max={250}
-                            value={form.heightCm}
-                            onChange={e => set("heightCm", parseFloat(e.target.value) || 170)}
+                            type="text" inputMode="decimal"
+                            value={heightStr}
+                            onChange={e => {
+                              setHeightStr(e.target.value);
+                              const v = parseFloat(e.target.value);
+                              if (!isNaN(v) && v > 0) set("heightCm", v);
+                            }}
+                            onBlur={() => setHeightStr(String(form.heightCm))}
                             className="w-full px-4 py-3 pr-10 rounded-xl bg-black/40 border border-white/10 focus:border-violet-500 outline-none text-white text-sm transition-colors"
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 text-xs">cm</span>
@@ -364,9 +372,14 @@ export default function Onboarding() {
                         <label className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-2 block">Weight</label>
                         <div className="relative">
                           <input
-                            type="number" min={20} max={300} step={0.5}
-                            value={form.weightKg}
-                            onChange={e => set("weightKg", parseFloat(e.target.value) || 70)}
+                            type="text" inputMode="decimal"
+                            value={weightStr}
+                            onChange={e => {
+                              setWeightStr(e.target.value);
+                              const v = parseFloat(e.target.value);
+                              if (!isNaN(v) && v > 0) set("weightKg", v);
+                            }}
+                            onBlur={() => setWeightStr(String(form.weightKg))}
                             className="w-full px-4 py-3 pr-10 rounded-xl bg-black/40 border border-white/10 focus:border-violet-500 outline-none text-white text-sm transition-colors"
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 text-xs">kg</span>

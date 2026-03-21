@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Activity, Dumbbell, Grid, LineChart, Apple, User, LogOut } from "lucide-react";
+import { Activity, Dumbbell, LineChart, Apple, User, LogOut } from "lucide-react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { motion } from "framer-motion";
 
@@ -16,7 +16,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const { logout } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
+    <div className="h-[100dvh] bg-background text-foreground flex flex-col md:flex-row overflow-hidden">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 flex-col glass-panel border-r border-white/5 sticky top-0 h-screen overflow-y-auto">
         <div className="p-6 flex items-center gap-3">
@@ -63,7 +63,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 pb-24 md:pb-0 min-w-0 max-w-full overflow-x-hidden relative">
+      <main className="flex-1 overflow-y-auto overscroll-y-contain pb-24 md:pb-0 min-w-0 max-w-full overflow-x-hidden relative" style={{ WebkitOverflowScrolling: "touch" }}>
         {/* Subtle background glow effect */}
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[30%] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[30%] bg-accent/10 rounded-full blur-[120px] pointer-events-none" />

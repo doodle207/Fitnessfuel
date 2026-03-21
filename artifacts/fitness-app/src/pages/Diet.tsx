@@ -382,25 +382,20 @@ export default function Diet() {
               </button>
             </div>
 
-            {/* Country Picker Inline */}
-            <AnimatePresence>
-              {showCountryPicker && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden">
-                  <div className="glass-card rounded-2xl p-4 border border-white/5">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Select Country</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {COUNTRIES.map(c => (
-                        <button key={c} onClick={() => saveCountry(c)}
-                          className={`py-2 px-3 rounded-xl text-sm font-medium transition-all ${country === c ? "bg-violet-600 text-white shadow-[0_0_10px_rgba(124,58,237,0.3)]" : "bg-white/5 border border-white/10 text-muted-foreground hover:bg-white/10"}`}>
-                          {c}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Country Picker Inline – no animation to stay snappy */}
+            {showCountryPicker && (
+              <div className="glass-card rounded-2xl p-4 border border-white/5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Select Country</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {COUNTRIES.map(c => (
+                    <button key={c} onClick={() => saveCountry(c)}
+                      className={`py-2 px-3 rounded-xl text-sm font-medium transition-colors ${country === c ? "bg-violet-600 text-white shadow-[0_0_10px_rgba(124,58,237,0.3)]" : "bg-white/5 border border-white/10 text-muted-foreground hover:bg-white/10"}`}>
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Meal Type Tabs */}
             <div className="grid grid-cols-4 gap-2">
