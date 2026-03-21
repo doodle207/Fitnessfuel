@@ -1,20 +1,108 @@
-import { useGetProfile } from "@workspace/api-client-react";
+import { useState } from "react";
+import { useGetProfile, useCreateProfile } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@workspace/replit-auth-web";
 import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
-import { User, Settings, LogOut, Target } from "lucide-react";
+import { User, Settings, LogOut, Target, X, Check, ChevronDown } from "lucide-react";
+
+const GOAL_OPTIONS = [
+  { value: "weight loss",  label: "Lose Fat" },
+  { value: "muscle gain",  label: "Build Muscle" },
+  { value: "maintenance",  label: "Maintain" },
+];
+const ACTIVITY_OPTIONS = [
+  { value: "sedentary", label: "Sedentary" },
+  { value: "light",     label: "Light" },
+  { value: "moderate",  label: "Moderate" },
+  { value: "active",    label: "Active" },
+];
+const DIET_OPTIONS = [
+  { value: "non-veg", label: "Non-Veg" },
+  { value: "veg",     label: "Vegetarian" },
+  { value: "vegan",   label: "Vegan" },
+];
+const EXPERIENCE_OPTIONS = [
+  { value: "beginner",     label: "Beginner" },
+  { value: "intermediate", label: "Intermediate" },
+  { value: "advanced",     label: "Advanced" },
+];
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="text-xs font-semibold uppercase tracking-wider text-white/40 block mb-1.5">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function SelectField({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
+  return (
+    <div className="relative">
+      <select value={value} onChange={e => onChange(e.target.value)}
+        className="w-full appearance-none px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 focus:border-violet-500 outline-none text-white text-sm transition-colors pr-8">
+        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+    </div>
+  );
+}
 
 export default function Profile() {
+  const queryClient = useQueryClient();
   const { data: rawProfile, isLoading } = useGetProfile();
   const { user, logout } = useAuth();
+  const [isEditing, setIsEditing] = useState(false);
+  const [saveOk, setSaveOk] = useState(false);
+  const [editForm, setEditForm] = useState<any>(null);
+  const [heightStr, setHeightStr] = useState("");
+  const [weightStr, setWeightStr] = useState("");
+  const [ageStr, setAgeStr] = useState("");
+
+  const { mutate: saveProfile, isPending } = useCreateProfile({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
+        setSaveOk(true);
+        setTimeout(() => { setSaveOk(false); setIsEditing(false); }, 1200);
+      },
+    },
+  });
 
   if (isLoading) return <LoadingState message="Loading profile..." />;
 
   const profile = rawProfile && typeof rawProfile === "object" && !Array.isArray(rawProfile)
-    ? rawProfile as any
-    : null;
+    ? rawProfile as any : null;
 
   const displayName = profile?.name || user?.firstName || user?.email || "User";
   const initial = displayName.charAt(0).toUpperCase();
+
+  const openEdit = () => {
+    const f = {
+      name:            profile?.name || displayName,
+      age:             profile?.age || 25,
+      gender:          profile?.gender || "male",
+      heightCm:        profile?.heightCm || 170,
+      weightKg:        profile?.weightKg || 70,
+      fitnessGoal:     profile?.fitnessGoal || "maintenance",
+      activityLevel:   profile?.activityLevel === "very active" ? "active" : (profile?.activityLevel || "moderate"),
+      experienceLevel: profile?.experienceLevel || "beginner",
+      dietPreference:  profile?.dietPreference || "non-veg",
+    };
+    setEditForm(f);
+    setHeightStr(String(f.heightCm));
+    setWeightStr(String(f.weightKg));
+    setAgeStr(String(f.age));
+    setIsEditing(true);
+  };
+
+  const setField = (key: string, val: any) => setEditForm((prev: any) => ({ ...prev, [key]: val }));
+
+  const handleSave = () => {
+    if (!editForm) return;
+    const payload = { ...editForm, activityLevel: editForm.activityLevel === "active" ? "very active" : editForm.activityLevel };
+    saveProfile({ data: payload });
+  };
 
   return (
     <PageTransition>
@@ -30,7 +118,7 @@ export default function Profile() {
           <h1 className="text-3xl font-display font-bold">{displayName}</h1>
           {profile ? (
             <p className="text-muted-foreground mt-1 capitalize">
-              {profile.experienceLevel || "Beginner"} • {profile.fitnessGoal || "General Fitness"}
+              {profile.experienceLevel || "Beginner"} · {profile.fitnessGoal || "General Fitness"}
             </p>
           ) : (
             <p className="text-muted-foreground mt-1">{user?.email || ""}</p>
@@ -53,9 +141,13 @@ export default function Profile() {
                   <span className="text-muted-foreground">Height</span>
                   <span className="font-medium">{profile.heightCm ?? "—"} cm</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Current Weight</span>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-muted-foreground">Weight</span>
                   <span className="font-medium">{profile.weightKg ?? "—"} kg</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Gender</span>
+                  <span className="font-medium capitalize">{profile.gender ?? "—"}</span>
                 </div>
               </div>
             </div>
@@ -67,12 +159,20 @@ export default function Profile() {
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between border-b border-white/5 pb-2">
-                  <span className="text-muted-foreground">Activity Level</span>
+                  <span className="text-muted-foreground">Goal</span>
+                  <span className="font-medium capitalize">{profile.fitnessGoal ?? "—"}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-muted-foreground">Activity</span>
                   <span className="font-medium capitalize">{profile.activityLevel ?? "—"}</span>
                 </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-muted-foreground">Experience</span>
+                  <span className="font-medium capitalize">{profile.experienceLevel ?? "—"}</span>
+                </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">System</span>
-                  <span className="font-medium">Metric</span>
+                  <span className="text-muted-foreground">Diet</span>
+                  <span className="font-medium capitalize">{profile.dietPreference ?? "—"}</span>
                 </div>
               </div>
             </div>
@@ -83,18 +183,17 @@ export default function Profile() {
           </div>
         )}
 
-        <div className="space-y-3 pt-6">
-          <button className="w-full glass-card p-4 rounded-2xl flex items-center justify-between hover:border-primary/50 transition-colors group">
+        <div className="space-y-3 pt-2">
+          <button onClick={openEdit}
+            className="w-full glass-card p-4 rounded-2xl flex items-center justify-between hover:border-primary/50 transition-colors group">
             <div className="flex items-center gap-3">
               <Settings className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
               <span className="font-medium">Edit Profile</span>
             </div>
           </button>
 
-          <button
-            onClick={() => logout()}
-            className="w-full glass-card p-4 rounded-2xl flex items-center justify-between border-destructive/20 hover:bg-destructive/10 hover:border-destructive/50 transition-colors group"
-          >
+          <button onClick={() => logout()}
+            className="w-full glass-card p-4 rounded-2xl flex items-center justify-between border-destructive/20 hover:bg-destructive/10 hover:border-destructive/50 transition-colors group">
             <div className="flex items-center gap-3 text-destructive">
               <LogOut className="w-5 h-5" />
               <span className="font-medium">Sign Out</span>
@@ -102,6 +201,88 @@ export default function Profile() {
           </button>
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      {isEditing && editForm && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-md p-0 sm:p-4"
+          onClick={() => setIsEditing(false)}>
+          <div onClick={e => e.stopPropagation()}
+            className="bg-[#0d0d14] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg shadow-2xl flex flex-col max-h-[90dvh]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/5 shrink-0">
+              <h3 className="font-display font-bold text-lg">Edit Profile</h3>
+              <button onClick={() => setIsEditing(false)} className="p-2 rounded-xl hover:bg-white/10 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable form */}
+            <div className="overflow-y-auto flex-1 p-5 space-y-4" style={{ WebkitOverflowScrolling: "touch" }}>
+              <Field label="Name">
+                <input type="text" value={editForm.name}
+                  onChange={e => setField("name", e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 focus:border-violet-500 outline-none text-white text-sm transition-colors" />
+              </Field>
+
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="Age">
+                  <input type="text" inputMode="numeric" value={ageStr}
+                    onChange={e => { setAgeStr(e.target.value); const v = parseInt(e.target.value); if (!isNaN(v) && v > 0) setField("age", v); }}
+                    onBlur={() => setAgeStr(String(editForm.age))}
+                    className="w-full px-3 py-2.5 rounded-xl bg-black/40 border border-white/10 focus:border-violet-500 outline-none text-white text-sm transition-colors" />
+                </Field>
+                <Field label="Height (cm)">
+                  <input type="text" inputMode="decimal" value={heightStr}
+                    onChange={e => { setHeightStr(e.target.value); const v = parseFloat(e.target.value); if (!isNaN(v) && v > 0) setField("heightCm", v); }}
+                    onBlur={() => setHeightStr(String(editForm.heightCm))}
+                    className="w-full px-3 py-2.5 rounded-xl bg-black/40 border border-white/10 focus:border-violet-500 outline-none text-white text-sm transition-colors" />
+                </Field>
+                <Field label="Weight (kg)">
+                  <input type="text" inputMode="decimal" value={weightStr}
+                    onChange={e => { setWeightStr(e.target.value); const v = parseFloat(e.target.value); if (!isNaN(v) && v > 0) setField("weightKg", v); }}
+                    onBlur={() => setWeightStr(String(editForm.weightKg))}
+                    className="w-full px-3 py-2.5 rounded-xl bg-black/40 border border-white/10 focus:border-violet-500 outline-none text-white text-sm transition-colors" />
+                </Field>
+              </div>
+
+              <Field label="Gender">
+                <div className="grid grid-cols-3 gap-2">
+                  {["male","female","other"].map(g => (
+                    <button key={g} onClick={() => setField("gender", g)}
+                      className={`py-2 rounded-xl text-sm font-medium transition-colors capitalize border ${editForm.gender === g ? "bg-violet-600 border-violet-500 text-white" : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"}`}>
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+
+              <Field label="Fitness Goal">
+                <SelectField value={editForm.fitnessGoal} onChange={v => setField("fitnessGoal", v)} options={GOAL_OPTIONS} />
+              </Field>
+
+              <Field label="Activity Level">
+                <SelectField value={editForm.activityLevel} onChange={v => setField("activityLevel", v)} options={ACTIVITY_OPTIONS} />
+              </Field>
+
+              <Field label="Experience">
+                <SelectField value={editForm.experienceLevel} onChange={v => setField("experienceLevel", v)} options={EXPERIENCE_OPTIONS} />
+              </Field>
+
+              <Field label="Diet Preference">
+                <SelectField value={editForm.dietPreference} onChange={v => setField("dietPreference", v)} options={DIET_OPTIONS} />
+              </Field>
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 pb-5 pt-3 border-t border-white/5 shrink-0">
+              <button onClick={handleSave} disabled={isPending}
+                className={`w-full py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 ${saveOk ? "bg-green-600 text-white" : "bg-violet-600 hover:bg-violet-500 text-white"} disabled:opacity-60`}>
+                {saveOk ? <><Check className="w-4 h-4" /> Saved!</> : isPending ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageTransition>
   );
 }

@@ -15,12 +15,7 @@ import { motion } from "framer-motion";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-// Macro icon positions in the combined PNG (3 equal columns)
-const MACRO_ICON_POS: Record<string, string> = {
-  Protein: "0%",
-  Carbs: "50%",
-  Fat: "100%",
-};
+const MACRO_EMOJI: Record<string, string> = { Protein: "🍗", Carbs: "🌾", Fat: "🥑" };
 
 interface MacroRingProps {
   label: string;
@@ -38,7 +33,6 @@ function MacroRing({ label, current, target, stroke, track }: MacroRingProps) {
   const gapLen = circumference - arcLen;
   const pct = Math.min(current / Math.max(target, 1), 1);
   const filled = arcLen * pct;
-  const iconPos = MACRO_ICON_POS[label] ?? "0%";
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -57,13 +51,7 @@ function MacroRing({ label, current, target, stroke, track }: MacroRingProps) {
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center pb-2">
-          <div style={{
-            width: 34, height: 34,
-            backgroundImage: "url(/images/macro-icons.png)",
-            backgroundSize: "300% auto",
-            backgroundPosition: `${iconPos} 50%`,
-            backgroundRepeat: "no-repeat",
-          }} />
+          <span className="text-2xl select-none">{MACRO_EMOJI[label] ?? "🍽️"}</span>
         </div>
       </div>
       <div className="text-center leading-snug">
@@ -176,7 +164,11 @@ export default function Dashboard() {
     10 * weightKg + 6.25 * heightCm - 5 * age + (gender === "female" ? -161 : 5)
   );
   const activityMultipliers: Record<string, number> = {
-    sedentary: 1.2, light: 1.375, moderate: 1.55, "very active": 1.725,
+    sedentary: 1.2,
+    light: 1.375, "lightly active": 1.375,
+    moderate: 1.55, "moderately active": 1.55,
+    active: 1.725, "very active": 1.725,
+    "extra active": 1.9,
   };
   const tdee = Math.round(bmr * (activityMultipliers[activityLevel] ?? 1.55));
   const calTarget = fitnessGoal === "weight loss" ? Math.round(tdee - 500)
@@ -189,7 +181,8 @@ export default function Dashboard() {
 
   const waterPct = Math.min(waterMl / 3000, 1);
   const waterGlasses = Math.round(waterMl / 250);
-  const netCalories = todayFoodCalories - totalBurned;
+  // Net = how much you ate vs your goal (deficit if negative, surplus if positive)
+  const netCalories = todayFoodCalories - calTarget;
 
   return (
     <PageTransition>
@@ -440,11 +433,50 @@ export default function Dashboard() {
           </motion.div>
         </div>
 
-        {/* ── ROW 3: PRs + Weekly Volume ── */}
+        {/* ── ROW 3: Weekly Volume + PRs ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* Personal Records */}
+          {/* Weekly Volume – now first */}
           <motion.div
             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+            className="glass-card rounded-3xl p-5 border border-white/5"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display font-bold text-lg flex items-center gap-2">
+                <Activity className="w-5 h-5 text-violet-400" /> Weekly Volume
+              </h3>
+              <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">Last 7 Days</span>
+            </div>
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={safeStats.weeklyVolume} barSize={28} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 11 }} dy={8} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 11 }} />
+                  <Tooltip
+                    cursor={{ fill: "rgba(255,255,255,0.04)" }}
+                    contentStyle={{ backgroundColor: "#18181b", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "14px", fontSize: "12px" }}
+                  />
+                  <Bar dataKey="volume" radius={[8, 8, 2, 2]} label={false}>
+                    {safeStats.weeklyVolume.map((entry, index) => (
+                      <Cell key={`cell-${index}`}
+                        fill={entry.volume > 0 ? "url(#barGrad)" : "rgba(255,255,255,0.05)"}
+                        stroke={entry.volume > 0 ? "rgba(124,58,237,0.3)" : "transparent"}
+                      />
+                    ))}
+                  </Bar>
+                  <defs>
+                    <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#7c3aed" />
+                      <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.7} />
+                    </linearGradient>
+                  </defs>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+
+          {/* Personal Records – now second */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
             className="glass-card rounded-3xl p-5 border border-white/5"
           >
             <div className="flex items-center justify-between mb-4">
@@ -480,45 +512,6 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
-          </motion.div>
-
-          {/* Weekly Volume Polygon Bar */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-            className="glass-card rounded-3xl p-5 border border-white/5"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display font-bold text-lg flex items-center gap-2">
-                <Activity className="w-5 h-5 text-violet-400" /> Weekly Volume
-              </h3>
-              <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">Last 7 Days</span>
-            </div>
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={safeStats.weeklyVolume} barSize={28} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
-                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 11 }} dy={8} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 11 }} />
-                  <Tooltip
-                    cursor={{ fill: "rgba(255,255,255,0.04)" }}
-                    contentStyle={{ backgroundColor: "#18181b", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "14px", fontSize: "12px" }}
-                  />
-                  <Bar dataKey="volume" radius={[8, 8, 2, 2]} label={false}>
-                    {safeStats.weeklyVolume.map((entry, index) => (
-                      <Cell key={`cell-${index}`}
-                        fill={entry.volume > 0 ? "url(#barGrad)" : "rgba(255,255,255,0.05)"}
-                        stroke={entry.volume > 0 ? "rgba(124,58,237,0.3)" : "transparent"}
-                      />
-                    ))}
-                  </Bar>
-                  <defs>
-                    <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#7c3aed" />
-                      <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.7} />
-                    </linearGradient>
-                  </defs>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
           </motion.div>
         </div>
 

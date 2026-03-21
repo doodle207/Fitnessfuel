@@ -9,83 +9,170 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const COUNTRY_FOODS: Record<string, { name: string; calories: number; proteinG: number; carbsG: number; fatG: number; fiberG: number; sodiumMg: number; amount: string; mealType: string }[]> = {
   India: [
+    // breakfast
     { name: "Idli (3 pieces)", calories: 120, proteinG: 4, carbsG: 24, fatG: 1, fiberG: 1, sodiumMg: 180, amount: "3 pieces", mealType: "breakfast" },
     { name: "Sambar", calories: 130, proteinG: 6, carbsG: 22, fatG: 1.5, fiberG: 3, sodiumMg: 350, amount: "1 bowl", mealType: "breakfast" },
     { name: "Poha", calories: 250, proteinG: 5, carbsG: 45, fatG: 4, fiberG: 2, sodiumMg: 280, amount: "1 bowl", mealType: "breakfast" },
     { name: "Masala Oats", calories: 220, proteinG: 7, carbsG: 38, fatG: 3, fiberG: 4, sodiumMg: 200, amount: "1 bowl", mealType: "breakfast" },
     { name: "Whole Wheat Paratha", calories: 130, proteinG: 3, carbsG: 20, fatG: 4, fiberG: 2, sodiumMg: 120, amount: "1 piece", mealType: "breakfast" },
-    { name: "Curd (Dahi)", calories: 98, proteinG: 8, carbsG: 6, fatG: 4, fiberG: 0, sodiumMg: 90, amount: "1 cup", mealType: "snack" },
+    { name: "Upma", calories: 210, proteinG: 5, carbsG: 38, fatG: 4, fiberG: 3, sodiumMg: 300, amount: "1 bowl", mealType: "breakfast" },
+    { name: "Dosa (plain)", calories: 170, proteinG: 4, carbsG: 30, fatG: 4, fiberG: 1, sodiumMg: 200, amount: "1 large", mealType: "breakfast" },
+    { name: "Besan Chilla", calories: 200, proteinG: 10, carbsG: 26, fatG: 6, fiberG: 4, sodiumMg: 220, amount: "2 pieces", mealType: "breakfast" },
+    { name: "Boiled Eggs", calories: 155, proteinG: 13, carbsG: 1, fatG: 11, fiberG: 0, sodiumMg: 180, amount: "2 eggs", mealType: "breakfast" },
+    { name: "Peanut Butter Toast", calories: 210, proteinG: 8, carbsG: 22, fatG: 11, fiberG: 3, sodiumMg: 220, amount: "2 slices", mealType: "breakfast" },
+    // lunch
     { name: "Dal Tadka", calories: 220, proteinG: 13, carbsG: 35, fatG: 2.5, fiberG: 6, sodiumMg: 400, amount: "1 bowl", mealType: "lunch" },
-    { name: "Steamed Rice", calories: 200, proteinG: 4, carbsG: 44, fatG: 0.5, fiberG: 0.5, sodiumMg: 5, amount: "1 cup", mealType: "lunch" },
+    { name: "Steamed Rice (150g)", calories: 195, proteinG: 4, carbsG: 43, fatG: 0.4, fiberG: 0.4, sodiumMg: 4, amount: "150g", mealType: "lunch" },
+    { name: "Roti (2 pieces)", calories: 180, proteinG: 6, carbsG: 36, fatG: 2, fiberG: 4, sodiumMg: 160, amount: "2 pieces", mealType: "lunch" },
     { name: "Chicken Curry", calories: 280, proteinG: 30, carbsG: 5, fatG: 15, fiberG: 1, sodiumMg: 500, amount: "200g", mealType: "lunch" },
     { name: "Rajma", calories: 230, proteinG: 15, carbsG: 40, fatG: 2, fiberG: 8, sodiumMg: 350, amount: "1 bowl", mealType: "lunch" },
     { name: "Paneer Bhurji", calories: 280, proteinG: 18, carbsG: 5, fatG: 20, fiberG: 0.5, sodiumMg: 380, amount: "100g", mealType: "lunch" },
-    { name: "Roti (Whole Wheat)", calories: 90, proteinG: 3, carbsG: 18, fatG: 1, fiberG: 2, sodiumMg: 80, amount: "1 piece", mealType: "lunch" },
+    { name: "Chole (Chickpea Curry)", calories: 240, proteinG: 12, carbsG: 38, fatG: 5, fiberG: 9, sodiumMg: 420, amount: "1 bowl", mealType: "lunch" },
+    { name: "Palak Dal", calories: 190, proteinG: 11, carbsG: 30, fatG: 3, fiberG: 7, sodiumMg: 360, amount: "1 bowl", mealType: "lunch" },
+    { name: "Egg Curry", calories: 250, proteinG: 16, carbsG: 8, fatG: 17, fiberG: 2, sodiumMg: 440, amount: "2 eggs + gravy", mealType: "lunch" },
+    { name: "Aloo Gobi", calories: 160, proteinG: 4, carbsG: 28, fatG: 4, fiberG: 5, sodiumMg: 280, amount: "1 bowl", mealType: "lunch" },
+    // snacks
+    { name: "Curd (Dahi)", calories: 98, proteinG: 8, carbsG: 6, fatG: 4, fiberG: 0, sodiumMg: 90, amount: "1 cup", mealType: "snack" },
     { name: "Roasted Chana", calories: 180, proteinG: 10, carbsG: 28, fatG: 3, fiberG: 7, sodiumMg: 80, amount: "50g", mealType: "snack" },
     { name: "Sprouted Moong Salad", calories: 120, proteinG: 9, carbsG: 18, fatG: 1, fiberG: 4, sodiumMg: 100, amount: "1 cup", mealType: "snack" },
     { name: "Banana", calories: 89, proteinG: 1, carbsG: 23, fatG: 0.3, fiberG: 2.5, sodiumMg: 1, amount: "1 medium", mealType: "snack" },
     { name: "Lassi (Plain)", calories: 150, proteinG: 7, carbsG: 22, fatG: 3.5, fiberG: 0, sodiumMg: 130, amount: "1 glass", mealType: "snack" },
+    { name: "Makhana (Fox Nuts)", calories: 100, proteinG: 4, carbsG: 20, fatG: 0.5, fiberG: 2, sodiumMg: 30, amount: "30g", mealType: "snack" },
+    { name: "Mixed Fruit Bowl", calories: 110, proteinG: 1.5, carbsG: 28, fatG: 0.5, fiberG: 3, sodiumMg: 5, amount: "1 cup", mealType: "snack" },
+    { name: "Peanuts", calories: 160, proteinG: 7, carbsG: 5, fatG: 14, fiberG: 2, sodiumMg: 5, amount: "30g", mealType: "snack" },
+    // dinner
     { name: "Dal Khichdi", calories: 300, proteinG: 11, carbsG: 55, fatG: 4, fiberG: 5, sodiumMg: 300, amount: "1 bowl", mealType: "dinner" },
     { name: "Grilled Fish", calories: 200, proteinG: 35, carbsG: 0, fatG: 6, fiberG: 0, sodiumMg: 350, amount: "150g", mealType: "dinner" },
     { name: "Egg Bhurji", calories: 210, proteinG: 14, carbsG: 4, fatG: 15, fiberG: 0.5, sodiumMg: 300, amount: "2 eggs", mealType: "dinner" },
     { name: "Mixed Veg Sabzi", calories: 120, proteinG: 4, carbsG: 18, fatG: 4, fiberG: 4, sodiumMg: 200, amount: "1 bowl", mealType: "dinner" },
     { name: "Chicken Biryani", calories: 400, proteinG: 25, carbsG: 55, fatG: 8, fiberG: 2, sodiumMg: 650, amount: "1 portion", mealType: "dinner" },
+    { name: "Rice (150g) + Dal", calories: 380, proteinG: 14, carbsG: 74, fatG: 2.5, fiberG: 6, sodiumMg: 380, amount: "150g rice + 1 bowl", mealType: "dinner" },
+    { name: "Roti (2) + Sabzi", calories: 280, proteinG: 8, carbsG: 48, fatG: 6, fiberG: 6, sodiumMg: 340, amount: "2 rotis + sabzi", mealType: "dinner" },
+    { name: "Paneer Butter Masala", calories: 340, proteinG: 16, carbsG: 14, fatG: 25, fiberG: 2, sodiumMg: 500, amount: "200g", mealType: "dinner" },
+    { name: "Fish Curry", calories: 240, proteinG: 28, carbsG: 8, fatG: 11, fiberG: 2, sodiumMg: 420, amount: "250g", mealType: "dinner" },
+    { name: "Mutton Curry", calories: 310, proteinG: 28, carbsG: 6, fatG: 19, fiberG: 1, sodiumMg: 480, amount: "200g", mealType: "dinner" },
   ],
   USA: [
+    // breakfast
     { name: "Oatmeal with Berries", calories: 220, proteinG: 7, carbsG: 40, fatG: 3, fiberG: 5, sodiumMg: 100, amount: "1 bowl", mealType: "breakfast" },
     { name: "Scrambled Eggs (3)", calories: 210, proteinG: 18, carbsG: 2, fatG: 15, fiberG: 0, sodiumMg: 300, amount: "3 eggs", mealType: "breakfast" },
     { name: "Greek Yogurt", calories: 130, proteinG: 17, carbsG: 9, fatG: 0.5, fiberG: 0, sodiumMg: 90, amount: "170g", mealType: "breakfast" },
     { name: "Whole Wheat Toast", calories: 140, proteinG: 5, carbsG: 27, fatG: 2, fiberG: 3, sodiumMg: 260, amount: "2 slices", mealType: "breakfast" },
+    { name: "Banana Protein Smoothie", calories: 280, proteinG: 20, carbsG: 38, fatG: 4, fiberG: 3, sodiumMg: 140, amount: "1 glass", mealType: "breakfast" },
+    { name: "Pancakes (2)", calories: 300, proteinG: 8, carbsG: 50, fatG: 7, fiberG: 2, sodiumMg: 420, amount: "2 medium", mealType: "breakfast" },
+    { name: "Avocado Egg Toast", calories: 320, proteinG: 14, carbsG: 25, fatG: 18, fiberG: 6, sodiumMg: 360, amount: "2 slices", mealType: "breakfast" },
+    // lunch
     { name: "Grilled Chicken Breast", calories: 165, proteinG: 31, carbsG: 0, fatG: 3.5, fiberG: 0, sodiumMg: 350, amount: "100g", mealType: "lunch" },
     { name: "Brown Rice", calories: 215, proteinG: 5, carbsG: 45, fatG: 1.5, fiberG: 2, sodiumMg: 10, amount: "1 cup", mealType: "lunch" },
     { name: "Turkey Wrap", calories: 350, proteinG: 30, carbsG: 35, fatG: 8, fiberG: 3, sodiumMg: 700, amount: "1 wrap", mealType: "lunch" },
     { name: "Tuna Salad", calories: 180, proteinG: 30, carbsG: 2, fatG: 5, fiberG: 0, sodiumMg: 400, amount: "150g", mealType: "lunch" },
+    { name: "Chicken Caesar Salad", calories: 330, proteinG: 28, carbsG: 16, fatG: 17, fiberG: 2, sodiumMg: 580, amount: "1 bowl", mealType: "lunch" },
+    { name: "Black Bean Burger", calories: 380, proteinG: 18, carbsG: 52, fatG: 9, fiberG: 8, sodiumMg: 620, amount: "1 burger", mealType: "lunch" },
+    { name: "Lentil Soup", calories: 230, proteinG: 14, carbsG: 38, fatG: 2, fiberG: 9, sodiumMg: 450, amount: "1 bowl", mealType: "lunch" },
+    // snacks
     { name: "Almonds", calories: 170, proteinG: 6, carbsG: 6, fatG: 15, fiberG: 3, sodiumMg: 0, amount: "30g", mealType: "snack" },
     { name: "Protein Shake", calories: 130, proteinG: 25, carbsG: 5, fatG: 1.5, fiberG: 0, sodiumMg: 160, amount: "1 scoop", mealType: "snack" },
     { name: "Apple", calories: 95, proteinG: 0.5, carbsG: 25, fatG: 0.3, fiberG: 4, sodiumMg: 2, amount: "1 medium", mealType: "snack" },
+    { name: "Cottage Cheese", calories: 110, proteinG: 14, carbsG: 4, fatG: 3, fiberG: 0, sodiumMg: 380, amount: "100g", mealType: "snack" },
+    { name: "Peanut Butter (2 tbsp)", calories: 188, proteinG: 8, carbsG: 6, fatG: 16, fiberG: 2, sodiumMg: 150, amount: "2 tbsp", mealType: "snack" },
+    // dinner
     { name: "Salmon Fillet", calories: 208, proteinG: 28, carbsG: 0, fatG: 10, fiberG: 0, sodiumMg: 280, amount: "150g", mealType: "dinner" },
     { name: "Quinoa", calories: 222, proteinG: 8, carbsG: 39, fatG: 3.5, fiberG: 5, sodiumMg: 15, amount: "1 cup", mealType: "dinner" },
     { name: "Ground Beef (lean)", calories: 176, proteinG: 26, carbsG: 0, fatG: 8, fiberG: 0, sodiumMg: 220, amount: "100g", mealType: "dinner" },
     { name: "Mixed Greens Salad", calories: 45, proteinG: 2, carbsG: 8, fatG: 0.5, fiberG: 2.5, sodiumMg: 50, amount: "2 cups", mealType: "dinner" },
+    { name: "Baked Sweet Potato", calories: 103, proteinG: 2, carbsG: 24, fatG: 0.1, fiberG: 4, sodiumMg: 40, amount: "1 medium", mealType: "dinner" },
+    { name: "Chicken Stir-Fry", calories: 310, proteinG: 28, carbsG: 22, fatG: 11, fiberG: 4, sodiumMg: 520, amount: "1 bowl", mealType: "dinner" },
   ],
   UK: [
+    // breakfast
     { name: "Porridge with Honey", calories: 240, proteinG: 6, carbsG: 44, fatG: 4, fiberG: 4, sodiumMg: 60, amount: "1 bowl", mealType: "breakfast" },
     { name: "Scrambled Eggs on Toast", calories: 280, proteinG: 15, carbsG: 28, fatG: 10, fiberG: 2, sodiumMg: 380, amount: "2 eggs", mealType: "breakfast" },
     { name: "Smoked Salmon Bagel", calories: 350, proteinG: 22, carbsG: 42, fatG: 8, fiberG: 2, sodiumMg: 620, amount: "1 bagel", mealType: "breakfast" },
+    { name: "Full English Breakfast", calories: 510, proteinG: 30, carbsG: 30, fatG: 28, fiberG: 3, sodiumMg: 980, amount: "1 plate", mealType: "breakfast" },
+    { name: "Granola with Milk", calories: 330, proteinG: 9, carbsG: 52, fatG: 8, fiberG: 4, sodiumMg: 120, amount: "1 bowl", mealType: "breakfast" },
+    // lunch
     { name: "Chicken Tikka Masala", calories: 320, proteinG: 28, carbsG: 12, fatG: 16, fiberG: 2, sodiumMg: 550, amount: "300g", mealType: "lunch" },
     { name: "Tuna Jacket Potato", calories: 340, proteinG: 25, carbsG: 55, fatG: 3, fiberG: 5, sodiumMg: 420, amount: "1 potato", mealType: "lunch" },
+    { name: "Prawn Sandwich", calories: 290, proteinG: 18, carbsG: 32, fatG: 9, fiberG: 2, sodiumMg: 540, amount: "1 sandwich", mealType: "lunch" },
+    { name: "Minestrone Soup", calories: 190, proteinG: 8, carbsG: 32, fatG: 3, fiberG: 6, sodiumMg: 480, amount: "1 bowl", mealType: "lunch" },
+    { name: "Chicken Salad Bowl", calories: 260, proteinG: 26, carbsG: 14, fatG: 10, fiberG: 3, sodiumMg: 380, amount: "1 bowl", mealType: "lunch" },
+    // snacks
     { name: "Cheddar Cheese", calories: 110, proteinG: 7, carbsG: 0.1, fatG: 9, fiberG: 0, sodiumMg: 170, amount: "30g", mealType: "snack" },
+    { name: "Rich Tea Biscuit", calories: 130, proteinG: 2, carbsG: 22, fatG: 4, fiberG: 0.5, sodiumMg: 100, amount: "4 biscuits", mealType: "snack" },
+    { name: "Hummus & Veg", calories: 160, proteinG: 6, carbsG: 16, fatG: 8, fiberG: 5, sodiumMg: 280, amount: "100g + veg", mealType: "snack" },
+    // dinner
     { name: "Roast Chicken Breast", calories: 180, proteinG: 33, carbsG: 0, fatG: 4, fiberG: 0, sodiumMg: 330, amount: "150g", mealType: "dinner" },
     { name: "Roasted Vegetables", calories: 120, proteinG: 3, carbsG: 22, fatG: 3, fiberG: 5, sodiumMg: 150, amount: "1 cup", mealType: "dinner" },
     { name: "Baked Cod with Peas", calories: 240, proteinG: 35, carbsG: 15, fatG: 4, fiberG: 5, sodiumMg: 300, amount: "200g", mealType: "dinner" },
+    { name: "Shepherd's Pie", calories: 380, proteinG: 22, carbsG: 40, fatG: 14, fiberG: 4, sodiumMg: 560, amount: "1 portion", mealType: "dinner" },
+    { name: "Grilled Salmon & Rice", calories: 420, proteinG: 32, carbsG: 45, fatG: 10, fiberG: 2, sodiumMg: 300, amount: "1 plate", mealType: "dinner" },
   ],
   Japan: [
+    // breakfast
     { name: "Miso Soup", calories: 40, proteinG: 3, carbsG: 5, fatG: 1, fiberG: 1, sodiumMg: 550, amount: "1 bowl", mealType: "breakfast" },
     { name: "Steamed Rice", calories: 200, proteinG: 4, carbsG: 44, fatG: 0.5, fiberG: 0.5, sodiumMg: 5, amount: "1 cup", mealType: "breakfast" },
     { name: "Grilled Salmon", calories: 200, proteinG: 28, carbsG: 0, fatG: 9, fiberG: 0, sodiumMg: 280, amount: "150g", mealType: "breakfast" },
+    { name: "Tamagoyaki (Egg Roll)", calories: 130, proteinG: 10, carbsG: 6, fatG: 7, fiberG: 0, sodiumMg: 220, amount: "1 roll", mealType: "breakfast" },
+    { name: "Natto with Rice", calories: 250, proteinG: 14, carbsG: 40, fatG: 5, fiberG: 3, sodiumMg: 200, amount: "1 bowl", mealType: "breakfast" },
+    // lunch
     { name: "Chicken Katsu", calories: 300, proteinG: 28, carbsG: 15, fatG: 12, fiberG: 1, sodiumMg: 450, amount: "150g", mealType: "lunch" },
     { name: "Soba Noodles", calories: 220, proteinG: 9, carbsG: 44, fatG: 1, fiberG: 3, sodiumMg: 400, amount: "1 bowl", mealType: "lunch" },
+    { name: "Ramen (Shoyu)", calories: 430, proteinG: 22, carbsG: 58, fatG: 11, fiberG: 2, sodiumMg: 1200, amount: "1 bowl", mealType: "lunch" },
+    { name: "Udon Noodles", calories: 320, proteinG: 10, carbsG: 65, fatG: 2, fiberG: 2, sodiumMg: 680, amount: "1 bowl", mealType: "lunch" },
+    { name: "Chirashi Sushi", calories: 380, proteinG: 26, carbsG: 52, fatG: 7, fiberG: 2, sodiumMg: 580, amount: "1 bowl", mealType: "lunch" },
+    // snacks
     { name: "Edamame", calories: 120, proteinG: 11, carbsG: 9, fatG: 5, fiberG: 5, sodiumMg: 5, amount: "1 cup", mealType: "snack" },
     { name: "Onigiri (Tuna)", calories: 180, proteinG: 9, carbsG: 33, fatG: 2, fiberG: 0.5, sodiumMg: 280, amount: "1 piece", mealType: "snack" },
+    { name: "Green Tea", calories: 3, proteinG: 0, carbsG: 0.5, fatG: 0, fiberG: 0, sodiumMg: 2, amount: "1 cup", mealType: "snack" },
+    { name: "Mochi (1 piece)", calories: 100, proteinG: 1.5, carbsG: 23, fatG: 0.5, fiberG: 0, sodiumMg: 10, amount: "1 piece", mealType: "snack" },
+    // dinner
     { name: "Yakitori Chicken", calories: 90, proteinG: 12, carbsG: 4, fatG: 2.5, fiberG: 0, sodiumMg: 300, amount: "1 skewer", mealType: "dinner" },
     { name: "Gyudon Beef Bowl", calories: 420, proteinG: 22, carbsG: 60, fatG: 10, fiberG: 1, sodiumMg: 680, amount: "1 bowl", mealType: "dinner" },
+    { name: "Teriyaki Chicken Bowl", calories: 380, proteinG: 30, carbsG: 44, fatG: 9, fiberG: 1, sodiumMg: 740, amount: "1 bowl", mealType: "dinner" },
+    { name: "Grilled Mackerel (Saba)", calories: 260, proteinG: 24, carbsG: 0, fatG: 17, fiberG: 0, sodiumMg: 380, amount: "150g", mealType: "dinner" },
+    { name: "Tofu Steak", calories: 160, proteinG: 14, carbsG: 6, fatG: 9, fiberG: 2, sodiumMg: 260, amount: "200g", mealType: "dinner" },
   ],
   Brazil: [
+    // breakfast
     { name: "Açaí Bowl", calories: 280, proteinG: 4, carbsG: 50, fatG: 8, fiberG: 6, sodiumMg: 30, amount: "1 bowl", mealType: "breakfast" },
     { name: "Pão de Queijo", calories: 210, proteinG: 8, carbsG: 28, fatG: 8, fiberG: 0.5, sodiumMg: 200, amount: "3 pieces", mealType: "breakfast" },
+    { name: "Tapioca Crepe", calories: 160, proteinG: 4, carbsG: 34, fatG: 1, fiberG: 0.5, sodiumMg: 80, amount: "1 crepe", mealType: "breakfast" },
+    { name: "Fruit Salad (Mixed)", calories: 130, proteinG: 2, carbsG: 33, fatG: 0.5, fiberG: 4, sodiumMg: 10, amount: "1 bowl", mealType: "breakfast" },
+    // lunch
     { name: "Rice & Black Beans", calories: 350, proteinG: 14, carbsG: 65, fatG: 2, fiberG: 10, sodiumMg: 350, amount: "1 plate", mealType: "lunch" },
     { name: "Grilled Picanha", calories: 300, proteinG: 28, carbsG: 0, fatG: 20, fiberG: 0, sodiumMg: 350, amount: "150g", mealType: "lunch" },
+    { name: "Feijoada", calories: 420, proteinG: 22, carbsG: 45, fatG: 16, fiberG: 10, sodiumMg: 680, amount: "1 bowl", mealType: "lunch" },
+    { name: "Frango Grelhado", calories: 190, proteinG: 32, carbsG: 2, fatG: 5, fiberG: 0, sodiumMg: 300, amount: "150g", mealType: "lunch" },
+    // snacks
     { name: "Coconut Water", calories: 45, proteinG: 0.5, carbsG: 11, fatG: 0, fiberG: 0, sodiumMg: 100, amount: "1 cup", mealType: "snack" },
+    { name: "Brigadeiro (1 ball)", calories: 90, proteinG: 1, carbsG: 14, fatG: 3.5, fiberG: 0, sodiumMg: 30, amount: "1 piece", mealType: "snack" },
+    { name: "Banana with Honey", calories: 110, proteinG: 1.5, carbsG: 28, fatG: 0.3, fiberG: 2.5, sodiumMg: 5, amount: "1 banana", mealType: "snack" },
+    // dinner
     { name: "Moqueca Fish Stew", calories: 280, proteinG: 28, carbsG: 8, fatG: 14, fiberG: 2, sodiumMg: 450, amount: "300g", mealType: "dinner" },
+    { name: "Frango ao Molho", calories: 260, proteinG: 30, carbsG: 8, fatG: 10, fiberG: 1, sodiumMg: 420, amount: "250g", mealType: "dinner" },
+    { name: "Arroz Integral + Frango", calories: 420, proteinG: 34, carbsG: 47, fatG: 8, fiberG: 3, sodiumMg: 360, amount: "1 plate", mealType: "dinner" },
   ],
   Mexico: [
+    // breakfast
     { name: "Huevos Rancheros", calories: 320, proteinG: 18, carbsG: 28, fatG: 14, fiberG: 4, sodiumMg: 600, amount: "2 eggs", mealType: "breakfast" },
     { name: "Avocado Toast", calories: 230, proteinG: 6, carbsG: 22, fatG: 13, fiberG: 6, sodiumMg: 280, amount: "1 toast", mealType: "breakfast" },
+    { name: "Chilaquiles", calories: 370, proteinG: 16, carbsG: 42, fatG: 16, fiberG: 4, sodiumMg: 620, amount: "1 plate", mealType: "breakfast" },
+    { name: "Tamale (1)", calories: 210, proteinG: 7, carbsG: 28, fatG: 8, fiberG: 3, sodiumMg: 380, amount: "1 piece", mealType: "breakfast" },
+    // lunch
     { name: "Grilled Chicken Tacos", calories: 260, proteinG: 22, carbsG: 22, fatG: 8, fiberG: 3, sodiumMg: 480, amount: "2 tacos", mealType: "lunch" },
     { name: "Black Beans", calories: 220, proteinG: 14, carbsG: 40, fatG: 1, fiberG: 14, sodiumMg: 300, amount: "1 cup", mealType: "lunch" },
+    { name: "Pozole Soup", calories: 290, proteinG: 18, carbsG: 38, fatG: 7, fiberG: 5, sodiumMg: 680, amount: "1 bowl", mealType: "lunch" },
+    { name: "Fish Taco (2)", calories: 280, proteinG: 22, carbsG: 24, fatG: 9, fiberG: 3, sodiumMg: 500, amount: "2 tacos", mealType: "lunch" },
+    { name: "Quesadilla (Cheese)", calories: 320, proteinG: 14, carbsG: 30, fatG: 16, fiberG: 2, sodiumMg: 560, amount: "1 piece", mealType: "lunch" },
+    // snacks
     { name: "Guacamole", calories: 150, proteinG: 2, carbsG: 8, fatG: 13, fiberG: 5, sodiumMg: 200, amount: "100g", mealType: "snack" },
+    { name: "Tortilla Chips", calories: 140, proteinG: 2, carbsG: 20, fatG: 6, fiberG: 1, sodiumMg: 120, amount: "30g", mealType: "snack" },
+    { name: "Elote (Corn)", calories: 180, proteinG: 5, carbsG: 36, fatG: 2, fiberG: 4, sodiumMg: 80, amount: "1 ear", mealType: "snack" },
+    // dinner
     { name: "Carne Asada", calories: 250, proteinG: 30, carbsG: 0, fatG: 13, fiberG: 0, sodiumMg: 420, amount: "150g", mealType: "dinner" },
     { name: "Chicken Enchilada", calories: 320, proteinG: 24, carbsG: 30, fatG: 10, fiberG: 3, sodiumMg: 750, amount: "2 pieces", mealType: "dinner" },
+    { name: "Burrito Bowl", calories: 460, proteinG: 28, carbsG: 58, fatG: 13, fiberG: 9, sodiumMg: 820, amount: "1 bowl", mealType: "dinner" },
+    { name: "Chicken Fajitas", calories: 340, proteinG: 30, carbsG: 24, fatG: 12, fiberG: 4, sodiumMg: 600, amount: "1 plate", mealType: "dinner" },
   ],
 };
 
@@ -596,7 +683,7 @@ export default function Diet() {
                   </div>
                 </div>
 
-                <div className="overflow-y-auto flex-1 custom-scrollbar">
+                <div className="overflow-y-auto flex-1 custom-scrollbar" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}>
                   {showCustomForm ? (
                     <div className="p-4 space-y-3">
                       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Custom Food</p>
