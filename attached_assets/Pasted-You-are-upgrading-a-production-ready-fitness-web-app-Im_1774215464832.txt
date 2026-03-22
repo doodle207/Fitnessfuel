@@ -1,0 +1,199 @@
+You are upgrading a production-ready fitness web app. Implement all features in a structured, bug-free, mobile-first way. Follow the exact order below.
+
+====================================
+PHASE 1: ONBOARDING FLOW (FIRST IMPRESSION)
+====================================
+
+1) Welcome Screen:
+- Use the attached logo file in a premium way
+- Show the logo centered with good spacing
+- Show the app name below the logo
+- Add CTA button: "Get Started for Free"
+
+2) After clicking CTA:
+- Show two options:
+  - Create Account
+  - Login
+
+3) Create Account Flow:
+- User signs up first
+- Then go to Profile Setup
+- Profile fields:
+  - Name
+  - Age (fix input bug, fully editable)
+  - Gender
+  - Weight
+  - Height
+  - Activity level
+  - Fitness goal
+  - Country (NEW dropdown)
+
+- At the END of profile setup:
+  - Ask for account connection:
+    - Google (add above)
+    - Replit
+- After completion, go to Dashboard
+
+4) Login Flow:
+- Existing users login directly
+- After login:
+  - If profile complete, go to Dashboard
+  - If not, go to Profile Setup first, then Dashboard
+
+====================================
+PHASE 2: CRITICAL BUG FIXES + CALCULATIONS
+====================================
+
+5) Fix Input Bug:
+- Age input should allow deleting/editing any number
+- Fix state handling so number 2 or any value does not get stuck
+
+6) Fix Calorie Calculations:
+Use Mifflin-St Jeor Equation:
+
+Male:
+BMR = (10 × weight kg) + (6.25 × height cm) − (5 × age) + 5
+
+Female:
+BMR = (10 × weight kg) + (6.25 × height cm) − (5 × age) − 161
+
+- Calculate TDEE using:
+  Sedentary: 1.2
+  Light: 1.375
+  Moderate: 1.55
+  Active: 1.725
+  Athlete: 1.9
+
+- Fix:
+  Net Calories = Calories Eaten - Calories Burned
+  Maintenance Calories = TDEE
+
+====================================
+PHASE 3: TIME + GREETING SYSTEM
+====================================
+
+7) Time System:
+- Use user's country to detect timezone
+- Show time beside date
+
+8) Greeting Logic:
+- 6 AM to 9 AM → "Good Morning"
+- 10 PM to 4 AM → "Good Night"
+- Otherwise → "Hey"
+
+====================================
+PHASE 4: AI COACH + PERSONALIZATION
+====================================
+
+9) AI Integration:
+- Use Groq API key for all AI-based features in the app
+- Groq should power:
+  - AI coach
+  - food scanner
+  - meal preparation / meal planning
+  - any smart estimation or assistant feature
+- If AI output is used, keep it structured, useful, and fast
+
+10) Expand Fitness Goals:
+- Fat Loss
+- Muscle Gain
+- Recomposition
+- Strength
+- Endurance
+- General Fitness
+- Athletic Performance
+
+11) AI Coach:
+- Make the AI coach motivating, supportive, and energetic
+- The coach should encourage the user and not sound robotic
+- Move AI Meal Plan inside AI Coach
+- Generate personalized plan using:
+  - Age
+  - Weight
+  - Height
+  - Goal
+  - Activity level
+
+- Output:
+  - Daily calories
+  - Macros split (Protein, Carbs, Fats)
+  - Meals (Breakfast, Lunch, Dinner, Snacks)
+
+====================================
+PHASE 5: DIET + SMART FOOD SYSTEM
+====================================
+
+12) Add Macros Tracking:
+- Show:
+  - Protein
+  - Carbs
+  - Fats
+- Show totals + per meal
+- Add progress bars
+
+13) Smart Food Logging:
+- When user inputs:
+  - Food name + weight in grams
+- Automatically estimate:
+  - Calories
+  - Protein
+  - Carbs
+  - Fats
+
+- Use Groq-powered AI estimation and reliable food logic
+- Avoid random or incorrect values
+- Keep results as accurate as possible
+
+- Remove country option from diet section
+
+====================================
+PHASE 6: UI/UX + DESIGN SYSTEM
+====================================
+
+14) Logo Integration:
+- Welcome screen: centered logo using attached file
+- Navbar: small icon version of the same logo
+- App icon: simplified version of the logo
+- Keep the logo placement clean and consistent across the app
+
+15) Period Cycle UI:
+- Redesign cycle bar
+- Show phases:
+  - Menstrual
+  - Follicular
+  - Ovulation
+  - Luteal
+- Keep the same size/space as current UI
+- Make it visually attractive with clear labels and icons
+
+====================================
+PHASE 7: MONETIZATION
+====================================
+
+16) Ads Integration:
+- Add non-intrusive banner ads
+- Place between sections without blocking the experience
+- Ensure smooth performance
+
+====================================
+GENERAL RULES
+====================================
+
+- Mobile-first responsive design
+- No UI glitches or auto-navigation bugs
+- Clean state management
+- Smooth transitions
+- No hardcoded calculation values
+- Maintain consistent dark neon theme
+- Ensure fast performance
+- Keep AI responses useful, motivating, and on-brand
+
+====================================
+FINAL OUTPUT
+====================================
+
+Return:
+- Updated UI components
+- Fixed logic functions
+- Groq AI integrations
+- Clean working app flow

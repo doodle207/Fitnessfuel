@@ -1,16 +1,10 @@
 import { Router, type IRouter } from "express";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { chatComplete, chatCompleteWithHistory } from "../lib/ai";
 import { db } from "@workspace/db";
 import { foodLogsTable, workoutsTable, userProfilesTable } from "@workspace/db/schema";
-import { eq, gte, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 const router: IRouter = Router();
-
-function getGemini() {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new Error("GEMINI_API_KEY not set");
-  return new GoogleGenerativeAI(key);
-}
 
 async function getUserContext(userId: string) {
   const today = new Date().toISOString().split("T")[0];
@@ -63,11 +57,19 @@ async function getUserContext(userId: string) {
       sedentary: 1.2, light: 1.375, "lightly active": 1.375,
       moderate: 1.55, "moderately active": 1.55,
       active: 1.725, "very active": 1.725,
+      athlete: 1.9, "extra active": 1.9,
     };
     const tdee = Math.round(bmr * (actMult[profile.activityLevel || "moderate"] ?? 1.55));
-    calTarget = profile.fitnessGoal === "weight loss" ? tdee - 500
-      : profile.fitnessGoal === "muscle gain" ? tdee + 300
-      : tdee;
+    const goalMult: Record<string, number> = {
+      "fat loss": -500, "weight loss": -500,
+      "muscle gain": 300,
+      "recomposition": 0,
+      "strength": 200,
+      "endurance": 100,
+      "general fitness": 0, "maintenance": 0,
+      "athletic performance": 200,
+    };
+    calTarget = tdee + (goalMult[profile.fitnessGoal || "maintenance"] ?? 0);
     proteinTarget = Math.round(w * 2.2);
   }
 
@@ -95,16 +97,23 @@ function buildSystemPrompt(ctx: Awaited<ReturnType<typeof getUserContext>>) {
   const targets = ctx.targets;
   const weekly = ctx.weekly;
 
-  return `You are an elite AI fitness coach inside FitTrackPro. You are direct, motivating, and data-driven. Never give generic advice — always base your response on the user's actual data below.
+  return `You are the AI fitness coach inside CaloForgeX — an elite, energetic, and supportive fitness companion. You are passionate about helping people reach their goals. Your personality is:
+- MOTIVATING: You hype people up, celebrate small wins, and use encouraging language
+- DIRECT: You give specific, actionable advice based on actual data — never generic fluff
+- SUPPORTIVE: You understand struggles and never shame anyone, but you push them to be better
+- ENERGETIC: Your tone is upbeat and confident — like a best friend who's also a certified trainer
+
+NEVER say "As an AI" or anything robotic. Speak naturally like a passionate coach who genuinely cares.
 
 USER PROFILE:
-- Name: ${p?.name || "User"}
+- Name: ${p?.name || "Champ"}
 - Age: ${p?.age || "unknown"}, Gender: ${p?.gender || "unknown"}
 - Weight: ${p?.weightKg || "unknown"} kg, Height: ${p?.heightCm || "unknown"} cm
-- Goal: ${p?.fitnessGoal || "maintenance"}
+- Goal: ${p?.fitnessGoal || "general fitness"}
 - Activity Level: ${p?.activityLevel || "moderate"}
 - Experience: ${p?.experienceLevel || "beginner"}
 - Diet: ${p?.dietPreference || "non-veg"}
+- Country: ${p?.country || "USA"}
 
 TODAY'S NUTRITION:
 - Calories eaten: ${today.calories} / ${targets.calories} kcal target
@@ -118,12 +127,11 @@ WORKOUT DATA (last 7 days):
 - Total workouts tracked: ${weekly.totalWorkouts}
 
 COACHING RULES:
-- Be specific, not generic. Reference their actual numbers.
-- Be direct and slightly strict when they're slacking.
-- Be supportive when they're doing well.
-- Keep responses concise and impactful — no fluff.
-- If data is missing, give the best advice you can with what's available.
-- Never say things like "As an AI..." — just coach them directly.`;
+- Reference their actual numbers — be specific!
+- Celebrate progress, push when they're slacking
+- Keep responses concise (under 150 words) and impactful
+- Use emojis sparingly to add energy 💪🔥
+- If data is missing, give the best advice you can`;
 }
 
 router.get("/ai-coach/insights", async (req, res) => {
@@ -134,28 +142,22 @@ router.get("/ai-coach/insights", async (req, res) => {
 
   try {
     const ctx = await getUserContext(req.user.id);
-    const genAI = getGemini();
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
     const systemPrompt = buildSystemPrompt(ctx);
 
-    const prompt = `${systemPrompt}
-
-Generate a personalized daily coaching report. Return ONLY valid JSON with this exact structure:
+    const prompt = `Generate a personalized daily coaching report. Return ONLY valid JSON with this exact structure:
 {
-  "todaysFocus": "one sentence — the single most important thing for this user to focus on today",
-  "coachFeedback": "2-3 sentences of specific feedback based on their actual data",
-  "warningAlert": "one sentence warning if something is off (protein low, no workout in 3+ days, etc). Empty string if everything is fine.",
-  "quickTip": "one short, actionable tip specific to their goal and current data",
-  "nextBestAction": "one concrete action they should take in the next hour",
-  "weeklyStatus": "one sentence summarizing their week — honest and direct",
-  "moodEmoji": "a single emoji that matches the coaching tone (🔥 💪 ⚠️ 😤 ✅ etc)"
+  "todaysFocus": "one sentence — the single most important thing to focus on today (motivating!)",
+  "coachFeedback": "2-3 sentences of specific, encouraging feedback based on actual data",
+  "warningAlert": "one sentence warning if something is off. Empty string if all good.",
+  "quickTip": "one short, actionable tip specific to their goal",
+  "nextBestAction": "one concrete action they should take right now",
+  "weeklyStatus": "one sentence summarizing their week — honest but encouraging",
+  "moodEmoji": "a single emoji that matches the coaching tone (🔥 💪 ⚠️ 😤 ✅ 🚀 etc)"
 }
 
-Base every field on their actual numbers. No filler text.`;
+Base every field on their actual numbers. Be motivating and energetic!`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().trim();
+    const text = await chatComplete(systemPrompt, prompt);
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("Invalid AI response format");
 
@@ -172,12 +174,12 @@ Base every field on their actual numbers. No filler text.`;
     }));
 
     res.json({
-      todaysFocus: "Log your meals and hit your protein target today.",
-      coachFeedback: "Start tracking consistently. Every data point helps your coach give better advice.",
+      todaysFocus: "Let's crush it today! Start by logging your meals and hitting your protein target 💪",
+      coachFeedback: "Every champion starts somewhere. Log your food consistently and watch the magic happen. Your body will thank you!",
       warningAlert: "",
-      quickTip: "Drink water, log your first meal, and plan tonight's workout.",
-      nextBestAction: "Open the Diet tab and log what you ate so far today.",
-      weeklyStatus: "Not enough data yet — start logging to unlock full coaching.",
+      quickTip: "Drink a big glass of water right now, then log your next meal. Small wins build big results! 🔥",
+      nextBestAction: "Open the Diet tab and log what you've eaten today — let's see where you stand!",
+      weeklyStatus: "We're just getting started — consistency is key. Let's build that streak! 🚀",
       moodEmoji: "💪",
       context: ctx.today,
     });
@@ -198,29 +200,75 @@ router.post("/ai-coach/chat", async (req, res) => {
 
   try {
     const ctx = await getUserContext(req.user.id);
-    const genAI = getGemini();
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
     const systemPrompt = buildSystemPrompt(ctx);
 
     const chatHistory = Array.isArray(history) ? history.slice(-8) : [];
+    const mappedHistory = chatHistory.map((h: any) => ({
+      role: h.role === "user" ? "user" as const : "assistant" as const,
+      content: h.content,
+    }));
 
-    const conversationText = chatHistory
-      .map((h: any) => `${h.role === "user" ? "User" : "Coach"}: ${h.content}`)
-      .join("\n");
-
-    const fullPrompt = `${systemPrompt}
-
-${conversationText ? `RECENT CONVERSATION:\n${conversationText}\n\n` : ""}User: ${message}
-
-Respond as the AI coach. Be direct, specific, and reference their data. Keep it under 150 words. No generic advice.`;
-
-    const result = await model.generateContent(fullPrompt);
-    const reply = result.response.text().trim();
-    res.json({ reply });
+    const reply = await chatCompleteWithHistory(systemPrompt, mappedHistory, message);
+    res.json({ reply: reply || "Keep pushing! Log your meals and workouts — I'll give you better insights with more data. 💪" });
   } catch (err: any) {
     console.error("[ai-coach/chat]", err?.message ?? err);
-    res.json({ reply: "I'm having trouble connecting right now. Make sure you're logging your workouts and meals consistently — that's the foundation." });
+    res.json({ reply: "I'm having a moment — but don't let that stop you! Keep logging your workouts and meals. Every rep counts! 💪🔥" });
+  }
+});
+
+router.post("/ai-coach/meal-plan", async (req, res) => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  try {
+    const ctx = await getUserContext(req.user.id);
+    const p = ctx.profile;
+    if (!p) {
+      res.status(400).json({ error: "Profile required" });
+      return;
+    }
+
+    const systemPrompt = `You are a certified nutritionist creating personalized meal plans. Create realistic, practical meal plans based on the user's data.`;
+
+    const prompt = `Create a personalized daily meal plan for:
+- Age: ${p.age}, Gender: ${p.gender}, Weight: ${p.weightKg}kg, Height: ${p.heightCm}cm
+- Goal: ${p.fitnessGoal}, Activity: ${p.activityLevel}
+- Diet: ${p.dietPreference}, Country: ${p.country || "USA"}
+- Daily calories target: ${ctx.targets.calories} kcal
+- Protein target: ${ctx.targets.protein}g
+
+Return ONLY valid JSON:
+{
+  "dailyCalories": number,
+  "proteinG": number,
+  "carbsG": number,
+  "fatG": number,
+  "meals": [
+    {
+      "mealType": "breakfast|lunch|snack|dinner",
+      "name": "meal name",
+      "calories": number,
+      "proteinG": number,
+      "carbsG": number,
+      "fatG": number,
+      "foods": [{"name": "food", "amount": "portion", "calories": number}]
+    }
+  ]
+}
+
+Include 4 meals (breakfast, lunch, snack, dinner). Use foods common in ${p.country || "USA"}. Make it practical and delicious!`;
+
+    const text = await chatComplete(systemPrompt, prompt);
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("Invalid response");
+
+    const plan = JSON.parse(jsonMatch[0]);
+    res.json(plan);
+  } catch (err: any) {
+    console.error("[ai-coach/meal-plan]", err?.message ?? err);
+    res.status(500).json({ error: "Failed to generate meal plan" });
   }
 });
 

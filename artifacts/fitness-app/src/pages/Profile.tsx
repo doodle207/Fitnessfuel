@@ -3,18 +3,23 @@ import { useGetProfile, useCreateProfile } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@workspace/replit-auth-web";
 import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
-import { User, Settings, LogOut, Target, X, Check, ChevronDown, Save } from "lucide-react";
+import { User, Settings, LogOut, Target, X, Check, ChevronDown, Save, Globe } from "lucide-react";
 
 const GOAL_OPTIONS = [
-  { value: "weight loss",  label: "Lose Fat" },
-  { value: "muscle gain",  label: "Build Muscle" },
-  { value: "maintenance",  label: "Maintain" },
+  { value: "weight loss",          label: "Lose Fat" },
+  { value: "muscle gain",          label: "Build Muscle" },
+  { value: "maintenance",          label: "Maintain" },
+  { value: "recomposition",        label: "Recomposition" },
+  { value: "athletic performance", label: "Performance" },
+  { value: "general fitness",      label: "General Fitness" },
+  { value: "flexibility",          label: "Flexibility" },
 ];
 const ACTIVITY_OPTIONS = [
   { value: "sedentary", label: "Sedentary" },
   { value: "light",     label: "Light" },
   { value: "moderate",  label: "Moderate" },
   { value: "active",    label: "Active" },
+  { value: "athlete",   label: "Athlete" },
 ];
 const DIET_OPTIONS = [
   { value: "non-veg", label: "Non-Veg" },
@@ -25,6 +30,10 @@ const EXPERIENCE_OPTIONS = [
   { value: "beginner",     label: "Beginner" },
   { value: "intermediate", label: "Intermediate" },
   { value: "advanced",     label: "Advanced" },
+];
+const COUNTRIES = [
+  "USA", "India", "UK", "Canada", "Australia", "Japan", "Brazil", "Mexico",
+  "Germany", "France", "South Korea", "Nigeria", "South Africa", "UAE", "Philippines",
 ];
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -40,7 +49,7 @@ function SelectField({ value, onChange, options }: { value: string; onChange: (v
   return (
     <div className="relative">
       <select value={value} onChange={e => onChange(e.target.value)}
-        className="w-full appearance-none px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 focus:border-violet-500 outline-none text-white text-sm transition-colors pr-8">
+        className="w-full appearance-none px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 focus:border-violet-500 outline-none text-white text-sm transition-colors pr-8 [color-scheme:dark]">
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
       <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
@@ -80,6 +89,8 @@ export default function Profile() {
   const openEdit = () => {
     const rawGender = profile?.gender || "male";
     const gender = rawGender === "other" ? "male" : rawGender;
+    const rawActivity = profile?.activityLevel || "moderate";
+    const activityLevel = rawActivity === "very active" ? "active" : rawActivity;
     const f = {
       name:             profile?.name || displayName,
       age:              profile?.age || 25,
@@ -87,9 +98,10 @@ export default function Profile() {
       heightCm:         profile?.heightCm || 170,
       weightKg:         profile?.weightKg || 70,
       fitnessGoal:      profile?.fitnessGoal || "maintenance",
-      activityLevel:    profile?.activityLevel === "very active" ? "active" : (profile?.activityLevel || "moderate"),
+      activityLevel,
       experienceLevel:  profile?.experienceLevel || "beginner",
       dietPreference:   profile?.dietPreference || "non-veg",
+      country:          profile?.country || "USA",
       periodStartDate:  profile?.periodStartDate || "",
       periodEndDate:    profile?.periodEndDate || "",
     };
@@ -104,7 +116,8 @@ export default function Profile() {
 
   const handleSave = () => {
     if (!editForm) return;
-    const payload = { ...editForm, activityLevel: editForm.activityLevel === "active" ? "very active" : editForm.activityLevel };
+    const actMap: Record<string, string> = { active: "very active", athlete: "athlete" };
+    const payload = { ...editForm, activityLevel: actMap[editForm.activityLevel] ?? editForm.activityLevel };
     saveProfile({ data: payload });
   };
 
@@ -123,6 +136,7 @@ export default function Profile() {
           {profile ? (
             <p className="text-muted-foreground mt-1 capitalize">
               {profile.experienceLevel || "Beginner"} · {profile.fitnessGoal || "General Fitness"}
+              {profile.country && <span className="text-violet-400"> · {profile.country}</span>}
             </p>
           ) : (
             <p className="text-muted-foreground mt-1">{user?.email || ""}</p>
@@ -139,19 +153,19 @@ export default function Profile() {
               <div className="space-y-3">
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-muted-foreground">Age</span>
-                  <span className="font-medium">{profile.age ?? "—"} years</span>
+                  <span className="font-medium">{profile.age ?? "\u2014"} years</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-muted-foreground">Height</span>
-                  <span className="font-medium">{profile.heightCm ?? "—"} cm</span>
+                  <span className="font-medium">{profile.heightCm ?? "\u2014"} cm</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-muted-foreground">Weight</span>
-                  <span className="font-medium">{profile.weightKg ?? "—"} kg</span>
+                  <span className="font-medium">{profile.weightKg ?? "\u2014"} kg</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Gender</span>
-                  <span className="font-medium capitalize">{profile.gender ?? "—"}</span>
+                  <span className="font-medium capitalize">{profile.gender ?? "\u2014"}</span>
                 </div>
               </div>
             </div>
@@ -164,19 +178,23 @@ export default function Profile() {
               <div className="space-y-3">
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-muted-foreground">Goal</span>
-                  <span className="font-medium capitalize">{profile.fitnessGoal ?? "—"}</span>
+                  <span className="font-medium capitalize">{profile.fitnessGoal ?? "\u2014"}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-muted-foreground">Activity</span>
-                  <span className="font-medium capitalize">{profile.activityLevel ?? "—"}</span>
+                  <span className="font-medium capitalize">{profile.activityLevel ?? "\u2014"}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-muted-foreground">Experience</span>
-                  <span className="font-medium capitalize">{profile.experienceLevel ?? "—"}</span>
+                  <span className="font-medium capitalize">{profile.experienceLevel ?? "\u2014"}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-muted-foreground">Diet</span>
+                  <span className="font-medium capitalize">{profile.dietPreference ?? "\u2014"}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Diet</span>
-                  <span className="font-medium capitalize">{profile.dietPreference ?? "—"}</span>
+                  <span className="text-muted-foreground">Country</span>
+                  <span className="font-medium flex items-center gap-1.5"><Globe className="w-3.5 h-3.5 text-violet-400" />{profile.country ?? "\u2014"}</span>
                 </div>
               </div>
             </div>
@@ -214,13 +232,11 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
       {isEditing && editForm && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-md p-0 sm:p-4"
           onClick={() => setIsEditing(false)}>
           <div onClick={e => e.stopPropagation()}
             className="bg-[#0d0d14] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg shadow-2xl flex flex-col max-h-[90dvh]">
-            {/* Header with Save button visible */}
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/5 shrink-0">
               <h3 className="font-display font-bold text-lg">Edit Profile</h3>
               <div className="flex items-center gap-2">
@@ -234,7 +250,6 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Scrollable form */}
             <div className="overflow-y-auto flex-1 p-5 space-y-4" style={{ WebkitOverflowScrolling: "touch" as any, touchAction: "pan-y", overscrollBehavior: "contain" }}>
               <Field label="Name">
                 <input type="text" value={editForm.name}
@@ -268,7 +283,7 @@ export default function Profile() {
                   {["male", "female"].map(g => (
                     <button key={g} onClick={() => setField("gender", g)}
                       className={`py-3 rounded-xl text-sm font-semibold transition-colors capitalize border ${editForm.gender === g ? "bg-violet-600 border-violet-500 text-white shadow-[0_0_12px_rgba(124,58,237,0.3)]" : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"}`}>
-                      {g === "male" ? "♂ Male" : "♀ Female"}
+                      {g === "male" ? "\u2642 Male" : "\u2640 Female"}
                     </button>
                   ))}
                 </div>
@@ -277,33 +292,32 @@ export default function Profile() {
               {editForm.gender === "female" && (
                 <div className="rounded-2xl border border-pink-500/20 bg-pink-500/5 p-4 space-y-3">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-base">🌸</span>
+                    <span className="text-base">{"\uD83C\uDF38"}</span>
                     <span className="text-xs font-semibold uppercase tracking-wider text-pink-300">Menstruation Cycle</span>
                   </div>
                   <Field label="Last Period Start Date">
-                    <input
-                      type="date"
-                      value={editForm.periodStartDate || ""}
-                      max={new Date().toISOString().split("T")[0]}
+                    <input type="date" value={editForm.periodStartDate || ""} max={new Date().toISOString().split("T")[0]}
                       onChange={e => setField("periodStartDate", e.target.value || null)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-black/40 border border-white/10 focus:border-pink-500 outline-none text-white text-sm transition-colors [color-scheme:dark]"
-                    />
+                      className="w-full px-3 py-2.5 rounded-xl bg-black/40 border border-white/10 focus:border-pink-500 outline-none text-white text-sm transition-colors [color-scheme:dark]" />
                   </Field>
                   <Field label="Last Period End Date">
-                    <input
-                      type="date"
-                      value={editForm.periodEndDate || ""}
-                      min={editForm.periodStartDate || undefined}
-                      max={new Date().toISOString().split("T")[0]}
+                    <input type="date" value={editForm.periodEndDate || ""} min={editForm.periodStartDate || undefined} max={new Date().toISOString().split("T")[0]}
                       onChange={e => setField("periodEndDate", e.target.value || null)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-black/40 border border-white/10 focus:border-pink-500 outline-none text-white text-sm transition-colors [color-scheme:dark]"
-                    />
+                      className="w-full px-3 py-2.5 rounded-xl bg-black/40 border border-white/10 focus:border-pink-500 outline-none text-white text-sm transition-colors [color-scheme:dark]" />
                   </Field>
-                  <p className="text-xs text-white/30 leading-relaxed">
-                    Used to show your cycle phase on the Dashboard and give personalized insights.
-                  </p>
+                  <p className="text-xs text-white/30 leading-relaxed">Used to show your cycle phase on the Dashboard and give personalized insights.</p>
                 </div>
               )}
+
+              <Field label="Country">
+                <div className="relative">
+                  <select value={editForm.country || "USA"} onChange={e => setField("country", e.target.value)}
+                    className="w-full appearance-none px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 focus:border-violet-500 outline-none text-white text-sm transition-colors pr-8 [color-scheme:dark]">
+                    {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+                </div>
+              </Field>
 
               <Field label="Fitness Goal">
                 <SelectField value={editForm.fitnessGoal} onChange={v => setField("fitnessGoal", v)} options={GOAL_OPTIONS} />

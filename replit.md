@@ -1,8 +1,8 @@
-# FitTrack Pro
+# CaloForgeX
 
 ## Overview
 
-A complete fitness companion web app with workout tracking, nutrition, progress monitoring, and achievement badges. Built with a sleek dark theme featuring violet/cyan accents.
+A complete fitness companion web app with workout tracking, AI-powered nutrition, progress monitoring, and achievement badges. Built with a sleek dark theme featuring violet/cyan accents. Formerly known as FitTrack Pro.
 
 ## Stack
 
@@ -16,6 +16,7 @@ A complete fitness companion web app with workout tracking, nutrition, progress 
 - **Authentication**: Replit Auth (OpenID Connect)
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
+- **AI**: OpenAI via Replit proxy (`AI_INTEGRATIONS_OPENAI_BASE_URL`, `AI_INTEGRATIONS_OPENAI_API_KEY`), model: gpt-4o
 - **Build**: esbuild (CJS bundle)
 
 ## Structure
@@ -24,7 +25,9 @@ A complete fitness companion web app with workout tracking, nutrition, progress 
 artifacts-monorepo/
 ├── artifacts/
 │   ├── api-server/       # Express API server
+│   │   └── src/lib/ai.ts # OpenAI helper (chat, image analysis, macro estimation)
 │   └── fitness-app/      # React + Vite frontend (served at /)
+│       └── public/logo.jpeg  # CaloForgeX logo
 ├── lib/
 │   ├── api-spec/         # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/ # Generated React Query hooks
@@ -37,41 +40,30 @@ artifacts-monorepo/
 
 ## Features
 
-1. **Auth + Onboarding**: Replit auth (PKCE via DB-backed `oauth_states` table) + Google OAuth. Profile creation invalidates query cache before redirect.
-2. **Dashboard**: Row 1 = stats strip; Row 2 = LEFT: Macro rings (Protein/Carbs/Fat) + Hydration (API-synced), RIGHT: Recent Workout + Streaks. Water data fetched from and posted to `/api/progress/water`. Profile icon (top-right) links to profile page.
-3. **Workout Tracker**: Log sets/reps/weight by muscle group and exercise, smart progression suggestions. Muscle group cards use uploaded anatomical images. Recent workouts shown as read-only history (no longer navigate to active workout). Finished workouts detected by `durationMinutes > 0` and shown with a completed summary view.
-4. **Progress Tracking**: Body weight chart (date sent as YYYY-MM-DD), measurements, achievements. Locked badges clickable — show a toast with badge name/requirement + 🔒 indicator.
-5. **Diet/Nutrition**: Country picker (auto-regenerates plan on change), macro targets (Protein/Carbs/Fat) shown with progress bars, food log, water tracker (API-synced), AI meal plan (country-specific foods, diet preference filter)
-6. **Achievements**: 10 badges across workout, streak, strength, and nutrition categories
-7. **Exercise Library**: 143 exercises (20 per muscle group: Chest, Back, Legs, Shoulders, Arms, Core, Cardio, Full Body) seeded to the database
-8. **Menstruation Cycle Tracker**: Female users see a full Cycle Tracker widget at the top of the Dashboard showing current phase (Menstruation/Follicular/Ovulation/Luteal), cycle day, next period countdown, a phase progress bar, and a personalized fitness tip. Period start/end dates are entered in the Profile edit modal (only visible when gender = female).
+1. **Auth + Onboarding**: Replit auth (PKCE via DB-backed `oauth_states` table) + Google OAuth. Welcome screen with CaloForgeX branding + CTA (stored in localStorage `cfx_welcomed`). Onboarding: 7 fitness goals, country dropdown (15 countries), athlete activity level (1.9 multiplier), age input fix (text+inputMode).
+2. **Dashboard**: Timezone-based greeting (country→timezone map). Net Calories = Eaten - Burned (totalBurned = workout + step calories). Calorie overview with goal/TDEE/eaten/burned cards and central net cal badge. Macro rings (Protein/Carbs/Fat). Hydration tracker (API-synced). Workout streaks & weekly volume chart. Period cycle tracker redesigned with 4 phases (Menstruation/Follicular/Ovulation/Luteal), phase-specific colors, tips, and progress bar. Non-intrusive ad banners between sections.
+3. **Workout Tracker**: Log sets/reps/weight by muscle group and exercise, smart progression suggestions. Muscle group cards use uploaded anatomical images.
+4. **Progress Tracking**: Body weight chart, measurements, achievements. Locked badges show toast with requirement.
+5. **Diet/Nutrition**: Smart food logging (food name + weight → AI macro estimation via `/api/diet/estimate-food`). Country removed from diet page (uses profile.country). Macro progress bars (protein/carbs/fat with targets). Food log with camera AI scan. Hydration tracker. AI meal plan sidebar.
+6. **AI Coach**: 3 tabs: Daily Coaching (insights), Chat (conversational AI with quick questions), Meal Plan (generate personalized plans based on country/diet/goal). Powered by OpenAI via Replit proxy.
+7. **Profile**: Country field, 7 fitness goals, athlete activity level, period cycle dates (female only), diet preference.
+8. **Ad Banners**: Non-intrusive `AdBanner` component with 3 variants, placed between dashboard sections and in diet/AI coach pages.
+9. **Achievements**: 10 badges across workout, streak, strength, and nutrition categories.
+10. **Exercise Library**: 143 exercises seeded to the database.
 
 ## Database Schema
 
-- `users` (Replit auth users)
-- `sessions` (auth sessions)
-- `user_profiles` (fitness profile)
-- `exercises` (library of 33 exercises)
-- `favorite_exercises` (user favorites)
-- `workouts` (workout sessions)
-- `workout_sets` (individual sets)
-- `bodyweight_logs`
-- `measurements`
-- `water_logs`
-- `meal_plans`
-- `meals`
-- `food_logs`
-- `achievements`
+Key tables: `user_profiles` (includes `country` column), `workouts`, `workout_exercises`, `exercise_sets`, `food_logs`, `water_logs`, `body_measurements`, `exercises` (seeded), `oauth_states`, `sessions`.
 
-## TypeScript & Composite Projects
+## Key Formulas
 
-- `lib/*` packages are composite and emit declarations via `tsc --build`.
-- Root `tsconfig.json` is a solution file for libs only.
+- **BMR**: Mifflin-St Jeor (10×weight + 6.25×height - 5×age + gender offset)
+- **TDEE**: BMR × activity multiplier (sedentary 1.2, light 1.375, moderate 1.55, active/very active 1.725, athlete 1.9)
+- **Calorie Target**: TDEE + goal adjustment (weight loss -500, muscle gain +300, performance +200, recomposition -100)
+- **Net Calories**: Eaten - Burned (workout + step calories)
+- **Protein Target**: weight × 2.2g
+- **Steps**: 0.04 kcal per step
 
-## Root Scripts
+## Activity Level Mapping
 
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages
-- `pnpm run typecheck` — full typecheck with project references
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API client and Zod schemas
-- `pnpm --filter @workspace/db run push` — push DB schema changes
-- `pnpm --filter @workspace/scripts run seed-exercises` — seed exercise library
+On save: `active` → `"very active"`, `athlete` → `"athlete"` (stored as-is in DB)
