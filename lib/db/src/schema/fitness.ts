@@ -14,6 +14,8 @@ export const userProfilesTable = pgTable("user_profiles", {
   experienceLevel: text("experience_level").notNull(),
   activityLevel: text("activity_level").notNull(),
   dietPreference: text("diet_preference").notNull().default("non-veg"),
+  periodStartDate: date("period_start_date"),
+  periodEndDate: date("period_end_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

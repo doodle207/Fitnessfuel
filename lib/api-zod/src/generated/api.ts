@@ -92,6 +92,8 @@ export const CreateProfileBody = zod.object({
   experienceLevel: zod.string(),
   activityLevel: zod.string(),
   dietPreference: zod.string(),
+  periodStartDate: zod.string().nullable().optional(),
+  periodEndDate: zod.string().nullable().optional(),
 });
 
 export const CreateProfileResponse = zod.object({
@@ -106,6 +108,8 @@ export const CreateProfileResponse = zod.object({
   experienceLevel: zod.string(),
   activityLevel: zod.string(),
   dietPreference: zod.string(),
+  periodStartDate: zod.string().nullable().optional(),
+  periodEndDate: zod.string().nullable().optional(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });

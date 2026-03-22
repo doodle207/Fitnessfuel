@@ -44,6 +44,7 @@ artifacts-monorepo/
 5. **Diet/Nutrition**: Country picker (auto-regenerates plan on change), macro targets (Protein/Carbs/Fat) shown with progress bars, food log, water tracker (API-synced), AI meal plan (country-specific foods, diet preference filter)
 6. **Achievements**: 10 badges across workout, streak, strength, and nutrition categories
 7. **Exercise Library**: 143 exercises (20 per muscle group: Chest, Back, Legs, Shoulders, Arms, Core, Cardio, Full Body) seeded to the database
+8. **Menstruation Cycle Tracker**: Female users see a full Cycle Tracker widget at the top of the Dashboard showing current phase (Menstruation/Follicular/Ovulation/Luteal), cycle day, next period countdown, a phase progress bar, and a personalized fitness tip. Period start/end dates are entered in the Profile edit modal (only visible when gender = female).
 
 ## Database Schema
 
