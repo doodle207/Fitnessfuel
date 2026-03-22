@@ -265,97 +265,60 @@ export default function Dashboard() {
           </Link>
         </header>
 
-        {/* ── Menstruation Cycle Widget (females only) ── */}
+        {/* ── Menstruation Cycle Banner (females only, compact) ── */}
         {isFemale && (
           <motion.div
-            initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}
-            className="rounded-3xl border border-pink-500/20 bg-gradient-to-br from-pink-950/40 via-rose-950/30 to-purple-950/40 p-5 backdrop-blur-sm"
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display font-bold text-base flex items-center gap-2">
-                <span className="text-lg">🌸</span> Cycle Tracker
-              </h3>
-              {!cycleInfo && (
-                <Link href="/profile" className="text-xs text-pink-400 border border-pink-500/30 px-3 py-1 rounded-full hover:bg-pink-500/10 transition-colors">
-                  Set dates →
-                </Link>
-              )}
-              {cycleInfo && (
-                <span className={`text-xs font-semibold px-3 py-1 rounded-full border ${
-                  cycleInfo.inPeriod
-                    ? "text-rose-300 border-rose-500/30 bg-rose-500/10"
-                    : cycleInfo.phase === "Follicular" ? "text-emerald-300 border-emerald-500/30 bg-emerald-500/10"
-                    : cycleInfo.phase === "Ovulation" ? "text-amber-300 border-amber-500/30 bg-amber-500/10"
-                    : "text-purple-300 border-purple-500/30 bg-purple-500/10"
-                }`}>
-                  {cycleInfo.phaseEmoji} {cycleInfo.phase}
-                </span>
-              )}
-            </div>
-
-            {!cycleInfo && (
-              <div className="text-center py-4">
-                <p className="text-sm text-white/50">Add your last period start date in your profile to track your cycle.</p>
+            {!cycleInfo ? (
+              <Link href="/profile">
+                <div className="rounded-2xl border border-pink-500/25 bg-gradient-to-r from-pink-950/50 to-purple-950/40 px-4 py-3 flex items-center justify-between backdrop-blur-sm hover:border-pink-500/40 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-lg">🌸</span>
+                    <div>
+                      <p className="text-sm font-semibold text-pink-200">Cycle Tracker</p>
+                      <p className="text-xs text-white/40">Tap to set your period dates</p>
+                    </div>
+                  </div>
+                  <span className="text-xs text-pink-400 border border-pink-500/30 px-2.5 py-1 rounded-full">Set up →</span>
+                </div>
+              </Link>
+            ) : (
+              <div className={`rounded-2xl border px-4 py-3 backdrop-blur-sm ${
+                cycleInfo.inPeriod ? "border-rose-500/25 bg-gradient-to-r from-rose-950/50 to-pink-950/40"
+                : cycleInfo.phase === "Follicular" ? "border-emerald-500/25 bg-gradient-to-r from-emerald-950/50 to-teal-950/40"
+                : cycleInfo.phase === "Ovulation" ? "border-amber-500/25 bg-gradient-to-r from-amber-950/50 to-yellow-950/40"
+                : "border-purple-500/25 bg-gradient-to-r from-purple-950/50 to-violet-950/40"
+              }`}>
+                <div className="flex items-center gap-3">
+                  <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-white/5">
+                    {cycleInfo.phaseEmoji}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-sm font-bold ${cycleInfo.phaseColor}`}>{cycleInfo.phase}</span>
+                      <span className="text-xs text-white/30">· Day {cycleInfo.cycleDay}/28</span>
+                      <span className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full ${
+                        cycleInfo.nextPeriodDays <= 2 ? "text-rose-300 bg-rose-500/15" : "text-white/40 bg-white/5"
+                      }`}>
+                        {cycleInfo.nextPeriodDays === 0 ? "Period today" : `Next in ${cycleInfo.nextPeriodDays}d`}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ${
+                          cycleInfo.inPeriod ? "bg-gradient-to-r from-rose-500 to-pink-400"
+                          : cycleInfo.phase === "Follicular" ? "bg-gradient-to-r from-emerald-500 to-teal-400"
+                          : cycleInfo.phase === "Ovulation" ? "bg-gradient-to-r from-amber-500 to-yellow-400"
+                          : "bg-gradient-to-r from-purple-500 to-violet-400"
+                        }`}
+                        style={{ width: `${cycleInfo.cycleProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-white/40 mt-1.5 leading-snug truncate">{cycleInfo.phaseTip}</p>
+                  </div>
+                </div>
               </div>
-            )}
-
-            {cycleInfo && (
-              <>
-                {/* Cycle progress bar */}
-                <div className="mb-4">
-                  <div className="flex justify-between text-xs text-white/40 mb-1.5">
-                    <span>Day {cycleInfo.cycleDay} of 28</span>
-                    <span>{cycleInfo.nextPeriodDays === 0 ? "Period may start today" : `Next period in ${cycleInfo.nextPeriodDays}d`}</span>
-                  </div>
-                  <div className="h-2.5 w-full bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-700 ${
-                        cycleInfo.inPeriod ? "bg-gradient-to-r from-rose-500 to-pink-400"
-                        : cycleInfo.phase === "Follicular" ? "bg-gradient-to-r from-emerald-500 to-teal-400"
-                        : cycleInfo.phase === "Ovulation" ? "bg-gradient-to-r from-amber-500 to-yellow-400"
-                        : "bg-gradient-to-r from-purple-500 to-violet-400"
-                      }`}
-                      style={{ width: `${cycleInfo.cycleProgress}%` }}
-                    />
-                  </div>
-                  {/* Phase labels */}
-                  <div className="flex justify-between text-[10px] text-white/25 mt-1 px-0.5">
-                    <span>🌸 Period</span>
-                    <span>🌱 Follicular</span>
-                    <span>✨ Ovulation</span>
-                    <span>🌙 Luteal</span>
-                  </div>
-                </div>
-
-                {/* Stats row */}
-                <div className="grid grid-cols-3 gap-3 mb-3">
-                  <div className="bg-white/5 rounded-2xl p-3 text-center">
-                    <p className="text-xs text-white/40 mb-0.5">Cycle Day</p>
-                    <p className="text-xl font-display font-bold text-white">{cycleInfo.cycleDay}</p>
-                    <p className="text-[10px] text-white/30">of 28</p>
-                  </div>
-                  <div className="bg-white/5 rounded-2xl p-3 text-center">
-                    <p className="text-xs text-white/40 mb-0.5">{cycleInfo.inPeriod ? "Period Day" : "Phase"}</p>
-                    <p className={`text-xl font-display font-bold ${cycleInfo.phaseColor}`}>
-                      {cycleInfo.inPeriod ? cycleInfo.periodDayNum : cycleInfo.phaseEmoji}
-                    </p>
-                    <p className="text-[10px] text-white/30">{cycleInfo.inPeriod ? "day" : cycleInfo.phase.toLowerCase()}</p>
-                  </div>
-                  <div className="bg-white/5 rounded-2xl p-3 text-center">
-                    <p className="text-xs text-white/40 mb-0.5">Next Period</p>
-                    <p className="text-xl font-display font-bold text-pink-300">
-                      {cycleInfo.nextPeriodDays === 0 ? "~Now" : `${cycleInfo.nextPeriodDays}d`}
-                    </p>
-                    <p className="text-[10px] text-white/30">away</p>
-                  </div>
-                </div>
-
-                {/* Tip */}
-                <div className="bg-white/5 rounded-2xl px-4 py-2.5 flex items-start gap-2">
-                  <span className="text-sm mt-0.5">💡</span>
-                  <p className="text-xs text-white/60 leading-relaxed">{cycleInfo.phaseTip}</p>
-                </div>
-              </>
             )}
           </motion.div>
         )}

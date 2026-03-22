@@ -3,7 +3,7 @@ import { useGetProfile, useCreateProfile } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@workspace/replit-auth-web";
 import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
-import { User, Settings, LogOut, Target, X, Check, ChevronDown } from "lucide-react";
+import { User, Settings, LogOut, Target, X, Check, ChevronDown, Save } from "lucide-react";
 
 const GOAL_OPTIONS = [
   { value: "weight loss",  label: "Lose Fat" },
@@ -78,10 +78,12 @@ export default function Profile() {
   const initial = displayName.charAt(0).toUpperCase();
 
   const openEdit = () => {
+    const rawGender = profile?.gender || "male";
+    const gender = rawGender === "other" ? "male" : rawGender;
     const f = {
       name:             profile?.name || displayName,
       age:              profile?.age || 25,
-      gender:           profile?.gender || "male",
+      gender,
       heightCm:         profile?.heightCm || 170,
       weightKg:         profile?.weightKg || 70,
       fitnessGoal:      profile?.fitnessGoal || "maintenance",
@@ -186,13 +188,21 @@ export default function Profile() {
         )}
 
         <div className="space-y-3 pt-2">
-          <button onClick={openEdit}
-            className="w-full glass-card p-4 rounded-2xl flex items-center justify-between hover:border-primary/50 transition-colors group">
-            <div className="flex items-center gap-3">
-              <Settings className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-              <span className="font-medium">Edit Profile</span>
-            </div>
-          </button>
+          <div className="flex gap-3">
+            <button onClick={openEdit}
+              className="flex-1 glass-card p-4 rounded-2xl flex items-center justify-between hover:border-primary/50 transition-colors group">
+              <div className="flex items-center gap-3">
+                <Settings className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                <span className="font-medium">Edit Profile</span>
+              </div>
+            </button>
+            {isEditing && editForm && (
+              <button onClick={handleSave} disabled={isPending}
+                className={`px-5 rounded-2xl font-semibold text-sm transition-all flex items-center gap-2 ${saveOk ? "bg-green-600 text-white" : "bg-violet-600 hover:bg-violet-500 text-white"} disabled:opacity-60`}>
+                {saveOk ? <><Check className="w-4 h-4" /> Saved!</> : isPending ? "..." : <><Save className="w-4 h-4" /> Save</>}
+              </button>
+            )}
+          </div>
 
           <button onClick={() => logout()}
             className="w-full glass-card p-4 rounded-2xl flex items-center justify-between border-destructive/20 hover:bg-destructive/10 hover:border-destructive/50 transition-colors group">
@@ -210,12 +220,18 @@ export default function Profile() {
           onClick={() => setIsEditing(false)}>
           <div onClick={e => e.stopPropagation()}
             className="bg-[#0d0d14] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg shadow-2xl flex flex-col max-h-[90dvh]">
-            {/* Header */}
+            {/* Header with Save button visible */}
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/5 shrink-0">
               <h3 className="font-display font-bold text-lg">Edit Profile</h3>
-              <button onClick={() => setIsEditing(false)} className="p-2 rounded-xl hover:bg-white/10 transition-colors">
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={handleSave} disabled={isPending}
+                  className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-1.5 ${saveOk ? "bg-green-600 text-white" : "bg-violet-600 hover:bg-violet-500 text-white"} disabled:opacity-60`}>
+                  {saveOk ? <><Check className="w-4 h-4" /> Saved!</> : isPending ? "Saving..." : <><Save className="w-3.5 h-3.5" /> Save</>}
+                </button>
+                <button onClick={() => setIsEditing(false)} className="p-2 rounded-xl hover:bg-white/10 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* Scrollable form */}
@@ -248,11 +264,11 @@ export default function Profile() {
               </div>
 
               <Field label="Gender">
-                <div className="grid grid-cols-3 gap-2">
-                  {["male","female","other"].map(g => (
+                <div className="grid grid-cols-2 gap-3">
+                  {["male", "female"].map(g => (
                     <button key={g} onClick={() => setField("gender", g)}
-                      className={`py-2 rounded-xl text-sm font-medium transition-colors capitalize border ${editForm.gender === g ? "bg-violet-600 border-violet-500 text-white" : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"}`}>
-                      {g}
+                      className={`py-3 rounded-xl text-sm font-semibold transition-colors capitalize border ${editForm.gender === g ? "bg-violet-600 border-violet-500 text-white shadow-[0_0_12px_rgba(124,58,237,0.3)]" : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"}`}>
+                      {g === "male" ? "♂ Male" : "♀ Female"}
                     </button>
                   ))}
                 </div>
@@ -304,14 +320,6 @@ export default function Profile() {
               <Field label="Diet Preference">
                 <SelectField value={editForm.dietPreference} onChange={v => setField("dietPreference", v)} options={DIET_OPTIONS} />
               </Field>
-            </div>
-
-            {/* Footer */}
-            <div className="px-5 pb-5 pt-3 border-t border-white/5 shrink-0">
-              <button onClick={handleSave} disabled={isPending}
-                className={`w-full py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 ${saveOk ? "bg-green-600 text-white" : "bg-violet-600 hover:bg-violet-500 text-white"} disabled:opacity-60`}>
-                {saveOk ? <><Check className="w-4 h-4" /> Saved!</> : isPending ? "Saving..." : "Save Changes"}
-              </button>
             </div>
           </div>
         </div>

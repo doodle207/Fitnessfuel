@@ -18,6 +18,7 @@ import ActiveWorkout from "@/pages/ActiveWorkout";
 import Progress from "@/pages/Progress";
 import Diet from "@/pages/Diet";
 import Profile from "@/pages/Profile";
+import AICoach from "@/pages/AICoach";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -194,6 +195,7 @@ function Router() {
         <Route path="/progress" component={Progress} />
         <Route path="/diet" component={Diet} />
         <Route path="/profile" component={Profile} />
+        <Route path="/ai-coach" component={AICoach} />
         <Route component={NotFound} />
       </Switch>
     </AuthGuard>

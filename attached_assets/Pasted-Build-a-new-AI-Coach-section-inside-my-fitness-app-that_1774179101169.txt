@@ -1,0 +1,116 @@
+Build a new “AI Coach” section inside my fitness app that makes the app feel truly personalized and different from a normal tracker.
+
+GOAL:
+Create an AI coach experience that uses user profile data, workout history, calorie/macros history, streaks, sleep/stress input if available, and goal type to give personalized coaching instead of generic advice.
+
+CORE IDEA:
+The AI coach should feel like a smart fitness mentor that:
+- understands the user’s goal
+- tracks their behavior over time
+- gives daily guidance
+- warns them when they are off track
+- adapts advice based on progress
+- feels friendly, sharp, and motivating
+
+FEATURES TO BUILD:
+
+1) AI Coach Dashboard Section
+Add a new section called “AI Coach” with:
+- Today’s Focus
+- Coach Feedback
+- Warning / Risk Alert
+- Quick Tip
+- Next Best Action
+- Weekly Progress Summary
+
+2) AI Chat Interface
+Create a chat-style page where users can ask:
+- what should I eat today?
+- should I train today?
+- why am I not progressing?
+- what should I fix this week?
+The AI must answer based on the user’s real app data, not generic fitness text.
+
+3) Personalization Logic
+The coach should use:
+- age
+- gender
+- weight
+- height
+- goal
+- workout consistency
+- calorie intake
+- protein / carbs / fat intake
+- missed workouts
+- streaks
+- progress trend
+- any available sleep / stress / water data
+
+4) Smart Coaching Rules
+The AI should give specific feedback like:
+- “Your calories are okay, but protein is too low for muscle gain.”
+- “You missed 2 workouts this week, so consistency is dropping.”
+- “You are in a deficit, but recovery looks weak.”
+- “Today is better for a lighter workout.”
+- “You are progressing, but slowly. Improve sleep and protein.”
+
+5) Coaching Personality
+Make the AI coach:
+- direct
+- motivating
+- simple to understand
+- not robotic
+- slightly strict when user is inconsistent
+- supportive when user is doing well
+
+6) Differentiating Features
+Add at least these unique features:
+- Reality Check Mode: tells user when they are slacking
+- Daily Micro-Coach: one small action per day
+- Weekly Report: summary of progress, issues, and next steps
+- Adaptive Workout Suggestion: suggest workout intensity based on user recovery and consistency
+- Adaptive Nutrition Suggestion: suggest macro focus based on goal and current intake
+
+7) UI / UX Requirements
+- clean modern design
+- mobile-friendly
+- fast loading
+- not glitchy
+- easy to read on small screens
+- keep AI Coach separate from normal tracker sections but connected to the same data
+
+8) Data Handling
+Use existing app data if available.
+If some data is missing, gracefully handle it and still show useful coaching.
+Do not show empty or broken UI states.
+Do not make the AI responses generic.
+Do not let the AI feel like just a chatbot with random fitness advice.
+
+9) Example AI behavior
+If user is inconsistent:
+“Your plan is not the problem. Consistency is. Fix your workout streak this week.”
+
+If protein is low:
+“You are training, but your protein is holding back results.”
+
+If user is on track:
+“Good work. Keep this pace and stay consistent for another week.”
+
+10) Technical expectations
+- integrate into existing app structure
+- keep code organized and reusable
+- create components if needed
+- make the AI coach section production-ready
+- do not break current dashboard or profile flow
+- ensure everything works well on mobile
+
+11) Output required
+Please implement:
+- AI Coach dashboard card section
+- AI Coach chat page or modal
+- weekly summary block
+- personalized coaching logic
+- mobile responsive UI
+- clean component structure
+
+Make the AI coach feel like the main premium feature of the app.

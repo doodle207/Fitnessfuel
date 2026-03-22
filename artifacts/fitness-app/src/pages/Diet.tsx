@@ -453,20 +453,6 @@ export default function Diet() {
               >
                 <Globe className="w-4 h-4 text-violet-400" /> {country} <ChevronDown className="w-3 h-3 text-muted-foreground" />
               </button>
-              <button
-                onClick={() => setShowImageAnalyzer(true)}
-                className="relative flex items-center justify-center w-10 h-10 rounded-xl border border-violet-500/30 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 hover:border-violet-500/50 transition-all shadow-[0_0_12px_rgba(124,58,237,0.2)] backdrop-blur-sm"
-                title="Scan food with AI"
-              >
-                <Camera className="w-4 h-4" />
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 shadow-[0_0_6px_rgba(124,58,237,0.6)]" />
-              </button>
-              <button
-                onClick={() => { setShowFoodModal(true); setShowCustomForm(false); }}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors shadow-[0_0_10px_rgba(124,58,237,0.3)]"
-              >
-                <Plus className="w-4 h-4" /> Add Food
-              </button>
             </div>
 
             {/* Country Picker Inline – no animation to stay snappy */}
@@ -512,11 +498,27 @@ export default function Diet() {
                       <div className="flex items-center gap-2">
                         <mt.icon className={`w-4 h-4 ${mt.color}`} />
                         <span className="font-semibold text-sm">{mt.label}</span>
-                        <span className="text-xs text-muted-foreground">({mealEntries.length} items)</span>
+                        <span className="text-xs text-muted-foreground">({mealEntries.length})</span>
                       </div>
-                      <span className={`text-sm font-bold ${mt.color}`}>
-                        {mealEntries.reduce((s, f) => s + f.calories, 0)} kcal
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-bold ${mt.color}`}>
+                          {mealEntries.reduce((s, f) => s + f.calories, 0)} kcal
+                        </span>
+                        <button
+                          onClick={() => { setActiveMealTab(mt.id); setShowImageAnalyzer(true); }}
+                          className="relative flex items-center justify-center w-8 h-8 rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 transition-all"
+                          title="Scan food with AI camera"
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-gradient-to-br from-violet-500 to-cyan-500" />
+                        </button>
+                        <button
+                          onClick={() => { setActiveMealTab(mt.id); setShowFoodModal(true); setShowCustomForm(false); }}
+                          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${mt.bg} ${mt.color} border border-opacity-30 hover:opacity-80`}
+                        >
+                          <Plus className="w-3 h-3" /> Add
+                        </button>
+                      </div>
                     </div>
                     {mealEntries.length === 0 ? (
                       <div className="py-8 text-center text-muted-foreground">

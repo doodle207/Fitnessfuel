@@ -9,6 +9,7 @@ import dashboardRouter from "./dashboard";
 import dietRouter from "./diet";
 import achievementsRouter from "./achievements";
 import imageAnalysisRouter from "./imageAnalysis";
+import aiCoachRouter from "./aiCoach";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(dashboardRouter);
 router.use(dietRouter);
 router.use(achievementsRouter);
 router.use(imageAnalysisRouter);
+router.use(aiCoachRouter);
 
 export default router;
