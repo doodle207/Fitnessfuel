@@ -438,7 +438,13 @@ export default function Diet() {
                   </div>
 
                   <div className="border-t border-white/5 pt-4 space-y-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Or Enter Manually</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Or Enter Manually</p>
+                      <button onClick={logCustomFood} disabled={!customFood.name || !customFood.calories}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs font-semibold hover:bg-white/15 transition-colors disabled:opacity-40 shrink-0">
+                        <Plus className="w-3 h-3" /> Add Food
+                      </button>
+                    </div>
                     <input value={customFood.name} onChange={e => setCustomFood(p => ({ ...p, name: e.target.value }))}
                       placeholder="Food name *" className="w-full px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 focus:border-violet-500 outline-none text-sm" />
                     <div className="grid grid-cols-2 gap-2">
