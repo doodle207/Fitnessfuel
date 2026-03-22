@@ -3,6 +3,7 @@ import { chatComplete, chatCompleteWithHistory } from "../lib/ai";
 import { db } from "@workspace/db";
 import { foodLogsTable, workoutsTable, userProfilesTable } from "@workspace/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { checkLimit } from "../middlewares/usageLimit";
 
 const router: IRouter = Router();
 
@@ -186,7 +187,7 @@ Base every field on their actual numbers. Be motivating and energetic!`;
   }
 });
 
-router.post("/ai-coach/chat", async (req, res) => {
+router.post("/ai-coach/chat", checkLimit("aiChat"), async (req, res) => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
     return;
@@ -216,7 +217,7 @@ router.post("/ai-coach/chat", async (req, res) => {
   }
 });
 
-router.post("/ai-coach/meal-plan", async (req, res) => {
+router.post("/ai-coach/meal-plan", checkLimit("mealPlan"), async (req, res) => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
     return;

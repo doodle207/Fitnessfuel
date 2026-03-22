@@ -4,6 +4,7 @@ import { analyzeImageForFood, estimateFoodMacros } from "../lib/ai";
 import { db } from "@workspace/db";
 import { foodLogsTable } from "@workspace/db/schema";
 import { z } from "zod/v4";
+import { checkLimit } from "../middlewares/usageLimit";
 
 const router: IRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -61,6 +62,7 @@ async function getMacrosForFood(foodName: string): Promise<FoodMacros> {
 router.post(
   "/diet/analyze-image",
   upload.single("image"),
+  checkLimit("scan"),
   async (req, res) => {
     if (!req.isAuthenticated()) {
       res.status(401).json({ error: "Unauthorized" });

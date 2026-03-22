@@ -1,0 +1,183 @@
+Build and implement a complete production-ready freemium + subscription system for my fitness web app.
+
+The app includes:
+- AI Coach
+- Food Scanner
+- Calorie estimation (text input)
+- Food logging
+- Meal Plan
+- Cycle / menstruation tracking
+- Dashboard
+
+TECH STACK:
+- Frontend: React
+- Backend: Node.js + Express
+- Database: existing DB or create minimal schema
+- Use environment variables for all keys
+
+-----------------------------------
+PAYMENT SYSTEM (RAZORPAY + STRIPE)
+-----------------------------------
+
+1) Payment routing
+- India → Razorpay
+- Outside India → Stripe
+- Also allow manual selection:
+  - “Pay with UPI / Razorpay”
+  - “Pay with Card / Stripe”
+
+2) Razorpay
+- POST /api/payments/razorpay/create-order
+- POST /api/payments/razorpay/verify
+- POST /api/webhooks/razorpay
+- Verify signature before unlocking premium
+
+3) Stripe
+- POST /api/payments/stripe/create-session
+- POST /api/webhooks/stripe
+- Handle:
+  - checkout.session.completed
+  - invoice.paid
+- Verify webhook signature
+
+4) Plans
+India:
+- ₹199/month
+- ₹349/month
+
+Global:
+- $5.99/month
+- $9.99/month
+
+5) Database
+Store:
+- userId
+- email
+- country
+- isPremium
+- paymentProvider
+- planName
+- subscriptionId
+- paymentStatus
+- expiryDate
+
+6) Premium unlock
+- Only unlock via backend verification/webhooks
+- Never rely on frontend only
+
+-----------------------------------
+FREEMIUM FEATURE LIMITS
+-----------------------------------
+
+FREE USERS:
+
+- Food logging → UNLIMITED (no restriction)
+- Calorie estimation (text input) → UNLIMITED
+
+- AI Coach → 2 chats per day
+- Food Scanner → 2 scans per day
+- Meal Plan → 1 plan per week
+
+- Daily coaching → free (basic, generic)
+- Cycle tracking → free (basic tracking + reminders)
+
+PAID USERS:
+- Unlimited access to all features
+
+-----------------------------------
+BACKEND LIMIT ENFORCEMENT
+-----------------------------------
+
+Apply limits ONLY in backend APIs:
+
+- POST /api/ai-coach → limit 2/day
+- POST /api/scan-food → limit 2/day
+- POST /api/meal-plan → limit 1/week
+
+Before processing:
+- check usage
+- if limit reached and not premium:
+  return:
+  { message: "Limit reached. Upgrade to continue." }
+
+-----------------------------------
+USAGE TRACKING
+-----------------------------------
+
+Add fields:
+- aiChatsToday
+- scansToday
+- mealPlansThisWeek
+- lastDailyReset
+- lastWeeklyReset
+
+Reset logic:
+- daily reset → AI chats, scans
+- weekly reset → meal plans
+
+-----------------------------------
+FRONTEND UX (VERY IMPORTANT)
+-----------------------------------
+
+Show usage clearly:
+- “2 AI chats left today”
+- “2 scans left today”
+- “1 meal plan left this week”
+
+When limit reached:
+- show upgrade popup
+- include:
+  - message
+  - “Upgrade Now” button
+
+Add upgrade triggers in:
+- AI Coach button + message send
+- Food Scanner submit
+- Meal Plan generate button
+- Dashboard premium sections
+
+-----------------------------------
+PRICING PAGE
+-----------------------------------
+
+Create:
+- Free plan
+- ₹199 Premium plan (Most Popular)
+- ₹349 Pro plan (Best Results)
+
+Show:
+- India or global pricing based on location
+- clear CTA buttons
+- success / cancel / loading states
+
+-----------------------------------
+SECURITY
+-----------------------------------
+
+- Never expose secret keys
+- Use env variables:
+  - RAZORPAY_KEY_ID
+  - RAZORPAY_SECRET
+  - STRIPE_SECRET_KEY
+  - STRIPE_WEBHOOK_SECRET
+- Validate all payments via backend
+- Use webhook verification
+
+-----------------------------------
+DELIVERABLE
+-----------------------------------
+
+Build a fully working system with:
+- Razorpay integration
+- Stripe integration
+- Webhooks
+- Premium unlock logic
+- Feature limits
+- Usage tracking
+- Upgrade UI
+- Pricing page
+
+Important:
+- Do not leave placeholders
+- Make it production-ready
+- Keep code clean and modular

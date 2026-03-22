@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Activity, Dumbbell, LineChart, Apple, Brain, User } from "lucide-react";
+import { Activity, Dumbbell, LineChart, Apple, Brain, User, Crown } from "lucide-react";
 import { motion } from "framer-motion";
 
 const mobileNavItems = [
@@ -16,6 +16,7 @@ const allDesktopNavItems = [
   { href: "/progress", label: "Progress", icon: LineChart },
   { href: "/diet", label: "Diet", icon: Apple },
   { href: "/ai-coach", label: "AI Coach", icon: Brain },
+  { href: "/pricing", label: "Premium", icon: Crown },
   { href: "/profile", label: "Profile", icon: User },
 ];
 

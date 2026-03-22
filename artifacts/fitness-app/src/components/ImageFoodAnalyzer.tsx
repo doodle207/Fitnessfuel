@@ -68,9 +68,10 @@ interface Props {
   activeMealTab: string;
   onFoodLogged: (entry: any) => void;
   onClose: () => void;
+  onLimitReached?: () => void;
 }
 
-export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose }: Props) {
+export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose, onLimitReached }: Props) {
   const [phase, setPhase] = useState<"upload" | "loading" | "result" | "error">("upload");
   const [loadingStep, setLoadingStep] = useState<"converting" | "analyzing">("analyzing");
   const [preview, setPreview] = useState<string | null>(null);
@@ -131,6 +132,11 @@ export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose
         console.error("[ImageFoodAnalyzer] Response is not JSON. Raw body:", rawText);
         setErrorMsg(`Unexpected server response (status ${res.status}). Please try again.`);
         setPhase("error");
+        return;
+      }
+      if (res.status === 429 && data?.limitReached) {
+        onClose();
+        onLimitReached?.();
         return;
       }
       if (!res.ok) {

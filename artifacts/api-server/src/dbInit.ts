@@ -217,6 +217,50 @@ async function createTables() {
       earned_at TIMESTAMP
     )
   `);
+
+  // Add country column to user_profiles if missing
+  await db.execute(sql`
+    ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'USA'
+  `);
+
+  // Subscriptions table (premium access)
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      id SERIAL PRIMARY KEY,
+      user_id TEXT NOT NULL UNIQUE,
+      is_premium BOOLEAN NOT NULL DEFAULT FALSE,
+      plan_name TEXT NOT NULL DEFAULT 'free',
+      expiry_date TIMESTAMP,
+      payment_provider TEXT,
+      coupon_used TEXT,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  // Coupon redemptions table (one-time use tracking)
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS coupon_redemptions (
+      id SERIAL PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      coupon_code TEXT NOT NULL,
+      redeemed_at TIMESTAMP NOT NULL DEFAULT NOW(),
+      UNIQUE (user_id, coupon_code)
+    )
+  `);
+
+  // Usage tracking table (daily/weekly limits for free users)
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS usage_tracking (
+      id SERIAL PRIMARY KEY,
+      user_id TEXT NOT NULL UNIQUE,
+      ai_chats_today INTEGER NOT NULL DEFAULT 0,
+      scans_today INTEGER NOT NULL DEFAULT 0,
+      meal_plans_this_week INTEGER NOT NULL DEFAULT 0,
+      last_daily_reset DATE,
+      last_weekly_reset DATE
+    )
+  `);
 }
 
 /**

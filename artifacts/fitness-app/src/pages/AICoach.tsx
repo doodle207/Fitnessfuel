@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import AdBanner from "@/components/AdBanner";
 import ChatMessage from "@/components/ChatMessage";
+import UpgradeModal from "@/components/UpgradeModal";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -38,10 +39,20 @@ export default function AICoach() {
   const [activeTab, setActiveTab] = useState<"coach" | "chat" | "meal">("coach");
   const [mealPlan, setMealPlan] = useState<any>(null);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<"aiChat" | "mealPlan">("aiChat");
+  const [subscription, setSubscription] = useState<any>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const profile = rawProfile && typeof rawProfile === "object" && !Array.isArray(rawProfile) ? rawProfile as any : null;
   const name = profile?.name?.split(" ")[0] || "Champ";
+
+  const loadSubscription = () => {
+    fetch(`${BASE}/api/payments/subscription`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d && setSubscription(d))
+      .catch(() => {});
+  };
 
   const loadInsights = async () => {
     setIsLoadingInsights(true);
@@ -54,6 +65,7 @@ export default function AICoach() {
 
   useEffect(() => {
     loadInsights();
+    loadSubscription();
     setChatMessages([{
       role: "coach",
       content: `Hey ${name}! I'm your AI coach. I know your goals, your workouts, and your nutrition. Ask me anything \u2014 I give real answers based on your actual data, not generic advice.`,
@@ -79,7 +91,14 @@ export default function AICoach() {
         body: JSON.stringify({ message, history }),
       });
       const data = await r.json();
-      setChatMessages(prev => [...prev, { role: "coach", content: data.reply || "Keep pushing! Log your meals and workouts. \uD83D\uDCAA", timestamp: new Date() }]);
+      if (r.status === 429 && data?.limitReached) {
+        setUpgradeReason("aiChat");
+        setShowUpgrade(true);
+        setChatMessages(prev => prev.slice(0, -1));
+      } else {
+        setChatMessages(prev => [...prev, { role: "coach", content: data.reply || "Keep pushing! Log your meals and workouts. \uD83D\uDCAA", timestamp: new Date() }]);
+        loadSubscription();
+      }
     } catch {
       setChatMessages(prev => [...prev, { role: "coach", content: "Connection issue. Try again in a moment.", timestamp: new Date() }]);
     }
@@ -91,7 +110,13 @@ export default function AICoach() {
     try {
       const r = await fetch(`${BASE}/api/ai-coach/meal-plan`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: "{}" });
       const d = await r.json();
-      if (d && d.meals) setMealPlan(d);
+      if (r.status === 429 && d?.limitReached) {
+        setUpgradeReason("mealPlan");
+        setShowUpgrade(true);
+      } else if (d && d.meals) {
+        setMealPlan(d);
+        loadSubscription();
+      }
     } catch {}
     setIsGeneratingPlan(false);
   };
@@ -111,6 +136,21 @@ export default function AICoach() {
           </div>
           <span className="text-xs font-bold text-violet-400 bg-violet-500/15 border border-violet-500/30 px-3 py-1.5 rounded-full">AI</span>
         </header>
+
+        {subscription && !subscription.isPremium && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] px-2.5 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 font-medium">
+              {Math.max(0, 2 - (subscription.usage?.aiChatsToday ?? 0))} AI chats left today
+            </span>
+            <span className="text-[11px] px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 font-medium">
+              {Math.max(0, 1 - (subscription.usage?.mealPlansThisWeek ?? 0))} meal plan left this week
+            </span>
+            <button onClick={() => { setUpgradeReason("aiChat"); setShowUpgrade(true); }}
+              className="text-[11px] px-2.5 py-1 rounded-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-semibold hover:opacity-90 transition-opacity">
+              Upgrade
+            </button>
+          </div>
+        )}
 
         <div className="flex bg-white/5 rounded-2xl p-1 gap-1">
           {[
@@ -401,6 +441,15 @@ export default function AICoach() {
           )}
         </AnimatePresence>
       </div>
+
+      {showUpgrade && (
+        <UpgradeModal
+          trigger={upgradeReason}
+          usage={subscription?.usage}
+          onClose={() => setShowUpgrade(false)}
+          onSuccess={() => { setShowUpgrade(false); loadSubscription(); }}
+        />
+      )}
     </PageTransition>
   );
 }
