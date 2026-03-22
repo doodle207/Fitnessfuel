@@ -300,13 +300,19 @@ export default function Progress() {
                     const earned = earnedKeys.has(badge.key);
                     return (
                       <motion.div key={badge.key} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                        className={`p-4 rounded-2xl border flex flex-col items-center text-center relative transition-all ${earned ? `bg-gradient-to-br ${badge.color}` : 'bg-black/30 border-white/5 opacity-50 grayscale'}`}>
+                        onClick={() => { if (!earned) { toast({ title: "🔒 Badge Locked", description: `${badge.name}: ${badge.desc}`, }); } }}
+                        className={`p-4 rounded-2xl border flex flex-col items-center text-center relative transition-all ${earned ? `bg-gradient-to-br ${badge.color}` : 'bg-black/30 border-white/5 opacity-50 grayscale cursor-pointer hover:opacity-60'}`}>
                         <div className="text-4xl mb-2">{badge.emoji}</div>
                         <h4 className="font-bold text-sm mb-1">{badge.name}</h4>
                         <p className="text-[11px] text-muted-foreground leading-tight">{badge.desc}</p>
                         {earned && (
                           <div className="absolute top-2 right-2 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
                             <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                          </div>
+                        )}
+                        {!earned && (
+                          <div className="absolute top-2 right-2 w-5 h-5 bg-white/10 border border-white/20 rounded-full flex items-center justify-center">
+                            <span className="text-[9px]">🔒</span>
                           </div>
                         )}
                       </motion.div>

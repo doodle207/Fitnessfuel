@@ -6,16 +6,24 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { Dumbbell, Play, Calendar, X, Target, Info, Zap, Timer, Search, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import imgChest from "@assets/IMG_5147_1774142427972.png";
+import imgBack from "@assets/IMG_5146_1774142427972.png";
+import imgLegs from "@assets/IMG_5144_1774142427972.jpeg";
+import imgShoulders from "@assets/IMG_5148_1774142427972.png";
+import imgArms from "@assets/IMG_5151_1774142427972.jpeg";
+import imgCore from "@assets/IMG_5152_1774142427972.jpeg";
+import imgCardio from "@assets/IMG_5149_1774142427972.png";
+import imgFullBody from "@assets/IMG_5153_1774142427972.jpeg";
 
 const muscleGroups = [
-  { id: "Chest", color: "from-blue-500/80 to-cyan-500/80", emoji: "💪", image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=220&fit=crop" },
-  { id: "Back", color: "from-violet-500/80 to-purple-500/80", emoji: "🏋️", image: "https://images.unsplash.com/photo-1603287681836-b174ce5074c2?w=400&h=220&fit=crop" },
-  { id: "Legs", color: "from-orange-500/80 to-red-500/80", emoji: "🦵", image: "https://images.unsplash.com/photo-1434652092654-250ad142a5bc?w=400&h=220&fit=crop" },
-  { id: "Shoulders", color: "from-emerald-500/80 to-teal-500/80", emoji: "🎯", image: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&h=220&fit=crop" },
-  { id: "Arms", color: "from-pink-500/80 to-rose-500/80", emoji: "💪", image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=220&fit=crop" },
-  { id: "Core", color: "from-yellow-500/80 to-orange-500/80", emoji: "⚡", image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&h=220&fit=crop" },
-  { id: "Cardio", color: "from-cyan-500/80 to-sky-500/80", emoji: "🏃", image: "https://images.unsplash.com/photo-1538805060514-97d9cc17730c?w=400&h=220&fit=crop" },
-  { id: "Full Body", color: "from-gray-600/80 to-gray-800/80", emoji: "🔥", image: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=400&h=220&fit=crop" },
+  { id: "Chest", color: "from-blue-500/80 to-cyan-500/80", emoji: "💪", image: imgChest },
+  { id: "Back", color: "from-violet-500/80 to-purple-500/80", emoji: "🏋️", image: imgBack },
+  { id: "Legs", color: "from-orange-500/80 to-red-500/80", emoji: "🦵", image: imgLegs },
+  { id: "Shoulders", color: "from-emerald-500/80 to-teal-500/80", emoji: "🎯", image: imgShoulders },
+  { id: "Arms", color: "from-pink-500/80 to-rose-500/80", emoji: "💪", image: imgArms },
+  { id: "Core", color: "from-yellow-500/80 to-orange-500/80", emoji: "⚡", image: imgCore },
+  { id: "Cardio", color: "from-cyan-500/80 to-sky-500/80", emoji: "🏃", image: imgCardio },
+  { id: "Full Body", color: "from-gray-600/80 to-gray-800/80", emoji: "🔥", image: imgFullBody },
 ];
 
 const repSchemes: Record<string, { sets: string; reps: string; rest: string; focus: string; tempo: string; rom: string }> = {
@@ -278,11 +286,10 @@ export default function WorkoutBuilder() {
             <div className="space-y-2">
               {recentWorkouts.slice(0, 5).map((workout: any) => (
                 <motion.div key={workout.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center justify-between p-4 rounded-2xl bg-black/30 border border-white/5 hover:border-violet-500/20 transition-colors group cursor-pointer"
-                  onClick={() => setLocation(`/workout/active/${workout.id}`)}
+                  className="flex items-center justify-between p-4 rounded-2xl bg-black/30 border border-white/5 transition-colors"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm group-hover:text-violet-400 transition-colors">{workout.name}</p>
+                    <p className="font-semibold text-sm">{workout.name}</p>
                     <div className="flex items-center gap-3 mt-0.5">
                       <p className="text-xs text-muted-foreground">{(() => { try { return format(new Date(workout.date), "EEE, MMM d, yyyy"); } catch { return workout.date; } })()}</p>
                       {workout.caloriesBurned > 0 && (
@@ -292,8 +299,8 @@ export default function WorkoutBuilder() {
                       )}
                     </div>
                   </div>
-                  <span className="shrink-0 text-xs px-2.5 py-1 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">
-                    {workout.muscleGroup || "Mixed"}
+                  <span className="shrink-0 text-xs px-2.5 py-1 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 flex items-center gap-1">
+                    ✓ {workout.muscleGroup || "Mixed"}
                   </span>
                 </motion.div>
               ))}

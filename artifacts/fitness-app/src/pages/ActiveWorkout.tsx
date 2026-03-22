@@ -86,6 +86,8 @@ function ProgressionHint({ lastWeight, lastReps }: { lastWeight: number; lastRep
   );
 }
 
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 export default function ActiveWorkout() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
@@ -149,6 +151,31 @@ export default function ActiveWorkout() {
   }
 
   const workoutData = workout as any;
+
+  if (workoutData.durationMinutes && workoutData.durationMinutes > 0) {
+    return (
+      <PageTransition>
+        <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8">
+          <div className="w-20 h-20 rounded-2xl bg-green-500/20 border border-green-500/30 flex items-center justify-center mb-4">
+            <Check className="w-10 h-10 text-green-400" />
+          </div>
+          <h2 className="text-2xl font-display font-bold mb-2">{workoutData.name}</h2>
+          <p className="text-muted-foreground text-sm mb-1">This workout is already complete.</p>
+          {workoutData.caloriesBurned > 0 && (
+            <p className="text-orange-400 text-sm font-medium mb-1">🔥 {workoutData.caloriesBurned} kcal burned</p>
+          )}
+          <p className="text-muted-foreground text-xs mb-6">⏱ {workoutData.durationMinutes} min · {workoutData.muscleGroup || "Mixed"}</p>
+          <button
+            onClick={() => setLocation("/workout")}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 text-white font-semibold hover:bg-violet-500 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to Workout
+          </button>
+        </div>
+      </PageTransition>
+    );
+  }
+
   const sets: any[] = Array.isArray(workoutData.sets) ? workoutData.sets : [];
 
   const setsByExercise = sets.reduce((acc: Record<number, any[]>, set: any) => {
@@ -163,7 +190,7 @@ export default function ActiveWorkout() {
   const handleFinishWorkout = async () => {
     setIsFinishing(true);
     try {
-      const res = await fetch(`/api/workouts/${workoutId}/finish`, { method: "PATCH", credentials: "include" });
+      const res = await fetch(`${BASE}/api/workouts/${workoutId}/finish`, { method: "PATCH", credentials: "include" });
       if (res.ok) {
         const data = await res.json();
         setFinishSummary(data);

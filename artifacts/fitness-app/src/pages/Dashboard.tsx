@@ -4,7 +4,7 @@ import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
 import { format, startOfWeek, addDays } from "date-fns";
 import {
   Flame, Activity, Trophy, ArrowRight, Utensils, Droplets, Footprints,
-  Target, TrendingUp, Zap, ChevronRight
+  Target, TrendingUp, Zap, ChevronRight, UserCircle2
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
@@ -187,21 +187,24 @@ export default function Dashboard() {
   return (
     <PageTransition>
       <div className="space-y-6 max-w-5xl mx-auto">
-        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-          <div>
+        <header className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
             <p className="text-muted-foreground text-sm">{format(new Date(), "EEEE, MMMM do")}</p>
             <h1 className="text-3xl md:text-4xl font-display font-bold mt-0.5">
               Hey, <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">{safeProfile.name?.split(" ")[0] || "Champ"}</span> 👋
             </h1>
+            <div className="flex gap-2 mt-3">
+              <Link href="/workout" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors shadow-[0_0_16px_rgba(124,58,237,0.4)]">
+                <Activity className="w-4 h-4" /> Workout
+              </Link>
+              <Link href="/diet" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium hover:bg-white/10 transition-colors">
+                <Utensils className="w-4 h-4" /> Log Food
+              </Link>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Link href="/workout" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors shadow-[0_0_16px_rgba(124,58,237,0.4)]">
-              <Activity className="w-4 h-4" /> Workout
-            </Link>
-            <Link href="/diet" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium hover:bg-white/10 transition-colors">
-              <Utensils className="w-4 h-4" /> Log Food
-            </Link>
-          </div>
+          <Link href="/profile" className="shrink-0 w-10 h-10 rounded-full bg-violet-600/20 border border-violet-500/30 flex items-center justify-center hover:bg-violet-600/40 transition-colors">
+            <UserCircle2 className="w-5 h-5 text-violet-400" />
+          </Link>
         </header>
 
         {/* ── ROW 1: Calories Overview ── */}

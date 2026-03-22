@@ -217,7 +217,7 @@ export default function Profile() {
             </div>
 
             {/* Scrollable form */}
-            <div className="overflow-y-auto flex-1 p-5 space-y-4" style={{ WebkitOverflowScrolling: "touch" }}>
+            <div className="overflow-y-auto flex-1 p-5 space-y-4" style={{ WebkitOverflowScrolling: "touch" as any, touchAction: "pan-y", overscrollBehavior: "contain" }}>
               <Field label="Name">
                 <input type="text" value={editForm.name}
                   onChange={e => setField("name", e.target.value)}

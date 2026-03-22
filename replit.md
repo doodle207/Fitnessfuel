@@ -38,11 +38,12 @@ artifacts-monorepo/
 ## Features
 
 1. **Auth + Onboarding**: Replit auth (PKCE via DB-backed `oauth_states` table) + Google OAuth. Profile creation invalidates query cache before redirect.
-2. **Dashboard**: Row 1 = stats strip; Row 2 = LEFT: Macro rings (Protein/Carbs/Fat) + Hydration (API-synced), RIGHT: Recent Workout + Streaks. Water data fetched from and posted to `/api/progress/water`.
-3. **Workout Tracker**: Log sets/reps/weight by muscle group and exercise, smart progression suggestions
-4. **Progress Tracking**: Body weight chart (date sent as YYYY-MM-DD), measurements, achievements
+2. **Dashboard**: Row 1 = stats strip; Row 2 = LEFT: Macro rings (Protein/Carbs/Fat) + Hydration (API-synced), RIGHT: Recent Workout + Streaks. Water data fetched from and posted to `/api/progress/water`. Profile icon (top-right) links to profile page.
+3. **Workout Tracker**: Log sets/reps/weight by muscle group and exercise, smart progression suggestions. Muscle group cards use uploaded anatomical images. Recent workouts shown as read-only history (no longer navigate to active workout). Finished workouts detected by `durationMinutes > 0` and shown with a completed summary view.
+4. **Progress Tracking**: Body weight chart (date sent as YYYY-MM-DD), measurements, achievements. Locked badges clickable — show a toast with badge name/requirement + 🔒 indicator.
 5. **Diet/Nutrition**: Country picker (auto-regenerates plan on change), macro targets (Protein/Carbs/Fat) shown with progress bars, food log, water tracker (API-synced), AI meal plan (country-specific foods, diet preference filter)
 6. **Achievements**: 10 badges across workout, streak, strength, and nutrition categories
+7. **Exercise Library**: 143 exercises (20 per muscle group: Chest, Back, Legs, Shoulders, Arms, Core, Cardio, Full Body) seeded to the database
 
 ## Database Schema
 
