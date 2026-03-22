@@ -19,6 +19,7 @@ import Progress from "@/pages/Progress";
 import Diet from "@/pages/Diet";
 import Profile from "@/pages/Profile";
 import AICoach from "@/pages/AICoach";
+import Pricing from "@/pages/Pricing";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -177,18 +178,17 @@ function LoginScreen() {
         )}
 
         <div className="space-y-3">
-          {googleEnabled && (
-            <motion.button
-              type="button"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={loginWithGoogle}
-              className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-semibold text-base text-[#1a1a2e] bg-white hover:bg-white/95 transition-all shadow-lg"
-            >
-              <GoogleIcon />
-              Sign in with Google
-            </motion.button>
-          )}
+          <motion.button
+            type="button"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={loginWithGoogle}
+            disabled={googleEnabled === false}
+            className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-semibold text-base text-[#1a1a2e] bg-white hover:bg-white/95 transition-all shadow-lg disabled:opacity-60"
+          >
+            <GoogleIcon />
+            {googleEnabled === null ? "Sign in with Google" : googleEnabled ? "Sign in with Google" : "Google (not configured)"}
+          </motion.button>
 
           <motion.button
             type="button"
@@ -262,6 +262,7 @@ function Router() {
         <Route path="/diet" component={Diet} />
         <Route path="/profile" component={Profile} />
         <Route path="/ai-coach" component={AICoach} />
+        <Route path="/pricing" component={Pricing} />
         <Route component={NotFound} />
       </Switch>
     </AuthGuard>

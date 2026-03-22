@@ -1,20 +1,52 @@
 import OpenAI from "openai";
 
-let _client: OpenAI | null = null;
+let _textClient: OpenAI | null = null;
+let _visionClient: OpenAI | null = null;
+
+function getGroqModel(): string {
+  return process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+}
+
+function useGroq(): boolean {
+  return !!(process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim());
+}
 
 export function getAI(): OpenAI {
-  if (_client) return _client;
-  _client = new OpenAI({
-    apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY || "",
+  if (_textClient) return _textClient;
+  if (useGroq()) {
+    _textClient = new OpenAI({
+      apiKey: process.env.GROQ_API_KEY!,
+      baseURL: "https://api.groq.com/openai/v1",
+    });
+    console.log("[AI] Using Groq:", getGroqModel());
+  } else {
+    _textClient = new OpenAI({
+      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.GEMINI_API_KEY || "",
+      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1",
+    });
+    console.log("[AI] Using Replit AI proxy / OpenAI");
+  }
+  return _textClient;
+}
+
+function getVisionAI(): OpenAI {
+  if (_visionClient) return _visionClient;
+  _visionClient = new OpenAI({
+    apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || "",
     baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1",
   });
-  return _client;
+  return _visionClient;
+}
+
+function getTextModel(): string {
+  if (useGroq()) return getGroqModel();
+  return "gpt-4o";
 }
 
 export async function chatComplete(systemPrompt: string, userPrompt: string): Promise<string> {
   const ai = getAI();
   const resp = await ai.chat.completions.create({
-    model: "gpt-4o",
+    model: getTextModel(),
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
@@ -37,7 +69,7 @@ export async function chatCompleteWithHistory(
     { role: "user", content: userMessage },
   ];
   const resp = await ai.chat.completions.create({
-    model: "gpt-4o",
+    model: getTextModel(),
     messages,
     temperature: 0.7,
     max_tokens: 1024,
@@ -46,7 +78,7 @@ export async function chatCompleteWithHistory(
 }
 
 export async function analyzeImageForFood(imageBase64: string, mimeType: string): Promise<string[]> {
-  const ai = getAI();
+  const ai = getVisionAI();
   const resp = await ai.chat.completions.create({
     model: "gpt-4o",
     messages: [
@@ -89,7 +121,7 @@ export async function estimateFoodMacros(foodName: string, weightGrams?: number)
   const weightStr = weightGrams ? `${weightGrams}g` : "a standard serving";
   const ai = getAI();
   const resp = await ai.chat.completions.create({
-    model: "gpt-4o",
+    model: getTextModel(),
     messages: [
       {
         role: "system",

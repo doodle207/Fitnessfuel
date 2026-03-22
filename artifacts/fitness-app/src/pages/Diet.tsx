@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import ImageFoodAnalyzer from "@/components/ImageFoodAnalyzer";
 import AdBanner from "@/components/AdBanner";
+import UpgradeModal from "@/components/UpgradeModal";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -40,6 +41,7 @@ export default function Diet() {
   const [waterData, setWaterData] = useState<{ totalMl: number; goalMl: number; logs: any[] }>({ totalMl: 0, goalMl: WATER_GOAL, logs: [] });
   const [caloriesBurned, setCaloriesBurned] = useState(0);
   const [showImageAnalyzer, setShowImageAnalyzer] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const [smartFoodName, setSmartFoodName] = useState("");
   const [smartFoodWeight, setSmartFoodWeight] = useState("");
@@ -379,7 +381,7 @@ export default function Diet() {
 
         <AnimatePresence>
           {showImageAnalyzer && (
-            <ImageFoodAnalyzer activeMealTab={activeMealTab} onFoodLogged={(entry) => addFoodToLog(entry)} onClose={() => setShowImageAnalyzer(false)} />
+            <ImageFoodAnalyzer activeMealTab={activeMealTab} onFoodLogged={(entry) => addFoodToLog(entry)} onClose={() => setShowImageAnalyzer(false)} onLimitReached={() => { setShowImageAnalyzer(false); setShowUpgrade(true); }} />
           )}
         </AnimatePresence>
 
@@ -468,6 +470,14 @@ export default function Diet() {
           )}
         </AnimatePresence>
       </div>
+
+      {showUpgrade && (
+        <UpgradeModal
+          trigger="scan"
+          onClose={() => setShowUpgrade(false)}
+          onSuccess={() => setShowUpgrade(false)}
+        />
+      )}
     </PageTransition>
   );
 }
