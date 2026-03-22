@@ -7,6 +7,7 @@ import {
   MessageSquare, ChevronRight, Flame, Dumbbell, Sparkles, Activity, UtensilsCrossed
 } from "lucide-react";
 import AdBanner from "@/components/AdBanner";
+import ChatMessage from "@/components/ChatMessage";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -258,21 +259,18 @@ export default function AICoach() {
                   </div>
                 </div>
 
-                <div className="p-4 space-y-4 max-h-96 overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
+                <div className="p-4 space-y-4 max-h-[420px] sm:max-h-[480px] overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
                   {chatMessages.map((msg, i) => (
-                    <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
-                      {msg.role === "coach" && (
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-600 flex items-center justify-center shrink-0 mt-0.5"><Brain className="w-4 h-4 text-white" /></div>
-                      )}
-                      <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.role === "user" ? "bg-violet-600 text-white rounded-tr-sm" : "bg-white/6 border border-white/8 text-white/90 rounded-tl-sm"}`}>
-                        {msg.content}
-                      </div>
+                    <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                      <ChatMessage role={msg.role} content={msg.content} />
                     </motion.div>
                   ))}
                   {isChatLoading && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-600 flex items-center justify-center shrink-0"><Brain className="w-4 h-4 text-white" /></div>
-                      <div className="bg-white/6 border border-white/8 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-600 flex items-center justify-center shrink-0 mt-0.5">
+                        <Brain className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="bg-white/[0.07] border border-white/[0.09] rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
                         {[0, 1, 2].map(i => (<div key={i} className="w-2 h-2 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />))}
                       </div>
                     </motion.div>

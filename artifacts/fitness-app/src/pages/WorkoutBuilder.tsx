@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { Dumbbell, Play, Calendar, X, Target, Info, Zap, Timer, Search, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
 import imgChest from "@assets/IMG_5147_1774142427972.png";
 import imgBack from "@assets/IMG_5146_1774142427972.png";
 import imgLegs from "@assets/IMG_5144_1774142427972.jpeg";
@@ -15,15 +16,26 @@ import imgCore from "@assets/IMG_5152_1774142427972.jpeg";
 import imgCardio from "@assets/IMG_5149_1774142427972.png";
 import imgFullBody from "@assets/IMG_5153_1774142427972.jpeg";
 
+const muscleGroupImages: Record<string, string> = {
+  Chest: imgChest,
+  Back: imgBack,
+  Legs: imgLegs,
+  Shoulders: imgShoulders,
+  Arms: imgArms,
+  Core: imgCore,
+  Cardio: imgCardio,
+  "Full Body": imgFullBody,
+};
+
 const muscleGroups = [
-  { id: "Chest", color: "from-blue-500/80 to-cyan-500/80", emoji: "💪", image: imgChest },
-  { id: "Back", color: "from-violet-500/80 to-purple-500/80", emoji: "🏋️", image: imgBack },
-  { id: "Legs", color: "from-orange-500/80 to-red-500/80", emoji: "🦵", image: imgLegs },
-  { id: "Shoulders", color: "from-emerald-500/80 to-teal-500/80", emoji: "🎯", image: imgShoulders },
-  { id: "Arms", color: "from-pink-500/80 to-rose-500/80", emoji: "💪", image: imgArms },
-  { id: "Core", color: "from-yellow-500/80 to-orange-500/80", emoji: "⚡", image: imgCore },
-  { id: "Cardio", color: "from-cyan-500/80 to-sky-500/80", emoji: "🏃", image: imgCardio },
-  { id: "Full Body", color: "from-gray-600/80 to-gray-800/80", emoji: "🔥", image: imgFullBody },
+  { id: "Chest", color: "from-blue-500/80 to-cyan-500/80", emoji: "💪" },
+  { id: "Back", color: "from-violet-500/80 to-purple-500/80", emoji: "🏋️" },
+  { id: "Legs", color: "from-orange-500/80 to-red-500/80", emoji: "🦵" },
+  { id: "Shoulders", color: "from-emerald-500/80 to-teal-500/80", emoji: "🎯" },
+  { id: "Arms", color: "from-pink-500/80 to-rose-500/80", emoji: "💪" },
+  { id: "Core", color: "from-yellow-500/80 to-orange-500/80", emoji: "⚡" },
+  { id: "Cardio", color: "from-cyan-500/80 to-sky-500/80", emoji: "🏃" },
+  { id: "Full Body", color: "from-gray-600/80 to-gray-800/80", emoji: "🔥" },
 ];
 
 const repSchemes: Record<string, { sets: string; reps: string; rest: string; focus: string; tempo: string; rom: string }> = {
@@ -175,6 +187,7 @@ export default function WorkoutBuilder() {
           <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
             {muscleGroups.map((group, idx) => {
               const isSelected = selectedGroup === group.id;
+              const imgSrc = muscleGroupImages[group.id];
               return (
                 <motion.button
                   key={group.id}
@@ -182,7 +195,17 @@ export default function WorkoutBuilder() {
                   onClick={() => { setSelectedGroup(group.id); setExpandedTip(null); setSearch(""); }}
                   className={`relative shrink-0 w-28 h-20 rounded-2xl overflow-hidden transition-all duration-300 ${isSelected ? "ring-2 ring-violet-500 ring-offset-2 ring-offset-background scale-105" : "opacity-70 hover:opacity-100 hover:scale-105"}`}
                 >
-                  <img src={group.image} alt={group.id} className="absolute inset-0 w-full h-full object-cover" />
+                  {/* Skeleton shimmer shown before image loads */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/10 animate-pulse" />
+                  <img
+                    src={imgSrc}
+                    alt={group.id}
+                    loading={idx < 3 ? "eager" : "lazy"}
+                    decoding="async"
+                    className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+                    onLoad={e => (e.currentTarget.style.opacity = "1")}
+                    style={{ opacity: 0 }}
+                  />
                   <div className={`absolute inset-0 bg-gradient-to-t ${isSelected ? "from-violet-700/90 via-black/40" : "from-black/80 via-black/30"} to-transparent`} />
                   <div className="absolute inset-0 flex flex-col justify-end p-2">
                     <span className="text-[11px] font-bold text-white leading-tight">{group.id}</span>

@@ -1,0 +1,98 @@
+Apply the following UI/UX and performance fixes to the app. Focus on mobile responsiveness, readability, and smooth performance.
+
+====================================
+1) AI COACH CHAT IMPROVEMENT
+====================================
+
+- Current AI coach responses appear as large paragraphs and are hard to read.
+- Convert responses into structured format:
+
+Requirements:
+- Break text into:
+  - Short paragraphs
+  - Bullet points
+  - Sections with headings
+
+- Highlight important parts:
+  - Use colored text (theme-based: purple/blue/green)
+  - Titles like:
+    - "Your Plan"
+    - "Tips"
+    - "Next Step"
+
+- Ensure:
+  - Easy to read on mobile
+  - Proper spacing between lines
+  - Clean chat bubble UI
+
+- Tone:
+  - Motivating
+  - Clear and direct
+  - Not robotic
+
+====================================
+2) WORKOUT IMAGE LOADING FIX
+====================================
+
+- Muscle group images in workout section are loading very slowly
+
+Fix:
+- Optimize images:
+  - Compress size
+  - Use modern formats (webp)
+- Add lazy loading
+- Add loading skeleton or shimmer effect
+- Preload most-used images
+
+Goal:
+- Images should load instantly or feel smooth
+
+====================================
+3) MANUAL FOOD ADD BUTTON FIX (MOBILE)
+====================================
+
+- Currently "Add Food" button is not visible properly on mobile
+
+Fix:
+- Move "Add Food" button beside the text:
+  "or enter manually"
+
+- Ensure:
+  - Button is always visible on mobile screen
+  - Proper spacing and alignment
+  - Touch-friendly size
+
+====================================
+4) AI FOOD SCANNER UI FIX
+====================================
+
+- AI Food Scanner camera view is not fully visible on mobile
+
+Fix:
+- After clicking "AI Food Scanner":
+  - Add a top banner/header
+  - Push camera view slightly downward (add top spacing)
+- Ensure:
+  - Full camera preview is visible
+  - No elements overlap
+  - Mobile safe area respected
+
+====================================
+GENERAL REQUIREMENTS
+====================================
+
+- Mobile-first design
+- Smooth UI transitions
+- No layout breaking
+- Keep consistent dark neon theme
+- Improve usability and clarity
+
+====================================
+FINAL OUTPUT
+====================================
+
+Return:
+- Updated chat UI
+- Optimized image loading logic
+- Fixed food input layout
+- Improved AI scanner interface

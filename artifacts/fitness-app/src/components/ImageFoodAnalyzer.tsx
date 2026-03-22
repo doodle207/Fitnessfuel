@@ -40,7 +40,7 @@ interface MacroItem {
   proteinG: number;
   carbsG: number;
   fatG: number;
-  source: "openfoodfacts" | "gemini_estimate";
+  source: "openfoodfacts" | "ai_estimate";
 }
 
 interface AnalysisResult {
@@ -242,10 +242,16 @@ export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose
         exit={{ y: 80, opacity: 0 }}
         transition={{ type: "spring", damping: 28, stiffness: 300 }}
         onClick={e => e.stopPropagation()}
-        className="bg-[#0d0d14] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md shadow-2xl overflow-hidden"
+        className="bg-[#0d0d14] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[90vh]"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        {/* Header */}
-        <div className="px-5 pt-5 pb-4 border-b border-white/5 flex items-center justify-between">
+        {/* Drag handle for mobile */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-10 h-1 rounded-full bg-white/20" />
+        </div>
+
+        {/* Sticky Header */}
+        <div className="px-5 pt-3 pb-4 border-b border-white/5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-600 flex items-center justify-center shadow-[0_0_12px_rgba(124,58,237,0.4)]">
               <Camera className="w-4 h-4 text-white" />
@@ -260,7 +266,7 @@ export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4 overflow-y-auto flex-1" style={{ WebkitOverflowScrolling: "touch" }}>
           {/* Upload Phase */}
           {phase === "upload" && (
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
@@ -305,7 +311,7 @@ export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose
               </button>
 
               <p className="text-center text-xs text-muted-foreground">
-                Powered by <span className="text-violet-400 font-medium">Gemini Vision</span> + <span className="text-cyan-400 font-medium">OpenFoodFacts</span>
+                Powered by <span className="text-violet-400 font-medium">AI Vision</span> + <span className="text-cyan-400 font-medium">OpenFoodFacts</span>
               </p>
             </motion.div>
           )}
@@ -391,7 +397,7 @@ export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose
                       <span className="text-sm capitalize">{item.foodName}</span>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-xs font-semibold">{item.calories} kcal</span>
-                        {item.source === "gemini_estimate" && (
+                        {item.source === "ai_estimate" && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-400 border border-violet-500/20">AI est.</span>
                         )}
                       </div>
