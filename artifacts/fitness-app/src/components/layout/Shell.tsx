@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Activity, Dumbbell, LineChart, Apple, Brain } from "lucide-react";
+import { Activity, Dumbbell, LineChart, Apple, Brain, User } from "lucide-react";
 import { motion } from "framer-motion";
 
 const mobileNavItems = [
@@ -9,17 +9,6 @@ const mobileNavItems = [
   { href: "/progress", label: "Progress", icon: LineChart },
   { href: "/ai-coach", label: "AI Coach", icon: Brain },
 ];
-
-const desktopNavItems = [
-  { href: "/", label: "Dashboard", icon: Activity },
-  { href: "/workout", label: "Workout", icon: Dumbbell },
-  { href: "/progress", label: "Progress", icon: LineChart },
-  { href: "/diet", label: "Diet", icon: Apple },
-  { href: "/ai-coach", label: "AI Coach", icon: Brain },
-  { href: "/profile", label: "Profile", icon: Activity },
-];
-
-import { User } from "lucide-react";
 
 const allDesktopNavItems = [
   { href: "/", label: "Dashboard", icon: Activity },
@@ -35,13 +24,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="h-[100dvh] bg-background text-foreground flex flex-col md:flex-row overflow-hidden">
-      {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 flex-col glass-panel border-r border-white/5 sticky top-0 h-screen overflow-y-auto">
         <div className="p-6 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-[0_0_15px_rgba(124,58,237,0.4)]">
-            <Activity className="w-6 h-6 text-white" />
-          </div>
-          <span className="font-display font-bold text-xl tracking-tight">FitTrack<span className="text-primary">Pro</span></span>
+          <img src="/logo.jpeg" alt="CaloForgeX" className="w-10 h-10 rounded-xl object-cover shadow-[0_0_15px_rgba(124,58,237,0.4)]" />
+          <span className="font-display font-bold text-xl tracking-tight">Calo<span className="text-primary">Forge</span><span className="text-cyan-400">X</span></span>
         </div>
 
         <nav className="flex-1 px-4 space-y-2 mt-4">
@@ -56,7 +42,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                     : "text-muted-foreground hover:bg-white/5 hover:text-foreground"}
                 `}>
                   {item.href === "/ai-coach" && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-violet-400 bg-violet-500/15 px-1.5 py-0.5 rounded-full">PRO</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-violet-400 bg-violet-500/15 px-1.5 py-0.5 rounded-full">AI</span>
                   )}
                   <item.icon className={`w-5 h-5 ${isActive ? "text-primary" : ""}`} />
                   {item.label}
@@ -73,7 +59,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </nav>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto overscroll-y-contain pb-24 md:pb-0 min-w-0 max-w-full overflow-x-hidden relative" style={{ WebkitOverflowScrolling: "touch" }}>
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[30%] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[30%] bg-accent/10 rounded-full blur-[120px] pointer-events-none" />
@@ -83,7 +68,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </main>
 
-      {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-white/5 z-50 px-1 py-2 pb-safe flex justify-around">
         {mobileNavItems.map((item) => {
           const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));

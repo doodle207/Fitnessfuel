@@ -12,18 +12,44 @@ import {
 } from "recharts";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import AdBanner from "@/components/AdBanner";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-const MACRO_EMOJI: Record<string, string> = { Protein: "💪", Carbs: "🌾", Fat: "🥑" };
+const MACRO_EMOJI: Record<string, string> = { Protein: "\uD83D\uDCAA", Carbs: "\uD83C\uDF3E", Fat: "\uD83E\uDD51" };
 
-interface MacroRingProps {
-  label: string;
-  current: number;
-  target: number;
-  stroke: string;
-  track: string;
+const COUNTRY_TIMEZONE: Record<string, string> = {
+  USA: "America/New_York", India: "Asia/Kolkata", UK: "Europe/London",
+  Canada: "America/Toronto", Australia: "Australia/Sydney", Japan: "Asia/Tokyo",
+  Brazil: "America/Sao_Paulo", Mexico: "America/Mexico_City", Germany: "Europe/Berlin",
+  France: "Europe/Paris", "South Korea": "Asia/Seoul", Nigeria: "Africa/Lagos",
+  "South Africa": "Africa/Johannesburg", UAE: "Asia/Dubai", Philippines: "Asia/Manila",
+};
+
+function getGreeting(country: string): { text: string; time: string } {
+  const tz = COUNTRY_TIMEZONE[country] || "UTC";
+  let now: Date;
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", minute: "numeric", hour12: true }).formatToParts(new Date());
+    const hourStr = parts.find(p => p.type === "hour")?.value || "12";
+    const period = parts.find(p => p.type === "dayPeriod")?.value || "AM";
+    const minStr = parts.find(p => p.type === "minute")?.value || "00";
+    let h = parseInt(hourStr);
+    if (period.toUpperCase() === "PM" && h !== 12) h += 12;
+    if (period.toUpperCase() === "AM" && h === 12) h = 0;
+    now = new Date();
+    now.setHours(h);
+    const timeStr = `${hourStr}:${minStr} ${period}`;
+    const greeting = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+    return { text: greeting, time: timeStr };
+  } catch {
+    const h = new Date().getHours();
+    const greeting = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+    return { text: greeting, time: "" };
+  }
 }
+
+interface MacroRingProps { label: string; current: number; target: number; stroke: string; track: string; }
 
 function MacroRing({ label, current, target, stroke, track }: MacroRingProps) {
   const r = 36;
@@ -38,20 +64,11 @@ function MacroRing({ label, current, target, stroke, track }: MacroRingProps) {
     <div className="flex flex-col items-center gap-2">
       <div className="relative w-24 h-24">
         <svg viewBox="0 0 100 100" className="w-full h-full" style={{ transform: "rotate(135deg)" }}>
-          <circle cx="50" cy="50" r={r} fill="none"
-            stroke={track} strokeWidth="9"
-            strokeDasharray={`${arcLen} ${gapLen}`}
-            strokeLinecap="round"
-          />
-          <circle cx="50" cy="50" r={r} fill="none"
-            stroke={stroke} strokeWidth="9"
-            strokeDasharray={`${filled} ${circumference - filled}`}
-            strokeLinecap="round"
-            style={{ transition: "stroke-dasharray 1s ease-out" }}
-          />
+          <circle cx="50" cy="50" r={r} fill="none" stroke={track} strokeWidth="9" strokeDasharray={`${arcLen} ${gapLen}`} strokeLinecap="round" />
+          <circle cx="50" cy="50" r={r} fill="none" stroke={stroke} strokeWidth="9" strokeDasharray={`${filled} ${circumference - filled}`} strokeLinecap="round" style={{ transition: "stroke-dasharray 1s ease-out" }} />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center pb-2">
-          <span className="text-2xl select-none">{MACRO_EMOJI[label] ?? "🍽️"}</span>
+          <span className="text-2xl select-none">{MACRO_EMOJI[label] ?? "\uD83C\uDF7D\uFE0F"}</span>
         </div>
       </div>
       <div className="text-center leading-snug">
@@ -62,9 +79,8 @@ function MacroRing({ label, current, target, stroke, track }: MacroRingProps) {
   );
 }
 
-const STEPS_KEY = "fittrack_steps_today";
-const STEPS_DATE_KEY = "fittrack_steps_date";
-const WATER_KEY = "fittrack_water_ml";
+const STEPS_KEY = "cfx_steps_today";
+const STEPS_DATE_KEY = "cfx_steps_date";
 const CALS_PER_STEP = 0.04;
 
 function getStepsToday(): number {
@@ -77,6 +93,13 @@ function getStepsToday(): number {
   }
   return parseInt(localStorage.getItem(STEPS_KEY) || "0");
 }
+
+const PHASE_DATA = [
+  { name: "Menstruation", emoji: "\uD83C\uDF38", color: "rose",    bgFrom: "from-rose-950/50",    bgTo: "to-pink-950/40",    border: "border-rose-500/25",    barColor: "from-rose-500 to-pink-400",    textColor: "text-rose-400",    tip: "Take it easy. Gentle movement like yoga or walking is great." },
+  { name: "Follicular",   emoji: "\uD83C\uDF31", color: "emerald", bgFrom: "from-emerald-950/50", bgTo: "to-teal-950/40",    border: "border-emerald-500/25", barColor: "from-emerald-500 to-teal-400", textColor: "text-emerald-400", tip: "Energy is rising! Great time for strength training." },
+  { name: "Ovulation",    emoji: "\u2728",       color: "amber",   bgFrom: "from-amber-950/50",   bgTo: "to-yellow-950/40",  border: "border-amber-500/25",   barColor: "from-amber-500 to-yellow-400", textColor: "text-amber-400",   tip: "Peak energy! Push harder \u2014 you're at your strongest." },
+  { name: "Luteal",       emoji: "\uD83C\uDF19", color: "purple",  bgFrom: "from-purple-950/50",  bgTo: "to-violet-950/40",  border: "border-purple-500/25",  barColor: "from-purple-500 to-violet-400",textColor: "text-purple-400",  tip: "Rest well and focus on light training. Cravings are normal." },
+];
 
 export default function Dashboard() {
   const { data: profile, isLoading: isProfileLoading } = useGetProfile();
@@ -109,19 +132,13 @@ export default function Dashboard() {
           { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 }
         );
         setTodayFoodCalories(Math.round(totals.calories));
-        setMacroTotals({
-          proteinG: Math.round(totals.proteinG),
-          carbsG: Math.round(totals.carbsG),
-          fatG: Math.round(totals.fatG),
-        });
-      })
-      .catch(() => {});
-    // Fetch water from API (same source as Diet page)
+        setMacroTotals({ proteinG: Math.round(totals.proteinG), carbsG: Math.round(totals.carbsG), fatG: Math.round(totals.fatG) });
+      }).catch(() => {});
     const today = new Date().toISOString().split("T")[0];
     fetch(`${BASE}/api/progress/water?date=${today}`, { credentials: "include" })
       .then(r => r.json())
       .then(d => { if (d && d.totalMl !== undefined) setWaterMl(d.totalMl); })
-      .catch(() => { setWaterMl(parseInt(localStorage.getItem(WATER_KEY) || "0")); });
+      .catch(() => {});
   }, []);
 
   const handleStepsSave = () => {
@@ -135,15 +152,8 @@ export default function Dashboard() {
 
   const safeProfile = profile && typeof profile === "object" && !Array.isArray(profile) ? profile as any : {};
   const safeStats = stats && typeof stats === "object" && !Array.isArray(stats) ? stats as any : {
-    currentStreak: 0,
-    totalWorkouts: 0,
-    weeklyStreak: 0,
-    recentWorkouts: [],
-    personalRecords: [],
-    weeklyVolume: [
-      { day: "Mon", volume: 0 }, { day: "Tue", volume: 0 }, { day: "Wed", volume: 0 },
-      { day: "Thu", volume: 0 }, { day: "Fri", volume: 0 }, { day: "Sat", volume: 0 }, { day: "Sun", volume: 0 },
-    ],
+    currentStreak: 0, totalWorkouts: 0, weeklyStreak: 0, recentWorkouts: [], personalRecords: [],
+    weeklyVolume: [{ day: "Mon", volume: 0 },{ day: "Tue", volume: 0 },{ day: "Wed", volume: 0 },{ day: "Thu", volume: 0 },{ day: "Fri", volume: 0 },{ day: "Sat", volume: 0 },{ day: "Sun", volume: 0 }],
   };
 
   const stepCalories = Math.round(steps * CALS_PER_STEP);
@@ -159,21 +169,25 @@ export default function Dashboard() {
   const gender = safeProfile.gender || "male";
   const activityLevel = safeProfile.activityLevel || "moderate";
   const fitnessGoal = safeProfile.fitnessGoal || "maintenance";
+  const country = safeProfile.country || "USA";
 
-  const bmr = Math.round(
-    10 * weightKg + 6.25 * heightCm - 5 * age + (gender === "female" ? -161 : 5)
-  );
+  const bmr = Math.round(10 * weightKg + 6.25 * heightCm - 5 * age + (gender === "female" ? -161 : 5));
   const activityMultipliers: Record<string, number> = {
-    sedentary: 1.2,
-    light: 1.375, "lightly active": 1.375,
+    sedentary: 1.2, light: 1.375, "lightly active": 1.375,
     moderate: 1.55, "moderately active": 1.55,
     active: 1.725, "very active": 1.725,
-    "extra active": 1.9,
+    athlete: 1.9, "extra active": 1.9,
   };
   const tdee = Math.round(bmr * (activityMultipliers[activityLevel] ?? 1.55));
-  const calTarget = fitnessGoal === "weight loss" ? Math.round(tdee - 500)
-    : fitnessGoal === "muscle gain" ? Math.round(tdee + 300)
-    : tdee;
+
+  const goalCalAdj: Record<string, number> = {
+    "weight loss": -500, "fat loss": -500,
+    "muscle gain": 300,
+    "athletic performance": 200,
+    "recomposition": -100,
+    "maintenance": 0, "general fitness": 0, "flexibility": 0,
+  };
+  const calTarget = tdee + (goalCalAdj[fitnessGoal] ?? 0);
 
   const proteinTarget = Math.round(weightKg * 2.2);
   const fatTarget = Math.round(weightKg * 0.9);
@@ -181,64 +195,40 @@ export default function Dashboard() {
 
   const waterPct = Math.min(waterMl / 3000, 1);
   const waterGlasses = Math.round(waterMl / 250);
-  // Net = how much you ate vs your goal (deficit if negative, surplus if positive)
-  const netCalories = todayFoodCalories - calTarget;
+  const netCalories = todayFoodCalories - totalBurned;
+
+  const greeting = getGreeting(country);
 
   const isFemale = gender === "female";
   const periodStartDate: string | null = (safeProfile as any).periodStartDate || null;
   const periodEndDate: string | null = (safeProfile as any).periodEndDate || null;
 
   let cycleInfo: {
-    cycleDay: number;
-    phase: string;
-    phaseColor: string;
-    phaseEmoji: string;
-    phaseTip: string;
-    nextPeriodDays: number;
-    inPeriod: boolean;
-    periodDayNum: number;
-    cycleProgress: number;
+    cycleDay: number; phase: string; phaseIdx: number; phaseTip: string;
+    nextPeriodDays: number; inPeriod: boolean; cycleProgress: number;
   } | null = null;
 
   if (isFemale && periodStartDate) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
     const start = parseISO(periodStartDate);
-    const cycleDay = differenceInDays(today, start) + 1;
+    const cycleDay = differenceInDays(todayDate, start) + 1;
     const clampedDay = Math.max(1, ((cycleDay - 1) % 28) + 1);
-    const periodDuration = periodEndDate
-      ? differenceInDays(parseISO(periodEndDate), start) + 1
-      : 5;
+    const periodDuration = periodEndDate ? differenceInDays(parseISO(periodEndDate), start) + 1 : 5;
     const inPeriod = clampedDay <= periodDuration;
     const nextPeriodStart = addDays(start, Math.ceil(cycleDay / 28) * 28);
-    const nextPeriodDays = differenceInDays(nextPeriodStart, today);
+    const nextPeriodDays = differenceInDays(nextPeriodStart, todayDate);
 
-    let phase = "Luteal";
-    let phaseColor = "text-purple-400";
-    let phaseEmoji = "🌙";
-    let phaseTip = "Rest well and focus on light training. Cravings are normal.";
-    if (clampedDay <= periodDuration) {
-      phase = "Menstruation";
-      phaseColor = "text-rose-400";
-      phaseEmoji = "🌸";
-      phaseTip = "Take it easy. Gentle movement like yoga or walking is great.";
-    } else if (clampedDay <= 13) {
-      phase = "Follicular";
-      phaseColor = "text-emerald-400";
-      phaseEmoji = "🌱";
-      phaseTip = "Energy is rising! Great time for strength training.";
-    } else if (clampedDay <= 16) {
-      phase = "Ovulation";
-      phaseColor = "text-amber-400";
-      phaseEmoji = "✨";
-      phaseTip = "Peak energy! Push harder — you're at your strongest.";
-    }
+    let phaseIdx = 3;
+    if (clampedDay <= periodDuration) phaseIdx = 0;
+    else if (clampedDay <= 13) phaseIdx = 1;
+    else if (clampedDay <= 16) phaseIdx = 2;
 
     cycleInfo = {
-      cycleDay: clampedDay, phase, phaseColor, phaseEmoji, phaseTip,
+      cycleDay: clampedDay, phase: PHASE_DATA[phaseIdx].name, phaseIdx,
+      phaseTip: PHASE_DATA[phaseIdx].tip,
       nextPeriodDays: Math.max(0, nextPeriodDays),
-      inPeriod, periodDayNum: inPeriod ? clampedDay : 0,
-      cycleProgress: Math.round((clampedDay / 28) * 100),
+      inPeriod, cycleProgress: Math.round((clampedDay / 28) * 100),
     };
   }
 
@@ -247,9 +237,13 @@ export default function Dashboard() {
       <div className="space-y-6 max-w-5xl mx-auto">
         <header className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-muted-foreground text-sm">{format(new Date(), "EEEE, MMMM do")}</p>
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <span>{format(new Date(), "EEEE, MMMM do")}</span>
+              {greeting.time && <span className="text-white/30">{"\u00B7"}</span>}
+              {greeting.time && <span className="text-violet-400 font-medium">{greeting.time}</span>}
+            </div>
             <h1 className="text-3xl md:text-4xl font-display font-bold mt-0.5">
-              Hey, <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">{safeProfile.name?.split(" ")[0] || "Champ"}</span> 👋
+              {greeting.text}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">{safeProfile.name?.split(" ")[0] || "Champ"}</span> {"\uD83D\uDC4B"}
             </h1>
             <div className="flex gap-2 mt-3">
               <Link href="/workout" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors shadow-[0_0_16px_rgba(124,58,237,0.4)]">
@@ -265,55 +259,49 @@ export default function Dashboard() {
           </Link>
         </header>
 
-        {/* ── Menstruation Cycle Banner (females only, compact) ── */}
         {isFemale && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}>
             {!cycleInfo ? (
               <Link href="/profile">
                 <div className="rounded-2xl border border-pink-500/25 bg-gradient-to-r from-pink-950/50 to-purple-950/40 px-4 py-3 flex items-center justify-between backdrop-blur-sm hover:border-pink-500/40 transition-colors cursor-pointer">
                   <div className="flex items-center gap-2.5">
-                    <span className="text-lg">🌸</span>
+                    <span className="text-lg">{"\uD83C\uDF38"}</span>
                     <div>
                       <p className="text-sm font-semibold text-pink-200">Cycle Tracker</p>
                       <p className="text-xs text-white/40">Tap to set your period dates</p>
                     </div>
                   </div>
-                  <span className="text-xs text-pink-400 border border-pink-500/30 px-2.5 py-1 rounded-full">Set up →</span>
+                  <span className="text-xs text-pink-400 border border-pink-500/30 px-2.5 py-1 rounded-full">Set up {"\u2192"}</span>
                 </div>
               </Link>
             ) : (
-              <div className={`rounded-2xl border px-4 py-3 backdrop-blur-sm ${
-                cycleInfo.inPeriod ? "border-rose-500/25 bg-gradient-to-r from-rose-950/50 to-pink-950/40"
-                : cycleInfo.phase === "Follicular" ? "border-emerald-500/25 bg-gradient-to-r from-emerald-950/50 to-teal-950/40"
-                : cycleInfo.phase === "Ovulation" ? "border-amber-500/25 bg-gradient-to-r from-amber-950/50 to-yellow-950/40"
-                : "border-purple-500/25 bg-gradient-to-r from-purple-950/50 to-violet-950/40"
-              }`}>
+              <div className={`rounded-2xl border ${PHASE_DATA[cycleInfo.phaseIdx].border} bg-gradient-to-r ${PHASE_DATA[cycleInfo.phaseIdx].bgFrom} ${PHASE_DATA[cycleInfo.phaseIdx].bgTo} px-4 py-4 backdrop-blur-sm`}>
+                <div className="flex items-center gap-2 mb-3">
+                  {PHASE_DATA.map((phase, i) => (
+                    <div key={i} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all ${
+                      i === cycleInfo!.phaseIdx ? `${phase.textColor} bg-white/10 border border-white/10` : "text-white/25"
+                    }`}>
+                      <span className="text-sm">{phase.emoji}</span>
+                      <span className="hidden sm:inline">{phase.name}</span>
+                    </div>
+                  ))}
+                  <span className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full ${
+                    cycleInfo.nextPeriodDays <= 2 ? "text-rose-300 bg-rose-500/15" : "text-white/40 bg-white/5"
+                  }`}>
+                    {cycleInfo.nextPeriodDays === 0 ? "Period today" : `Next in ${cycleInfo.nextPeriodDays}d`}
+                  </span>
+                </div>
                 <div className="flex items-center gap-3">
                   <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-white/5">
-                    {cycleInfo.phaseEmoji}
+                    {PHASE_DATA[cycleInfo.phaseIdx].emoji}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-sm font-bold ${cycleInfo.phaseColor}`}>{cycleInfo.phase}</span>
-                      <span className="text-xs text-white/30">· Day {cycleInfo.cycleDay}/28</span>
-                      <span className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full ${
-                        cycleInfo.nextPeriodDays <= 2 ? "text-rose-300 bg-rose-500/15" : "text-white/40 bg-white/5"
-                      }`}>
-                        {cycleInfo.nextPeriodDays === 0 ? "Period today" : `Next in ${cycleInfo.nextPeriodDays}d`}
-                      </span>
+                      <span className={`text-sm font-bold ${PHASE_DATA[cycleInfo.phaseIdx].textColor}`}>{cycleInfo.phase}</span>
+                      <span className="text-xs text-white/30">{"\u00B7"} Day {cycleInfo.cycleDay}/28</span>
                     </div>
                     <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-700 ${
-                          cycleInfo.inPeriod ? "bg-gradient-to-r from-rose-500 to-pink-400"
-                          : cycleInfo.phase === "Follicular" ? "bg-gradient-to-r from-emerald-500 to-teal-400"
-                          : cycleInfo.phase === "Ovulation" ? "bg-gradient-to-r from-amber-500 to-yellow-400"
-                          : "bg-gradient-to-r from-purple-500 to-violet-400"
-                        }`}
-                        style={{ width: `${cycleInfo.cycleProgress}%` }}
-                      />
+                      <div className={`h-full rounded-full transition-all duration-700 bg-gradient-to-r ${PHASE_DATA[cycleInfo.phaseIdx].barColor}`} style={{ width: `${cycleInfo.cycleProgress}%` }} />
                     </div>
                     <p className="text-[11px] text-white/40 mt-1.5 leading-snug truncate">{cycleInfo.phaseTip}</p>
                   </div>
@@ -323,52 +311,33 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* ── ROW 1: Calories Overview ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          className="glass-card rounded-3xl p-5 border border-white/5"
-        >
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="glass-card rounded-3xl p-5 border border-white/5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display font-bold text-lg flex items-center gap-2"><Flame className="w-5 h-5 text-orange-500" /> Calorie Overview</h3>
             <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">Today</span>
           </div>
 
-          {/* Cross layout: 2×2 grid + floating center circle */}
           <div className="relative grid grid-cols-2 gap-3 mb-4">
-            {/* Eaten – top-left */}
             <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-4 text-center">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
-                <Utensils className="w-3 h-3 text-green-400" /> Eaten
-              </p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1"><Utensils className="w-3 h-3 text-green-400" /> Eaten</p>
               <p className="text-2xl font-display font-bold text-green-400">{todayFoodCalories}</p>
               <p className="text-[10px] text-muted-foreground">kcal</p>
             </div>
-            {/* Burned – top-right */}
             <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4 text-center">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
-                <Zap className="w-3 h-3 text-orange-400" /> Burned
-              </p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1"><Zap className="w-3 h-3 text-orange-400" /> Burned</p>
               <p className="text-2xl font-display font-bold text-orange-400">{totalBurned}</p>
               <p className="text-[10px] text-muted-foreground">kcal</p>
             </div>
-            {/* Goal – bottom-left */}
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 text-center">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
-                <Target className="w-3 h-3 text-blue-400" /> Goal
-              </p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1"><Target className="w-3 h-3 text-blue-400" /> Goal</p>
               <p className="text-2xl font-display font-bold text-blue-400">{calTarget}</p>
               <p className="text-[10px] text-muted-foreground">{fitnessGoal === "weight loss" ? "Cut" : fitnessGoal === "muscle gain" ? "Bulk" : "Maintain"}</p>
             </div>
-            {/* Maintenance – bottom-right */}
             <div className="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-4 text-center">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
-                <Activity className="w-3 h-3 text-violet-400" /> Maint.
-              </p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-center gap-1"><Activity className="w-3 h-3 text-violet-400" /> Maint.</p>
               <p className="text-2xl font-display font-bold text-violet-400">{tdee}</p>
               <p className="text-[10px] text-muted-foreground">body maint.</p>
             </div>
-
-            {/* Center floating circle – Net calories */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className={`w-[86px] h-[86px] rounded-full flex flex-col items-center justify-center border-2 shadow-lg z-10 ${netCalories <= 0 ? "bg-[#0d1117] border-orange-500/60 shadow-orange-500/20" : "bg-[#0d1117] border-green-500/60 shadow-green-500/20"}`}>
                 <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold leading-none mb-0.5">Net cal</p>
@@ -382,7 +351,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Daily target bar */}
           <div className="space-y-1.5 mb-3">
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>Daily target: <span className="text-white/60 font-semibold">{calTarget} kcal</span></span>
@@ -397,59 +365,44 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Step count */}
           <button onClick={() => setShowStepsInput(v => !v)}
             className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-violet-500/8 border border-violet-500/20 hover:bg-violet-500/15 transition-colors">
             <span className="flex items-center gap-2 text-sm font-semibold text-violet-300">
               <Footprints className="w-4 h-4 text-violet-400" /> Step Count
             </span>
-            <span className="text-sm font-display font-bold text-violet-400">{steps.toLocaleString()} <span className="text-xs text-muted-foreground font-normal">≈ {stepCalories} kcal</span></span>
+            <span className="text-sm font-display font-bold text-violet-400">{steps.toLocaleString()} <span className="text-xs text-muted-foreground font-normal">{"\u2248"} {stepCalories} kcal</span></span>
           </button>
           {showStepsInput && (
             <div className="flex gap-2 mt-2">
-              <input
-                type="number"
-                value={stepsInput}
-                onChange={e => setStepsInput(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleStepsSave()}
-                placeholder="Enter today's step count"
-                className="flex-1 px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 focus:border-violet-500 outline-none text-sm"
-              />
+              <input type="number" value={stepsInput} onChange={e => setStepsInput(e.target.value)} onKeyDown={e => e.key === "Enter" && handleStepsSave()}
+                placeholder="Enter today's step count" className="flex-1 px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 focus:border-violet-500 outline-none text-sm" />
               <button onClick={handleStepsSave} className="px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors">Save</button>
             </div>
           )}
         </motion.div>
 
-        {/* ── ROW 2: Macros+Hydration (left) | Workout+Streaks (right) ── */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
+        <AdBanner variant={0} />
 
-          {/* LEFT: Macros + Hydration */}
-          <motion.div
-            initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
-            className="md:col-span-3 glass-card rounded-3xl p-5 border border-white/5 space-y-5"
-          >
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
+          <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="md:col-span-3 glass-card rounded-3xl p-5 border border-white/5 space-y-5">
             <div className="flex items-center justify-between">
               <h3 className="font-display font-bold text-lg">Macros & Hydration</h3>
               <Link href="/diet" className="text-xs text-violet-400 hover:underline flex items-center gap-1">Diet <ArrowRight className="w-3 h-3" /></Link>
             </div>
 
-            {/* Macro Rings row */}
             <div className="grid grid-cols-3 gap-2">
               <MacroRing label="Protein" current={macroTotals.proteinG} target={proteinTarget} stroke="#4A90D9" track="rgba(74,144,217,0.15)" />
               <MacroRing label="Carbs" current={macroTotals.carbsG} target={carbsTarget} stroke="#34C759" track="rgba(52,199,89,0.15)" />
               <MacroRing label="Fat" current={macroTotals.fatG} target={fatTarget} stroke="#FF9500" track="rgba(255,149,0,0.15)" />
             </div>
 
-            {/* Hydration */}
             <div className="rounded-2xl bg-cyan-500/5 border border-cyan-500/15 p-4">
               <div className="flex items-center gap-4">
                 <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
                     <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(6,182,212,0.12)" strokeWidth="8" />
                     <circle cx="40" cy="40" r="32" fill="none" stroke="url(#waterGrad2)" strokeWidth="8"
-                      strokeLinecap="round"
-                      style={{ strokeDasharray: `${2 * Math.PI * 32}`, strokeDashoffset: `${2 * Math.PI * 32 * (1 - waterPct)}`, transition: "stroke-dashoffset 1s ease" }}
-                    />
+                      strokeLinecap="round" style={{ strokeDasharray: `${2 * Math.PI * 32}`, strokeDashoffset: `${2 * Math.PI * 32 * (1 - waterPct)}`, transition: "stroke-dashoffset 1s ease" }} />
                     <defs>
                       <linearGradient id="waterGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stopColor="#06b6d4" />
@@ -468,8 +421,7 @@ export default function Dashboard() {
                     <span className="text-xs text-muted-foreground">{waterMl} / 3000 ml</span>
                   </div>
                   <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mb-3">
-                    <div className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-1000"
-                      style={{ width: `${waterPct * 100}%` }} />
+                    <div className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-1000" style={{ width: `${waterPct * 100}%` }} />
                   </div>
                   <div className="flex gap-2">
                     {[250, 500].map(ml => (
@@ -477,8 +429,8 @@ export default function Dashboard() {
                         const newVal = Math.min(waterMl + ml, 3000);
                         setWaterMl(newVal);
                         try {
-                          const today = new Date().toISOString().split("T")[0];
-                          const r = await fetch(`${BASE}/api/progress/water`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amountMl: ml, date: today }) });
+                          const todayStr = new Date().toISOString().split("T")[0];
+                          const r = await fetch(`${BASE}/api/progress/water`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amountMl: ml, date: todayStr }) });
                           const d = await r.json();
                           if (d && d.totalMl !== undefined) setWaterMl(d.totalMl);
                         } catch {}
@@ -492,16 +444,12 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-          {/* RIGHT: Workout + Streaks */}
-          <motion.div
-            initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
-            className="md:col-span-2 glass-card rounded-3xl p-5 border border-white/5 space-y-4"
-          >
+          <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }} className="md:col-span-2 glass-card rounded-3xl p-5 border border-white/5 space-y-4">
             <h3 className="font-display font-bold text-lg flex items-center gap-2"><Flame className="w-5 h-5 text-orange-500" /> Workout & Streaks</h3>
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-2xl p-4 bg-orange-500/10 border border-orange-500/20 text-center">
                 <p className="text-3xl font-display font-black text-orange-400">{safeStats.currentStreak}</p>
-                <p className="text-xs text-muted-foreground mt-1">Day Streak 🔥</p>
+                <p className="text-xs text-muted-foreground mt-1">Day Streak {"\uD83D\uDD25"}</p>
               </div>
               <div className="rounded-2xl p-4 bg-violet-500/10 border border-violet-500/20 text-center">
                 <p className="text-3xl font-display font-black text-violet-400">{safeStats.totalWorkouts}</p>
@@ -509,17 +457,11 @@ export default function Dashboard() {
               </div>
             </div>
             {(() => {
-              // Build a set of workout dates this week (Mon–Sun)
               const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-              const workoutDateSet = new Set(
-                (safeStats.recentWorkouts || []).map((w: any) =>
-                  (w.date || "").split("T")[0]
-                )
-              );
+              const workoutDateSet = new Set((safeStats.recentWorkouts || []).map((w: any) => (w.date || "").split("T")[0]));
               const dayLabels = ["M", "T", "W", "T", "F", "S", "S"];
               const weekDays = dayLabels.map((lbl, i) => ({
-                lbl,
-                dateStr: format(addDays(weekStart, i), "yyyy-MM-dd"),
+                lbl, dateStr: format(addDays(weekStart, i), "yyyy-MM-dd"),
                 isToday: format(addDays(weekStart, i), "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd"),
               }));
               const sessionCount = weekDays.filter(d => workoutDateSet.has(d.dateStr)).length;
@@ -532,9 +474,7 @@ export default function Dashboard() {
                   <div className="flex gap-1">
                     {weekDays.map(({ dateStr, isToday }, i) => {
                       const done = workoutDateSet.has(dateStr);
-                      return (
-                        <div key={i} className={`flex-1 h-2 rounded-full transition-all ${done ? "bg-gradient-to-r from-violet-500 to-cyan-400 shadow-[0_0_8px_rgba(124,58,237,0.5)]" : isToday ? "bg-white/20" : "bg-white/10"}`} />
-                      );
+                      return <div key={i} className={`flex-1 h-2 rounded-full transition-all ${done ? "bg-gradient-to-r from-violet-500 to-cyan-400 shadow-[0_0_8px_rgba(124,58,237,0.5)]" : isToday ? "bg-white/20" : "bg-white/10"}`} />;
                     })}
                   </div>
                   <div className="flex gap-1 justify-between">
@@ -552,17 +492,12 @@ export default function Dashboard() {
           </motion.div>
         </div>
 
-        {/* ── ROW 3: Weekly Volume + PRs ── */}
+        <AdBanner variant={1} />
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* Weekly Volume – now first */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="glass-card rounded-3xl p-5 border border-white/5"
-          >
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card rounded-3xl p-5 border border-white/5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display font-bold text-lg flex items-center gap-2">
-                <Activity className="w-5 h-5 text-violet-400" /> Weekly Volume
-              </h3>
+              <h3 className="font-display font-bold text-lg flex items-center gap-2"><Activity className="w-5 h-5 text-violet-400" /> Weekly Volume</h3>
               <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">Last 7 Days</span>
             </div>
             <div className="h-52">
@@ -570,16 +505,10 @@ export default function Dashboard() {
                 <BarChart data={safeStats.weeklyVolume} barSize={28} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
                   <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 11 }} dy={8} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 11 }} />
-                  <Tooltip
-                    cursor={{ fill: "rgba(255,255,255,0.04)" }}
-                    contentStyle={{ backgroundColor: "#18181b", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "14px", fontSize: "12px" }}
-                  />
+                  <Tooltip cursor={{ fill: "rgba(255,255,255,0.04)" }} contentStyle={{ backgroundColor: "#18181b", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "14px", fontSize: "12px" }} />
                   <Bar dataKey="volume" radius={[8, 8, 2, 2]} label={false}>
-                    {safeStats.weeklyVolume.map((entry, index) => (
-                      <Cell key={`cell-${index}`}
-                        fill={entry.volume > 0 ? "url(#barGrad)" : "rgba(255,255,255,0.05)"}
-                        stroke={entry.volume > 0 ? "rgba(124,58,237,0.3)" : "transparent"}
-                      />
+                    {safeStats.weeklyVolume.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={entry.volume > 0 ? "url(#barGrad)" : "rgba(255,255,255,0.05)"} stroke={entry.volume > 0 ? "rgba(124,58,237,0.3)" : "transparent"} />
                     ))}
                   </Bar>
                   <defs>
@@ -593,15 +522,9 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-          {/* Personal Records – now second */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-            className="glass-card rounded-3xl p-5 border border-white/5"
-          >
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="glass-card rounded-3xl p-5 border border-white/5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display font-bold text-lg flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-yellow-500" /> Personal Records
-              </h3>
+              <h3 className="font-display font-bold text-lg flex items-center gap-2"><Trophy className="w-5 h-5 text-yellow-500" /> Personal Records</h3>
               <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">{safeStats.personalRecords.length} PRs</span>
             </div>
             {safeStats.personalRecords.length === 0 ? (
@@ -611,13 +534,11 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-2">
-                {safeStats.personalRecords.slice(0, 4).map((pr, i) => (
+                {safeStats.personalRecords.slice(0, 4).map((pr: any, i: number) => (
                   <motion.div key={pr.exerciseId} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 * i }}
                     className="flex items-center justify-between p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/10 hover:border-yellow-500/30 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-yellow-500/20 flex items-center justify-center">
-                        <TrendingUp className="w-4 h-4 text-yellow-500" />
-                      </div>
+                      <div className="w-8 h-8 rounded-lg bg-yellow-500/20 flex items-center justify-center"><TrendingUp className="w-4 h-4 text-yellow-500" /></div>
                       <div>
                         <p className="font-semibold text-sm">{pr.exerciseName}</p>
                         <p className="text-xs text-muted-foreground">{format(new Date(pr.date), "MMM d, yyyy")}</p>
@@ -634,11 +555,7 @@ export default function Dashboard() {
           </motion.div>
         </div>
 
-        {/* ── Recent Workouts ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="glass-card rounded-3xl p-5 border border-white/5"
-        >
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-card rounded-3xl p-5 border border-white/5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display font-bold text-lg">Recent Workouts</h3>
             <Link href="/workout" className="text-xs text-violet-400 hover:underline flex items-center gap-1">See all <ArrowRight className="w-3 h-3" /></Link>
@@ -650,7 +567,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {safeStats.recentWorkouts.slice(0, 3).map((workout, i) => (
+              {safeStats.recentWorkouts.slice(0, 3).map((workout: any, i: number) => (
                 <Link key={workout.id} href={`/workout/active/${workout.id}`} className="block group">
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}
                     className="p-4 rounded-2xl bg-black/40 border border-white/5 hover:border-violet-500/30 transition-all group-hover:bg-black/60 relative overflow-hidden">
