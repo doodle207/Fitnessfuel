@@ -1,13 +1,18 @@
 #!/bin/bash
 set -e
 
-echo "==> Installing pnpm..."
+echo "==> Node version: $(node --version)"
+echo "==> NPM version: $(npm --version)"
+
+# Install exact pnpm version matching the lockfile
 npm install -g pnpm@10
 
-echo "==> Installing workspace dependencies..."
+echo "==> pnpm version: $(pnpm --version)"
+
+# Install all workspace dependencies
 pnpm install --no-frozen-lockfile
 
-echo "==> Building fitness app..."
+echo "==> Building CaloForgeX frontend..."
 pnpm --filter @workspace/fitness-app run build
 
-echo "==> Build complete! Output: artifacts/fitness-app/dist/public"
+echo "==> Done! Output: artifacts/fitness-app/dist/public"
