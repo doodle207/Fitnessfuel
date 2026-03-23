@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useGetProfile, getGetProfileQueryKey } from "@workspace/api-client-react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Activity, Zap, TrendingUp, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
