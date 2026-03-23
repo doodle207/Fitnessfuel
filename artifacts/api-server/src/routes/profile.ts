@@ -34,9 +34,12 @@ router.post("/profile", async (req, res) => {
   
   try {
     // Parse and validate the body, providing defaults for optional fields
+    // Convert empty strings to null for date fields (PostgreSQL DATE columns reject "")
     const body = CreateProfileBody.parse({
       ...req.body,
       dietPreference: req.body.dietPreference || "non-veg",
+      periodStartDate: req.body.periodStartDate || null,
+      periodEndDate: req.body.periodEndDate || null,
     });
     
     const existing = await db.select().from(userProfilesTable).where(eq(userProfilesTable.userId, userId)).limit(1);

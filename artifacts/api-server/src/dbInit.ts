@@ -218,10 +218,11 @@ async function createTables() {
     )
   `);
 
-  // Add country column to user_profiles if missing
-  await db.execute(sql`
-    ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'USA'
-  `);
+  // Add new columns to user_profiles if missing (safe migration for existing deployments)
+  await db.execute(sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'USA'`);
+  await db.execute(sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS diet_preference TEXT NOT NULL DEFAULT 'non-veg'`);
+  await db.execute(sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS period_start_date DATE`);
+  await db.execute(sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS period_end_date DATE`);
 
   // Subscriptions table (premium access)
   await db.execute(sql`
