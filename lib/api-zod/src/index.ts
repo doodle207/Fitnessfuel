@@ -1,2 +1,32 @@
 export * from "./generated/api";
-export * from "./generated/types";
+
+export type {
+  Achievement,
+  AddBodyweightBody,
+  AuthUser,
+  BeginBrowserLoginParams,
+  BodyweightLog,
+  DashboardStats,
+  ErrorResponse,
+  Exercise,
+  ExerciseProgression,
+  FoodLogEntry,
+  GetExercisesParams,
+  HealthStatus,
+  Meal,
+  MealFood,
+  MealPlan,
+  Measurement,
+  PersonalRecord,
+  ProgressionEntry,
+  SuccessResponse,
+  UpsertProfileBody,
+  UserProfile,
+  WaterEntry,
+  WaterLog,
+  WeeklyVolumeEntry,
+  Workout,
+  WorkoutDetail,
+  WorkoutSet,
+  WorkoutSetDetail,
+} from "./generated/types";

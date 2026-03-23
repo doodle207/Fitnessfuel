@@ -11,6 +11,8 @@ export interface AuthUser {
   /** @nullable */
   username?: string | null;
   /** @nullable */
+  email?: string | null;
+  /** @nullable */
   firstName?: string | null;
   /** @nullable */
   lastName?: string | null;

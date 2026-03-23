@@ -9,8 +9,8 @@ function getValidCoupons(): string[] {
   return raw.split(",").map(c => c.trim().toUpperCase()).filter(Boolean);
 }
 
-router.get("/payments/subscription", async (req: Request, res: Response) => {
-  if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
+router.get("/payments/subscription", async (req: Request, res: Response): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.user.id;
 
   try {
@@ -63,42 +63,45 @@ router.get("/payments/subscription", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/payments/redeem-coupon", async (req: Request, res: Response) => {
-  if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
+router.post("/payments/redeem-coupon", async (req: Request, res: Response): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.user.id;
   const { couponCode } = req.body;
 
   if (!couponCode || typeof couponCode !== "string") {
-    return res.status(400).json({ error: "Coupon code is required" });
+    res.status(400).json({ error: "Coupon code is required" });
+    return;
   }
 
   const normalized = couponCode.trim().toUpperCase();
   const validCoupons = getValidCoupons();
 
   if (validCoupons.length === 0) {
-    return res.status(400).json({ error: "No vouchers are configured on this server." });
+    res.status(400).json({ error: "No vouchers are configured on this server." });
+    return;
   }
 
   if (!validCoupons.includes(normalized)) {
-    return res.status(400).json({ error: "Invalid coupon code. Please check and try again." });
+    res.status(400).json({ error: "Invalid coupon code. Please check and try again." });
+    return;
   }
 
   try {
-    // Check if this user has already redeemed this coupon
     const { rows: userUsed } = await db.execute(
       sql`SELECT id FROM coupon_redemptions WHERE user_id = ${userId} AND coupon_code = ${normalized} LIMIT 1`
     );
     if ((userUsed as any[]).length > 0) {
-      return res.status(400).json({ error: "You have already used this coupon on this account." });
+      res.status(400).json({ error: "You have already used this coupon on this account." });
+      return;
     }
 
-    // Check if coupon has been used 100 times globally
     const { rows: globalCount } = await db.execute(
       sql`SELECT COUNT(*) as count FROM coupon_redemptions WHERE coupon_code = ${normalized}`
     );
     const usageCount = (globalCount as any[])?.[0]?.count ?? 0;
     if (usageCount >= 100) {
-      return res.status(400).json({ error: "This coupon has reached its usage limit." });
+      res.status(400).json({ error: "This coupon has reached its usage limit." });
+      return;
     }
 
     const expiryDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -127,7 +130,8 @@ router.post("/payments/redeem-coupon", async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error("[payments/redeem-coupon]", err);
     if (err?.code === "23505") {
-      return res.status(400).json({ error: "You have already used this coupon on this account." });
+      res.status(400).json({ error: "You have already used this coupon on this account." });
+      return;
     }
     res.status(500).json({ error: "Failed to redeem coupon. Please try again." });
   }
