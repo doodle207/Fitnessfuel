@@ -9,7 +9,7 @@ function getValidCoupons(): string[] {
   return raw.split(",").map(c => c.trim().toUpperCase()).filter(Boolean);
 }
 
-router.get("/api/payments/subscription", async (req: Request, res: Response) => {
+router.get("/payments/subscription", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
   const userId = req.user.id;
 
@@ -63,7 +63,7 @@ router.get("/api/payments/subscription", async (req: Request, res: Response) => 
   }
 });
 
-router.post("/api/payments/redeem-coupon", async (req: Request, res: Response) => {
+router.post("/payments/redeem-coupon", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized" });
   const userId = req.user.id;
   const { couponCode } = req.body;
