@@ -84,11 +84,21 @@ router.post("/payments/redeem-coupon", async (req: Request, res: Response) => {
   }
 
   try {
-    const { rows: globalUsed } = await db.execute(
-      sql`SELECT id FROM coupon_redemptions WHERE coupon_code = ${normalized} LIMIT 1`
+    // Check if this user has already redeemed this coupon
+    const { rows: userUsed } = await db.execute(
+      sql`SELECT id FROM coupon_redemptions WHERE user_id = ${userId} AND coupon_code = ${normalized} LIMIT 1`
     );
-    if ((globalUsed as any[]).length > 0) {
-      return res.status(400).json({ error: "This coupon has already been redeemed." });
+    if ((userUsed as any[]).length > 0) {
+      return res.status(400).json({ error: "You have already used this coupon on this account." });
+    }
+
+    // Check if coupon has been used 100 times globally
+    const { rows: globalCount } = await db.execute(
+      sql`SELECT COUNT(*) as count FROM coupon_redemptions WHERE coupon_code = ${normalized}`
+    );
+    const usageCount = (globalCount as any[])?.[0]?.count ?? 0;
+    if (usageCount >= 100) {
+      return res.status(400).json({ error: "This coupon has reached its usage limit." });
     }
 
     const expiryDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
