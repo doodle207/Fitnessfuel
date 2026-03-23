@@ -112,8 +112,8 @@ const PHASE_DATA = [
 ];
 
 export default function Dashboard() {
-  const { data: profile, isLoading: isProfileLoading } = useGetProfile();
-  const { data: stats, isLoading: isStatsLoading } = useGetDashboard();
+  const { data: profile, isLoading: isProfileLoading } = useGetProfile({ query: { queryKey: ['fitness', 'profile'] } });
+  const { data: stats, isLoading: isStatsLoading } = useGetDashboard({ query: { queryKey: ['fitness', 'dashboard-stats'] } });
   const [steps, setSteps] = useState(getStepsToday);
   const [stepsInput, setStepsInput] = useState("");
   const [showStepsInput, setShowStepsInput] = useState(false);

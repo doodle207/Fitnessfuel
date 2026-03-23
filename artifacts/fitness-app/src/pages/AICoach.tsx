@@ -30,7 +30,7 @@ const QUICK_QUESTIONS = [
 ];
 
 export default function AICoach() {
-  const { data: rawProfile } = useGetProfile();
+  const { data: rawProfile } = useGetProfile({ query: { queryKey: ['fitness', 'profile-aicoach'] } });
   const [insights, setInsights] = useState<Insights | null>(null);
   const [isLoadingInsights, setIsLoadingInsights] = useState(true);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);

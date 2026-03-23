@@ -59,7 +59,7 @@ function SelectField({ value, onChange, options }: { value: string; onChange: (v
 
 export default function Profile() {
   const queryClient = useQueryClient();
-  const { data: rawProfile, isLoading } = useGetProfile();
+  const { data: rawProfile, isLoading } = useGetProfile({ query: { queryKey: ['fitness', 'profile-page'] } });
   const { user, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [saveOk, setSaveOk] = useState(false);

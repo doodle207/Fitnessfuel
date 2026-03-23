@@ -30,7 +30,7 @@ interface FoodLogEntry {
 }
 
 export default function Diet() {
-  const { data: rawProfile } = useGetProfile();
+  const { data: rawProfile } = useGetProfile({ query: { queryKey: ['fitness', 'profile-diet'] } });
   const profile = rawProfile && typeof rawProfile === "object" && !Array.isArray(rawProfile) ? rawProfile as any : null;
 
   const [showFoodModal, setShowFoodModal] = useState(false);

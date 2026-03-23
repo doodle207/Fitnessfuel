@@ -108,8 +108,8 @@ export default function WorkoutBuilder() {
   const [search, setSearch] = useState("");
   const { toast } = useToast();
 
-  const { data: rawExercises, isLoading: exLoading } = useGetExercises({ muscleGroup: selectedGroup });
-  const { data: rawWorkouts } = useGetWorkouts();
+  const { data: rawExercises, isLoading: exLoading } = useGetExercises({ muscleGroup: selectedGroup } as any, { query: { queryKey: ['fitness', 'exercises', selectedGroup] } });
+  const { data: rawWorkouts } = useGetWorkouts({ query: { queryKey: ['fitness', 'workouts'] } });
 
   const exercises: Exercise[] = Array.isArray(rawExercises) ? rawExercises : [];
   const recentWorkouts = Array.isArray(rawWorkouts) ? rawWorkouts : [];

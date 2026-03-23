@@ -40,7 +40,7 @@ export default function Progress() {
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const { data: rawWeightLogs, isLoading } = useGetBodyweightLogs();
+  const { data: rawWeightLogs, isLoading } = useGetBodyweightLogs({ query: { queryKey: ['fitness', 'bodyweight-logs'] } });
   const weightLogs = Array.isArray(rawWeightLogs) ? rawWeightLogs : [];
 
   const { mutate: logWeight, isPending: isLogging } = useAddBodyweightLog({

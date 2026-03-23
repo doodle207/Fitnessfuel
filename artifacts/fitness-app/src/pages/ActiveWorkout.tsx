@@ -97,8 +97,8 @@ export default function ActiveWorkout() {
   const [elapsed, setElapsed] = useState(0);
   const { toast } = useToast();
 
-  const { data: workout, isLoading: isWorkoutLoading, error: workoutError } = useGetWorkout(workoutId);
-  const { data: rawExercises, isLoading: isExLoading } = useGetExercises();
+  const { data: workout, isLoading: isWorkoutLoading, error: workoutError } = useGetWorkout(workoutId, { query: { queryKey: ['fitness', 'workout', workoutId] } });
+  const { data: rawExercises, isLoading: isExLoading } = useGetExercises(undefined, { query: { queryKey: ['fitness', 'exercises'] } });
   const allExercises: Exercise[] = Array.isArray(rawExercises) ? rawExercises : [];
 
   const [pendingExerciseIds, setPendingExerciseIds] = useState<number[]>([]);
