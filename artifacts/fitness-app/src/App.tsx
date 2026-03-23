@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@workspace/replit-auth-web";
-import { useGetProfile } from "@workspace/api-client-react";
+import { useGetProfile, getGetProfileQueryKey } from "@workspace/api-client-react";
 import { useEffect, useState } from "react";
 import { Activity, Zap, TrendingUp, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -215,7 +215,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem("cfx_welcomed"));
 
   const { data: profile, isLoading: isProfileLoading, error: profileError } = useGetProfile({
-    query: { enabled: isAuthenticated }
+    query: { queryKey: getGetProfileQueryKey(), enabled: isAuthenticated }
   });
 
   const needsOnboarding = isAuthenticated && !isProfileLoading && profileError && (profileError as any).status === 404;
