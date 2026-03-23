@@ -31,29 +31,39 @@ router.post("/profile", async (req, res) => {
     return;
   }
   const userId = req.user.id;
-  const body = CreateProfileBody.parse(req.body);
+  
+  try {
+    // Parse and validate the body, providing defaults for optional fields
+    const body = CreateProfileBody.parse({
+      ...req.body,
+      dietPreference: req.body.dietPreference || "non-veg",
+    });
+    
+    const existing = await db.select().from(userProfilesTable).where(eq(userProfilesTable.userId, userId)).limit(1);
 
-  const existing = await db.select().from(userProfilesTable).where(eq(userProfilesTable.userId, userId)).limit(1);
+    let profile;
+    if (existing.length > 0) {
+      const updated = await db.update(userProfilesTable)
+        .set({ ...body, updatedAt: new Date() })
+        .where(eq(userProfilesTable.userId, userId))
+        .returning();
+      profile = updated[0];
+    } else {
+      const inserted = await db.insert(userProfilesTable)
+        .values({ userId, ...body })
+        .returning();
+      profile = inserted[0];
+    }
 
-  let profile;
-  if (existing.length > 0) {
-    const updated = await db.update(userProfilesTable)
-      .set({ ...body, updatedAt: new Date() })
-      .where(eq(userProfilesTable.userId, userId))
-      .returning();
-    profile = updated[0];
-  } else {
-    const inserted = await db.insert(userProfilesTable)
-      .values({ userId, ...body })
-      .returning();
-    profile = inserted[0];
+    res.json({
+      ...profile,
+      createdAt: profile.createdAt.toISOString(),
+      updatedAt: profile.updatedAt.toISOString(),
+    });
+  } catch (error: any) {
+    console.error("[profile POST]", error?.message || error);
+    res.status(400).json({ error: error?.message || "Failed to save profile" });
   }
-
-  res.json({
-    ...profile,
-    createdAt: profile.createdAt.toISOString(),
-    updatedAt: profile.updatedAt.toISOString(),
-  });
 });
 
 export default router;
