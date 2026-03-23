@@ -123,18 +123,76 @@ function WelcomeScreen({ onContinue }: { onContinue: () => void }) {
   );
 }
 
-function LoginScreen() {
-  const { login, loginWithGoogle } = useAuth();
-  const [googleEnabled, setGoogleEnabled] = useState<boolean | null>(null);
+type EmailStep = "email" | "password" | "register";
 
-  useEffect(() => {
-    fetch("/api/auth/providers", { credentials: "include" })
-      .then((r) => r.json())
-      .then((d) => setGoogleEnabled(!!d?.google))
-      .catch(() => setGoogleEnabled(false));
-  }, []);
+function LoginScreen() {
+  const { loginWithGoogle } = useAuth();
+
+  const [step, setStep] = useState<EmailStep>("email");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [isNewUser, setIsNewUser] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const urlError = new URLSearchParams(window.location.search).get("error");
+
+  async function handleEmailContinue(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/auth/email/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json();
+      if (data.exists) {
+        setIsNewUser(false);
+        setStep("password");
+      } else {
+        setIsNewUser(true);
+        setStep("register");
+      }
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handlePasswordSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!password) return;
+    setLoading(true);
+    setError(null);
+    const endpoint = isNewUser ? "/api/auth/email/register" : "/api/auth/email/login";
+    const body = isNewUser
+      ? { email, password, firstName }
+      : { email, password };
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const data = await res.json();
+        setError(data.error || "Authentication failed. Please try again.");
+      }
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#080810] flex flex-col items-center justify-center relative overflow-hidden px-4">
@@ -168,38 +226,123 @@ function LoginScreen() {
           <p className="text-white/50 text-base mt-2">Your elite fitness & nutrition companion</p>
         </div>
 
-        {urlError && (
+        {(urlError || error) && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
-            {urlError === "google_auth_failed" && "Google sign-in failed. Please try again."}
-            {urlError === "auth_session_expired" && "Login session expired. Please try signing in again."}
-            {urlError === "auth_failed" && "Authentication failed. Please try again."}
-            {!["google_auth_failed","auth_session_expired","auth_failed"].includes(urlError) && "Sign-in error. Please try again."}
+            {error && error}
+            {!error && urlError === "google_auth_failed" && "Google sign-in failed. Please try again."}
+            {!error && urlError === "auth_session_expired" && "Login session expired. Please try signing in again."}
+            {!error && urlError === "auth_failed" && "Authentication failed. Please try again."}
+            {!error && urlError && !["google_auth_failed","auth_session_expired","auth_failed"].includes(urlError) && "Sign-in error. Please try again."}
           </div>
         )}
 
-        <div className="space-y-3">
-          <motion.button
-            type="button"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={loginWithGoogle}
-            disabled={googleEnabled === false}
-            className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-semibold text-base text-[#1a1a2e] bg-white hover:bg-white/95 transition-all shadow-lg disabled:opacity-60"
-          >
-            <GoogleIcon />
-            {googleEnabled === null ? "Sign in with Google" : googleEnabled ? "Sign in with Google" : "Google (not configured)"}
-          </motion.button>
+        <AnimatePresence mode="wait">
+          {step === "email" && (
+            <motion.div
+              key="email-step"
+              initial={{ opacity: 0, x: 0 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.25 }}
+            >
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={loginWithGoogle}
+                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-semibold text-base text-[#1a1a2e] bg-white hover:bg-white/95 transition-all shadow-lg"
+              >
+                <GoogleIcon />
+                Continue with Google
+              </motion.button>
 
-          <motion.button
-            type="button"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={login}
-            className="w-full py-4 rounded-2xl font-semibold text-base text-white/80 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all"
-          >
-            Sign in with Replit
-          </motion.button>
-        </div>
+              <div className="flex items-center gap-3 my-5">
+                <div className="flex-1 h-px bg-white/10" />
+                <span className="text-white/40 text-sm">or</span>
+                <div className="flex-1 h-px bg-white/10" />
+              </div>
+
+              <form onSubmit={handleEmailContinue} className="space-y-3">
+                <div>
+                  <label className="block text-white font-semibold text-sm mb-2">Email address</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    required
+                    className="w-full px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-base focus:outline-none focus:border-violet-500/60 focus:bg-white/8 transition-all"
+                  />
+                </div>
+                <motion.button
+                  type="submit"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  disabled={loading || !email.trim()}
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-base text-white bg-[#2d2d3a] hover:bg-[#363645] transition-all disabled:opacity-60"
+                >
+                  {loading ? "Checking..." : <>Continue <ChevronRight className="w-4 h-4" /></>}
+                </motion.button>
+              </form>
+            </motion.div>
+          )}
+
+          {(step === "password" || step === "register") && (
+            <motion.div
+              key="password-step"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.25 }}
+            >
+              <button
+                type="button"
+                onClick={() => { setStep("email"); setError(null); setPassword(""); setFirstName(""); }}
+                className="flex items-center gap-1 text-white/50 hover:text-white/80 text-sm mb-5 transition-colors"
+              >
+                ← {email}
+              </button>
+
+              <form onSubmit={handlePasswordSubmit} className="space-y-3">
+                {isNewUser && (
+                  <div>
+                    <label className="block text-white font-semibold text-sm mb-2">First name</label>
+                    <input
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder="Enter your first name"
+                      className="w-full px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-base focus:outline-none focus:border-violet-500/60 transition-all"
+                    />
+                  </div>
+                )}
+                <div>
+                  <label className="block text-white font-semibold text-sm mb-2">
+                    {isNewUser ? "Create a password" : "Password"}
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={isNewUser ? "At least 8 characters" : "Enter your password"}
+                    required
+                    autoFocus
+                    className="w-full px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-base focus:outline-none focus:border-violet-500/60 transition-all"
+                  />
+                </div>
+                <motion.button
+                  type="submit"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  disabled={loading || !password}
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-base text-white bg-[#2d2d3a] hover:bg-[#363645] transition-all disabled:opacity-60"
+                >
+                  {loading ? (isNewUser ? "Creating account..." : "Signing in...") : <>{isNewUser ? "Create account" : "Sign in"} <ChevronRight className="w-4 h-4" /></>}
+                </motion.button>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <p className="text-center text-xs text-white/25 mt-6">
           By continuing, you agree to our Terms & Privacy Policy

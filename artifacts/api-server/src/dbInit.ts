@@ -218,6 +218,9 @@ async function createTables() {
     )
   `);
 
+  // Add password_hash column to users if missing (email/password auth)
+  await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR`);
+
   // Add new columns to user_profiles if missing (safe migration for existing deployments)
   await db.execute(sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'USA'`);
   await db.execute(sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS diet_preference TEXT NOT NULL DEFAULT 'non-veg'`);

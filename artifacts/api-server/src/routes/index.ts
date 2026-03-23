@@ -11,11 +11,13 @@ import achievementsRouter from "./achievements";
 import imageAnalysisRouter from "./imageAnalysis";
 import aiCoachRouter from "./aiCoach";
 import paymentsRouter from "./payments";
+import emailAuthRouter from "./emailAuth";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+router.use(emailAuthRouter);
 router.use(profileRouter);
 router.use(exercisesRouter);
 router.use(workoutsRouter);
