@@ -4,8 +4,9 @@ import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
 import { format, startOfWeek, addDays, differenceInDays, parseISO } from "date-fns";
 import {
   Flame, Activity, Trophy, ArrowRight, Utensils, Droplets, Footprints,
-  Target, TrendingUp, Zap, ChevronRight, UserCircle2
+  Target, TrendingUp, Zap, ChevronRight, UserCircle2, Crown
 } from "lucide-react";
+import UpgradeModal from "@/components/UpgradeModal";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, Cell,
@@ -28,21 +29,30 @@ const COUNTRY_TIMEZONE: Record<string, string> = {
 
 function getGreeting(country: string): { text: string; time: string } {
   const tz = COUNTRY_TIMEZONE[country] || "UTC";
-  let now: Date;
   try {
-    const parts = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", minute: "numeric", hour12: true }).formatToParts(new Date());
+    const formatter = new Intl.DateTimeFormat("en-US", { 
+      timeZone: tz, 
+      hour: "2-digit", 
+      minute: "2-digit", 
+      hour12: true,
+      weekday: "short",
+      month: "short",
+      day: "numeric"
+    });
+    
+    const parts = formatter.formatToParts(new Date());
     const hourStr = parts.find(p => p.type === "hour")?.value || "12";
-    const period = parts.find(p => p.type === "dayPeriod")?.value || "AM";
     const minStr = parts.find(p => p.type === "minute")?.value || "00";
+    const period = parts.find(p => p.type === "dayPeriod")?.value || "AM";
+    
     let h = parseInt(hourStr);
     if (period.toUpperCase() === "PM" && h !== 12) h += 12;
     if (period.toUpperCase() === "AM" && h === 12) h = 0;
-    now = new Date();
-    now.setHours(h);
+    
     const timeStr = `${hourStr}:${minStr} ${period}`;
     const greeting = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
     return { text: greeting, time: timeStr };
-  } catch {
+  } catch (err) {
     const h = new Date().getHours();
     const greeting = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
     return { text: greeting, time: "" };
@@ -110,6 +120,7 @@ export default function Dashboard() {
   const [waterMl, setWaterMl] = useState(0);
   const [macroTotals, setMacroTotals] = useState({ proteinG: 0, carbsG: 0, fatG: 0 });
   const [todayFoodCalories, setTodayFoodCalories] = useState(0);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(STEPS_KEY, String(steps));
@@ -254,9 +265,14 @@ export default function Dashboard() {
               </Link>
             </div>
           </div>
-          <Link href="/profile" className="shrink-0 w-10 h-10 rounded-full bg-violet-600/20 border border-violet-500/30 flex items-center justify-center hover:bg-violet-600/40 transition-colors">
-            <UserCircle2 className="w-5 h-5 text-violet-400" />
-          </Link>
+          <div className="shrink-0 flex items-center gap-2">
+            <button onClick={() => setShowUpgrade(true)} className="px-3 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 text-white text-xs sm:text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5 whitespace-nowrap shadow-[0_0_12px_rgba(124,58,237,0.3)]">
+              <Crown className="w-4 h-4" /> <span className="hidden sm:inline">Premium</span>
+            </button>
+            <Link href="/profile" className="shrink-0 w-10 h-10 rounded-full bg-violet-600/20 border border-violet-500/30 flex items-center justify-center hover:bg-violet-600/40 transition-colors">
+              <UserCircle2 className="w-5 h-5 text-violet-400" />
+            </Link>
+          </div>
         </header>
 
         {isFemale && (
@@ -588,6 +604,14 @@ export default function Dashboard() {
           )}
         </motion.div>
       </div>
+
+      {showUpgrade && (
+        <UpgradeModal
+          trigger="general"
+          onClose={() => setShowUpgrade(false)}
+          onSuccess={() => setShowUpgrade(false)}
+        />
+      )}
     </PageTransition>
   );
 }
