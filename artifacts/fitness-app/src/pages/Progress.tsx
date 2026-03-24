@@ -47,7 +47,7 @@ export default function Progress() {
     mutation: {
       onSuccess: () => {
         setWeight("");
-        queryClient.invalidateQueries({ queryKey: [`/api/progress/bodyweight`] });
+        queryClient.invalidateQueries({ queryKey: ['fitness', 'bodyweight-logs'] });
         toast({ title: "Weight logged!", description: "Your weight has been recorded." });
       },
       onError: () => {

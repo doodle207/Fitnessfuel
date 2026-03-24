@@ -104,6 +104,7 @@ export default function Profile() {
       country:          profile?.country || "USA",
       periodStartDate:  profile?.periodStartDate || "",
       periodEndDate:    profile?.periodEndDate || "",
+      cycleRegularity:  profile?.cycleRegularity || "regular",
     };
     setEditForm(f);
     setHeightStr(String(f.heightCm));
@@ -290,22 +291,32 @@ export default function Profile() {
               </Field>
 
               {editForm.gender === "female" && (
-                <div className="rounded-2xl border border-pink-500/20 bg-pink-500/5 p-4 space-y-3">
+                <div className="rounded-2xl border border-pink-500/30 bg-gradient-to-br from-pink-950/50 to-rose-950/30 p-4 space-y-3 shadow-[0_0_20px_rgba(236,72,153,0.08)]">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-base">{"\uD83C\uDF38"}</span>
-                    <span className="text-xs font-semibold uppercase tracking-wider text-pink-300">Menstruation Cycle</span>
+                    <span className="text-base">🌸</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-pink-300">Menstrual Cycle Tracker</span>
                   </div>
+                  <Field label="Cycle Regularity">
+                    <div className="grid grid-cols-2 gap-2">
+                      {["Regular", "Irregular"].map(opt => (
+                        <button key={opt} onClick={() => setField("cycleRegularity", opt.toLowerCase())}
+                          className={`py-2.5 rounded-xl text-sm font-semibold transition-colors border ${(editForm.cycleRegularity || "regular") === opt.toLowerCase() ? "bg-pink-600/80 border-pink-500 text-white shadow-[0_0_10px_rgba(236,72,153,0.3)]" : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"}`}>
+                          {opt === "Regular" ? "⏱ Regular" : "〰️ Irregular"}
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
                   <Field label="Last Period Start Date">
                     <input type="date" value={editForm.periodStartDate || ""} max={new Date().toISOString().split("T")[0]}
                       onChange={e => setField("periodStartDate", e.target.value || null)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-black/40 border border-white/10 focus:border-pink-500 outline-none text-white text-sm transition-colors [color-scheme:dark]" />
+                      className="w-full px-3 py-2.5 rounded-xl bg-black/40 border border-pink-500/20 focus:border-pink-500 outline-none text-white text-sm transition-colors [color-scheme:dark]" />
                   </Field>
                   <Field label="Last Period End Date">
                     <input type="date" value={editForm.periodEndDate || ""} min={editForm.periodStartDate || undefined} max={new Date().toISOString().split("T")[0]}
                       onChange={e => setField("periodEndDate", e.target.value || null)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-black/40 border border-white/10 focus:border-pink-500 outline-none text-white text-sm transition-colors [color-scheme:dark]" />
+                      className="w-full px-3 py-2.5 rounded-xl bg-black/40 border border-pink-500/20 focus:border-pink-500 outline-none text-white text-sm transition-colors [color-scheme:dark]" />
                   </Field>
-                  <p className="text-xs text-white/30 leading-relaxed">Used to show your cycle phase on the Dashboard and give personalized insights.</p>
+                  <p className="text-xs text-pink-300/40 leading-relaxed">Your cycle phase shows on the Dashboard with personalized workout & nutrition insights.</p>
                 </div>
               )}
 
