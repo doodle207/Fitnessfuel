@@ -301,7 +301,61 @@ export default function Diet() {
               })()}
             </div>
 
-            <AdBanner variant={2} />
+            {/* Smart Food Log — integrated into Today's Log with glow accent */}
+            <div className="relative rounded-2xl border-2 border-violet-500/30 bg-gradient-to-br from-violet-950/40 to-cyan-950/20 p-4 shadow-[0_0_24px_rgba(124,58,237,0.12)]">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-600/5 to-cyan-600/5 pointer-events-none" />
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-600 flex items-center justify-center shadow-[0_0_14px_rgba(124,58,237,0.5)] shrink-0">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-sm text-white">Smart Food Log</h3>
+                  <p className="text-[11px] text-violet-400/80">AI-estimated macros from food name</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <input value={smartFoodName} onChange={e => setSmartFoodName(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && estimateFood()}
+                  placeholder="e.g. Chicken breast, 200g rice..."
+                  className="w-full px-4 py-2.5 rounded-xl bg-black/50 border border-violet-500/20 focus:border-violet-500 outline-none text-sm placeholder:text-white/25" />
+                <div className="flex gap-2">
+                  <input type="number" value={smartFoodWeight} onChange={e => setSmartFoodWeight(e.target.value)} placeholder="Weight (g) optional"
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-black/50 border border-violet-500/20 focus:border-violet-500 outline-none text-sm placeholder:text-white/25" />
+                  <button onClick={estimateFood} disabled={!smartFoodName.trim() || isEstimating}
+                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2 shrink-0 shadow-[0_0_14px_rgba(124,58,237,0.35)]">
+                    {isEstimating ? <Search className="w-4 h-4 animate-pulse" /> : <Sparkles className="w-4 h-4" />}
+                    {isEstimating ? "..." : "Estimate"}
+                  </button>
+                </div>
+              </div>
+              {smartEstimate && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-3 space-y-2">
+                  <div className="p-3 rounded-xl bg-white/5 border border-violet-500/15">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="font-semibold text-sm text-white">{smartEstimate.foodName}</p>
+                      {smartEstimate.weightGrams && <p className="text-[10px] text-muted-foreground">{smartEstimate.weightGrams}g</p>}
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 text-center">
+                      {[
+                        { val: smartEstimate.calories, unit: "kcal", color: "text-violet-400" },
+                        { val: `${smartEstimate.proteinG}g`, unit: "Protein", color: "text-blue-400" },
+                        { val: `${smartEstimate.carbsG}g`, unit: "Carbs", color: "text-green-400" },
+                        { val: `${smartEstimate.fatG}g`, unit: "Fat", color: "text-orange-400" },
+                      ].map(({ val, unit, color }, i) => (
+                        <div key={i} className="p-1.5 rounded-lg bg-black/30 border border-white/5">
+                          <p className={`text-sm font-bold ${color}`}>{val}</p>
+                          <p className="text-[9px] text-muted-foreground">{unit}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <button onClick={logEstimatedFood}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 text-white text-sm font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-[0_0_16px_rgba(124,58,237,0.35)]">
+                    <Plus className="w-4 h-4" /> Add to {MEAL_TYPES.find(m => m.id === activeMealTab)?.label}
+                  </button>
+                </motion.div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -328,53 +382,6 @@ export default function Diet() {
                 ))}
               </div>
               <p className="text-[10px] text-center text-muted-foreground mt-2">{Math.round(waterData.totalMl / 250)} / 12 glasses</p>
-            </div>
-
-            <div className="glass-card rounded-3xl p-5 border border-white/5">
-              <h3 className="font-display font-bold mb-3 flex items-center gap-2"><Sparkles className="w-4 h-4 text-violet-400" /> Smart Food Log</h3>
-              <p className="text-xs text-muted-foreground mb-3">Enter food name and weight for AI-estimated macros</p>
-              <div className="space-y-2">
-                <input value={smartFoodName} onChange={e => setSmartFoodName(e.target.value)} placeholder="e.g. Chicken breast"
-                  className="w-full px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 focus:border-violet-500 outline-none text-sm" />
-                <input type="number" value={smartFoodWeight} onChange={e => setSmartFoodWeight(e.target.value)} placeholder="Weight in grams (optional)"
-                  className="w-full px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 focus:border-violet-500 outline-none text-sm" />
-                <button onClick={estimateFood} disabled={!smartFoodName.trim() || isEstimating}
-                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2">
-                  {isEstimating ? <Search className="w-4 h-4 animate-pulse" /> : <Sparkles className="w-4 h-4" />}
-                  {isEstimating ? "Estimating..." : "Estimate Macros"}
-                </button>
-              </div>
-
-              {smartEstimate && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-3 space-y-2">
-                  <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                    <p className="font-semibold text-sm text-white">{smartEstimate.foodName}</p>
-                    {smartEstimate.weightGrams && <p className="text-[10px] text-muted-foreground">{smartEstimate.weightGrams}g</p>}
-                    <div className="grid grid-cols-4 gap-2 mt-2">
-                      <div className="text-center">
-                        <p className="text-sm font-bold text-violet-400">{smartEstimate.calories}</p>
-                        <p className="text-[9px] text-muted-foreground">kcal</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-bold text-blue-400">{smartEstimate.proteinG}g</p>
-                        <p className="text-[9px] text-muted-foreground">Protein</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-bold text-green-400">{smartEstimate.carbsG}g</p>
-                        <p className="text-[9px] text-muted-foreground">Carbs</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-bold text-orange-400">{smartEstimate.fatG}g</p>
-                        <p className="text-[9px] text-muted-foreground">Fat</p>
-                      </div>
-                    </div>
-                  </div>
-                  <button onClick={logEstimatedFood}
-                    className="w-full py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors flex items-center justify-center gap-2">
-                    <Plus className="w-4 h-4" /> Log to {activeMealTab}
-                  </button>
-                </motion.div>
-              )}
             </div>
           </div>
         </div>
