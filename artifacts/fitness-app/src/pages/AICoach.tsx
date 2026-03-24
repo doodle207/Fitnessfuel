@@ -48,32 +48,51 @@ export default function AICoach() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  const startListening = useCallback(() => {
+  const startListening = useCallback(async () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setVoiceError("Voice input is not supported in this browser.");
-      setTimeout(() => setVoiceError(null), 3000);
+      setVoiceError("Voice input is not supported in this browser. Try Chrome or Safari.");
+      setTimeout(() => setVoiceError(null), 4000);
       return;
     }
+
+    // Request microphone permission explicitly first
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setVoiceError("Microphone access denied. Please allow microphone permissions.");
+      setTimeout(() => setVoiceError(null), 4000);
+      return;
+    }
+
     const recognition = new SpeechRecognition();
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-US";
+    recognition.maxAlternatives = 1;
 
     recognition.onstart = () => { setIsListening(true); setVoiceError(null); };
     recognition.onend = () => { setIsListening(false); };
     recognition.onerror = (e: any) => {
       setIsListening(false);
-      if (e.error !== "no-speech") {
+      if (e.error === "not-allowed" || e.error === "permission-denied") {
+        setVoiceError("Microphone access denied. Please allow microphone permissions.");
+      } else if (e.error === "network") {
+        setVoiceError("Network error with voice recognition. Please try again.");
+      } else if (e.error !== "no-speech" && e.error !== "aborted") {
         setVoiceError("Voice input error. Please try again.");
-        setTimeout(() => setVoiceError(null), 3000);
       }
+      setTimeout(() => setVoiceError(null), 4000);
     };
     recognition.onresult = (e: any) => {
-      const transcript = Array.from(e.results as SpeechRecognitionResultList)
-        .map((r: SpeechRecognitionResult) => r[0].transcript)
-        .join("");
-      setChatInput(transcript);
+      let interimTranscript = "";
+      let finalTranscript = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalTranscript += t;
+        else interimTranscript += t;
+      }
+      setChatInput(finalTranscript || interimTranscript);
     };
 
     recognitionRef.current = recognition;
@@ -82,6 +101,7 @@ export default function AICoach() {
 
   const stopListening = useCallback(() => {
     recognitionRef.current?.stop();
+    recognitionRef.current = null;
     setIsListening(false);
   }, []);
 
