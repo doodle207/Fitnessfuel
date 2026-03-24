@@ -1,15 +1,5 @@
 {
-  "buildCommand": "bash build-vercel.sh",
-  "outputDirectory": "artifacts/fitness-app/dist/public",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/:path*" }
-  ],
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Credentials", "value": "true" }
-      ]
-    }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
