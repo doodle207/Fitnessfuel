@@ -94,13 +94,16 @@ function MacroRing({ label, current, target, stroke, track }: MacroRingProps) {
   );
 }
 
-function CalorieCircle({ value, label, color, glow, icon }: { value: number; label: string; color: string; glow: string; icon: React.ReactNode }) {
+function CalorieCircle({ value, label, bgColor, borderColor, iconColor, textColor, glowColor, icon }: {
+  value: number; label: string; bgColor: string; borderColor: string; iconColor: string; textColor: string; glowColor: string; icon: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className={`relative w-20 h-20 rounded-full border-2 ${color} flex flex-col items-center justify-center ${glow}`}>
-        <div className="text-white/50 mb-0.5">{icon}</div>
-        <p className="text-base font-display font-bold text-white leading-none">{value}</p>
-        <p className="text-[9px] text-white/50">kcal</p>
+      <div className={`relative w-20 h-20 rounded-full border-2 ${borderColor} ${bgColor} flex flex-col items-center justify-center`}
+        style={{ boxShadow: `0 0 18px ${glowColor}` }}>
+        <div className={`${iconColor} mb-0.5`}>{icon}</div>
+        <p className={`text-base font-display font-bold ${textColor} leading-none`}>{value}</p>
+        <p className="text-[9px] text-white/40">kcal</p>
       </div>
       <p className="text-xs font-semibold text-white/70">{label}</p>
     </div>
@@ -114,14 +117,16 @@ function CalorieMainRing({ remaining, goal, eaten }: { remaining: number; goal: 
   return (
     <div className="relative flex flex-col items-center justify-center" style={{ width: 140, height: 140 }}>
       {/* Ripple rings */}
-      <motion.div className="absolute inset-0 rounded-full border border-violet-500/20"
-        animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0, 0.3] }}
+      <motion.div className="absolute inset-0 rounded-full border border-blue-500/25"
+        animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0, 0.4] }}
         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }} />
-      <motion.div className="absolute inset-[-8px] rounded-full border border-cyan-500/10"
-        animate={{ scale: [1, 1.12, 1], opacity: [0.2, 0, 0.2] }}
+      <motion.div className="absolute inset-[-8px] rounded-full border border-cyan-500/15"
+        animate={{ scale: [1, 1.12, 1], opacity: [0.25, 0, 0.25] }}
         transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} />
+      {/* Blue fill background */}
+      <div className="absolute inset-[6px] rounded-full bg-blue-500/8" />
       <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 140 140">
-        <circle cx="70" cy="70" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
+        <circle cx="70" cy="70" r={r} fill="none" stroke="rgba(59,130,246,0.12)" strokeWidth="10" />
         <circle cx="70" cy="70" r={r} fill="none"
           stroke={isOver ? "#f97316" : "url(#calGrad)"}
           strokeWidth="10" strokeLinecap="round"
@@ -129,14 +134,14 @@ function CalorieMainRing({ remaining, goal, eaten }: { remaining: number; goal: 
           style={{ transition: "stroke-dasharray 1.2s ease-out" }} />
         <defs>
           <linearGradient id="calGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#7c3aed" /><stop offset="100%" stopColor="#06b6d4" />
+            <stop offset="0%" stopColor="#3b82f6" /><stop offset="100%" stopColor="#06b6d4" />
           </linearGradient>
         </defs>
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <p className="text-2xl font-display font-black text-white leading-none">{Math.abs(remaining)}</p>
-        <p className="text-[10px] text-white/50 mt-0.5">{remaining >= 0 ? "remaining" : "over goal"}</p>
-        <p className="text-[9px] text-violet-400 font-semibold mt-0.5">of {goal}</p>
+        <p className="text-2xl font-display font-black text-blue-300 leading-none">{Math.abs(remaining)}</p>
+        <p className="text-[10px] text-blue-400/70 mt-0.5">{remaining >= 0 ? "remaining" : "over goal"}</p>
+        <p className="text-[9px] text-white/40 font-medium mt-0.5">of {goal}</p>
       </div>
     </div>
   );
@@ -343,9 +348,21 @@ export default function Dashboard() {
                 <span className="text-xs text-muted-foreground bg-white/5 px-2 py-0.5 rounded-full">Today</span>
               </div>
               <div className="flex items-center justify-center gap-4 mb-4">
-                <CalorieCircle value={todayFoodCalories} label="Eaten" color="border-green-500/50" glow="shadow-[0_0_16px_rgba(34,197,94,0.2)]" icon={<Utensils className="w-3.5 h-3.5" />} />
+                <CalorieCircle
+                  value={todayFoodCalories} label="Eaten"
+                  bgColor="bg-green-500/15" borderColor="border-green-500/50"
+                  iconColor="text-green-400" textColor="text-green-300"
+                  glowColor="rgba(34,197,94,0.25)"
+                  icon={<Utensils className="w-3.5 h-3.5" />}
+                />
                 <CalorieMainRing remaining={remaining} goal={calTarget} eaten={todayFoodCalories} />
-                <CalorieCircle value={totalBurned} label="Burned" color="border-orange-500/50" glow="shadow-[0_0_16px_rgba(249,115,22,0.2)]" icon={<Zap className="w-3.5 h-3.5" />} />
+                <CalorieCircle
+                  value={totalBurned} label="Burned"
+                  bgColor="bg-orange-500/15" borderColor="border-orange-500/50"
+                  iconColor="text-orange-400" textColor="text-orange-300"
+                  glowColor="rgba(249,115,22,0.25)"
+                  icon={<Zap className="w-3.5 h-3.5" />}
+                />
               </div>
               <div className="space-y-1">
                 <div className="flex justify-between text-xs text-muted-foreground">
@@ -408,9 +425,46 @@ export default function Dashboard() {
           )}
         </motion.div>
 
-        {/* ── Workout & Streaks (circular) + Hydration side by side ── */}
+        {/* ── Hydration + Workout & Streaks (Hydration first / on top) ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="glass-card rounded-2xl p-4 border border-white/5 space-y-3">
+          {/* Hydration */}
+          <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="glass-card rounded-2xl p-4 border border-cyan-500/15 bg-cyan-500/3 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display font-bold text-sm flex items-center gap-2"><Droplets className="w-4 h-4 text-cyan-400" /> Hydration</h3>
+              <span className="text-xs text-cyan-400 font-semibold">{waterMl} / 3000 ml</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="relative w-16 h-16 shrink-0">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 60 60">
+                  <circle cx="30" cy="30" r="24" fill="none" stroke="rgba(6,182,212,0.12)" strokeWidth="6" />
+                  <circle cx="30" cy="30" r="24" fill="none" stroke="url(#wGrad)" strokeWidth="6" strokeLinecap="round"
+                    style={{ strokeDasharray: `${2 * Math.PI * 24}`, strokeDashoffset: `${2 * Math.PI * 24 * (1 - waterPct)}`, transition: "stroke-dashoffset 1s ease" }} />
+                  <defs><linearGradient id="wGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#06b6d4" /><stop offset="100%" stopColor="#3b82f6" /></linearGradient></defs>
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-base font-display font-bold text-cyan-400">{waterGlasses}</span>
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
+                  <div className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-1000" style={{ width: `${waterPct * 100}%` }} />
+                </div>
+                <div className="grid grid-cols-2 gap-1">
+                  {[250, 500].map(ml => (
+                    <button key={ml} onClick={() => logWater(ml)} className="py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold hover:bg-cyan-500/20 active:scale-95 transition-all flex items-center justify-center gap-1">
+                      <Droplets className="w-3 h-3" /> +{ml}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-center gap-1 flex-wrap">
+              {Array.from({ length: 12 }).map((_, i) => (<div key={i} className={`w-3 h-3 rounded-full transition-all ${i < waterGlasses ? "bg-cyan-400 shadow-[0_0_5px_rgba(6,182,212,0.5)]" : "bg-white/10"}`} />))}
+            </div>
+          </motion.div>
+
+          {/* Workout & Streaks (circular) */}
+          <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.12 }} className="glass-card rounded-2xl p-4 border border-white/5 space-y-3">
             <h3 className="font-display font-bold text-sm flex items-center gap-2"><Flame className="w-4 h-4 text-orange-500" /> Workout & Streaks</h3>
             <div className="flex items-center justify-center gap-6">
               <div className="flex flex-col items-center">
@@ -451,42 +505,6 @@ export default function Dashboard() {
               <span className="text-xs font-semibold text-violet-300">Start Workout</span>
               <ChevronRight className="w-3.5 h-3.5 text-violet-400 group-hover:translate-x-1 transition-transform" />
             </Link>
-          </motion.div>
-
-          {/* Hydration (compact, beside Workout & Streaks) */}
-          <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.12 }} className="glass-card rounded-2xl p-4 border border-cyan-500/15 bg-cyan-500/3 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display font-bold text-sm flex items-center gap-2"><Droplets className="w-4 h-4 text-cyan-400" /> Hydration</h3>
-              <span className="text-xs text-cyan-400 font-semibold">{waterMl} / 3000 ml</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="relative w-16 h-16 shrink-0">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 60 60">
-                  <circle cx="30" cy="30" r="24" fill="none" stroke="rgba(6,182,212,0.12)" strokeWidth="6" />
-                  <circle cx="30" cy="30" r="24" fill="none" stroke="url(#wGrad)" strokeWidth="6" strokeLinecap="round"
-                    style={{ strokeDasharray: `${2 * Math.PI * 24}`, strokeDashoffset: `${2 * Math.PI * 24 * (1 - waterPct)}`, transition: "stroke-dashoffset 1s ease" }} />
-                  <defs><linearGradient id="wGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#06b6d4" /><stop offset="100%" stopColor="#3b82f6" /></linearGradient></defs>
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-base font-display font-bold text-cyan-400">{waterGlasses}</span>
-                </div>
-              </div>
-              <div className="flex-1">
-                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
-                  <div className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-1000" style={{ width: `${waterPct * 100}%` }} />
-                </div>
-                <div className="grid grid-cols-2 gap-1">
-                  {[250, 500].map(ml => (
-                    <button key={ml} onClick={() => logWater(ml)} className="py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold hover:bg-cyan-500/20 active:scale-95 transition-all flex items-center justify-center gap-1">
-                      <Droplets className="w-3 h-3" /> +{ml}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-center gap-1 flex-wrap">
-              {Array.from({ length: 12 }).map((_, i) => (<div key={i} className={`w-3 h-3 rounded-full transition-all ${i < waterGlasses ? "bg-cyan-400 shadow-[0_0_5px_rgba(6,182,212,0.5)]" : "bg-white/10"}`} />))}
-            </div>
           </motion.div>
         </div>
 

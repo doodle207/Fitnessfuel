@@ -59,7 +59,8 @@ export default function AICoach() {
     }
 
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
     } catch {
       setVoiceError("Microphone access denied. Please allow microphone permissions.");
       setTimeout(() => setVoiceError(null), 4000);
