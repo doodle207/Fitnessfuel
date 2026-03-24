@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { PageTransition } from "@/components/ui/LoadingState";
 import { useGetProfile } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Brain, Send, RefreshCw, Zap, AlertTriangle, Target, TrendingUp,
-  MessageSquare, ChevronRight, Flame, Dumbbell, Sparkles, Activity, UtensilsCrossed
+  MessageSquare, ChevronRight, Flame, Dumbbell, Sparkles, Activity, UtensilsCrossed,
+  Mic, MicOff
 } from "lucide-react";
 import AdBanner from "@/components/AdBanner";
 import ChatMessage from "@/components/ChatMessage";
@@ -42,7 +43,47 @@ export default function AICoach() {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<"aiChat" | "mealPlan">("aiChat");
   const [subscription, setSubscription] = useState<any>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+
+  const startListening = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setVoiceError("Voice input is not supported in this browser.");
+      setTimeout(() => setVoiceError(null), 3000);
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => { setIsListening(true); setVoiceError(null); };
+    recognition.onend = () => { setIsListening(false); };
+    recognition.onerror = (e: any) => {
+      setIsListening(false);
+      if (e.error !== "no-speech") {
+        setVoiceError("Voice input error. Please try again.");
+        setTimeout(() => setVoiceError(null), 3000);
+      }
+    };
+    recognition.onresult = (e: any) => {
+      const transcript = Array.from(e.results as SpeechRecognitionResultList)
+        .map((r: SpeechRecognitionResult) => r[0].transcript)
+        .join("");
+      setChatInput(transcript);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  }, []);
+
+  const stopListening = useCallback(() => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  }, []);
 
   const profile = rawProfile && typeof rawProfile === "object" && !Array.isArray(rawProfile) ? rawProfile as any : null;
   const name = profile?.name?.split(" ")[0] || "Champ";
@@ -319,10 +360,31 @@ export default function AICoach() {
                 </div>
 
                 <div className="px-4 pb-4 pt-2 border-t border-white/5">
+                  {voiceError && (
+                    <p className="text-xs text-red-400 mb-2 text-center">{voiceError}</p>
+                  )}
+                  {isListening && (
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                      <span className="text-xs text-red-400 font-medium">Listening... speak now</span>
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage(chatInput)}
-                      placeholder="Ask anything about your fitness..." disabled={isChatLoading}
+                      placeholder={isListening ? "Listening..." : "Ask anything about your fitness..."}
+                      disabled={isChatLoading}
                       className="flex-1 px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 focus:border-violet-500 outline-none text-sm text-white placeholder:text-muted-foreground transition-colors disabled:opacity-50" />
+                    <button
+                      onClick={isListening ? stopListening : startListening}
+                      disabled={isChatLoading}
+                      title={isListening ? "Stop listening" : "Voice input"}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
+                        isListening
+                          ? "bg-red-600 hover:bg-red-500 text-white shadow-[0_0_12px_rgba(220,38,38,0.5)]"
+                          : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white border border-white/10"
+                      }`}>
+                      {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    </button>
                     <button onClick={() => sendMessage(chatInput)} disabled={!chatInput.trim() || isChatLoading}
                       className="w-10 h-10 rounded-xl bg-violet-600 hover:bg-violet-500 text-white flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0">
                       <Send className="w-4 h-4" />
