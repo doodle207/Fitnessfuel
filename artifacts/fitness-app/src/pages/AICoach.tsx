@@ -47,6 +47,8 @@ export default function AICoach() {
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const autoSendRef = useRef(false);
+  const finalTranscriptRef = useRef("");
 
   const startListening = useCallback(async () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -56,7 +58,6 @@ export default function AICoach() {
       return;
     }
 
-    // Request microphone permission explicitly first
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
@@ -65,15 +66,18 @@ export default function AICoach() {
       return;
     }
 
+    finalTranscriptRef.current = "";
+    autoSendRef.current = true;
+
     const recognition = new SpeechRecognition();
-    recognition.continuous = true;
+    recognition.continuous = false;
     recognition.interimResults = true;
     recognition.lang = "en-US";
     recognition.maxAlternatives = 1;
 
     recognition.onstart = () => { setIsListening(true); setVoiceError(null); };
-    recognition.onend = () => { setIsListening(false); };
     recognition.onerror = (e: any) => {
+      autoSendRef.current = false;
       setIsListening(false);
       if (e.error === "not-allowed" || e.error === "permission-denied") {
         setVoiceError("Microphone access denied. Please allow microphone permissions.");
@@ -85,21 +89,34 @@ export default function AICoach() {
       setTimeout(() => setVoiceError(null), 4000);
     };
     recognition.onresult = (e: any) => {
-      let interimTranscript = "";
-      let finalTranscript = "";
+      let interim = "";
+      let finals = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) finalTranscript += t;
-        else interimTranscript += t;
+        if (e.results[i].isFinal) finals += t;
+        else interim += t;
       }
-      setChatInput(finalTranscript || interimTranscript);
+      if (finals) finalTranscriptRef.current += finals;
+      setChatInput(finalTranscriptRef.current || interim);
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+      const text = (finalTranscriptRef.current || "").trim();
+      if (autoSendRef.current && text) {
+        setChatInput("");
+        finalTranscriptRef.current = "";
+        autoSendRef.current = false;
+        sendMessage(text);
+      }
     };
 
     recognitionRef.current = recognition;
     recognition.start();
   }, []);
 
-  const stopListening = useCallback(() => {
+  const stopListening = useCallback((andSend = false) => {
+    autoSendRef.current = andSend;
     recognitionRef.current?.stop();
     recognitionRef.current = null;
     setIsListening(false);
@@ -384,23 +401,33 @@ export default function AICoach() {
                     <p className="text-xs text-red-400 mb-2 text-center">{voiceError}</p>
                   )}
                   {isListening && (
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    <div className="flex items-center justify-center gap-2 mb-2.5">
+                      {/* Waveform bars */}
+                      <div className="flex items-center gap-[3px]">
+                        {[0.4, 0.7, 1, 0.6, 0.9, 0.5, 0.8].map((h, i) => (
+                          <motion.div key={i} className="w-[3px] rounded-full bg-red-400"
+                            animate={{ height: [`${8 * h}px`, `${18 * h}px`, `${8 * h}px`] }}
+                            transition={{ duration: 0.5 + i * 0.07, repeat: Infinity, ease: "easeInOut", delay: i * 0.06 }} />
+                        ))}
+                      </div>
                       <span className="text-xs text-red-400 font-medium">Listening... speak now</span>
+                      <button onClick={() => stopListening(true)} className="text-[10px] font-semibold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full hover:bg-green-500/20 transition-colors">
+                        Send ↑
+                      </button>
                     </div>
                   )}
                   <div className="flex gap-2">
                     <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage(chatInput)}
-                      placeholder={isListening ? "Listening..." : "Ask anything about your fitness..."}
+                      placeholder={isListening ? "Listening... (will auto-send)" : "Ask anything about your fitness..."}
                       disabled={isChatLoading}
                       className="flex-1 px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 focus:border-violet-500 outline-none text-sm text-white placeholder:text-muted-foreground transition-colors disabled:opacity-50" />
                     <button
-                      onClick={isListening ? stopListening : startListening}
+                      onClick={isListening ? () => stopListening(true) : startListening}
                       disabled={isChatLoading}
-                      title={isListening ? "Stop listening" : "Voice input"}
+                      title={isListening ? "Stop and send" : "Voice input"}
                       className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
                         isListening
-                          ? "bg-red-600 hover:bg-red-500 text-white shadow-[0_0_12px_rgba(220,38,38,0.5)]"
+                          ? "bg-red-600 hover:bg-red-500 text-white shadow-[0_0_14px_rgba(220,38,38,0.6)]"
                           : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white border border-white/10"
                       }`}>
                       {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}

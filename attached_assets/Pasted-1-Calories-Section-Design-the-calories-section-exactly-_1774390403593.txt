@@ -1,0 +1,75 @@
+1. Calories Section
+	•	Design the calories section exactly like attached picture.
+	•	Eaten, Burned, Remaining calories → circular shapes instead of rounded squares.
+	•	Add dynamic animations to make the section feel alive (e.g., water ripple, floating particles, or moving waves behind calorie numbers).
+
+⸻
+
+2. Body Weight Logging
+	•	Fix performance issue: logging body weight should load instantly, no delay.
+
+⸻
+
+3. Dashboard / Sections
+	•	Workout & Streaks:
+	•	Circular shape
+	•	Reduce size
+	•	Hydration Bar:
+	•	Move beside Workout & Streaks
+	•	Remove hydration bar from horizontal slider
+	•	Add horizontal slider / carousel for Macros and Calories only
+	•	Reduce section heights for more content per page
+
+⸻
+
+4. Profile Section / Gender
+	•	Remove “Other” option
+	•	If user selects Female:
+	•	Section background → pinkish
+	•	Add Menstrual Cycle input:
+	•	Cycle details
+	•	Regular / Irregular
+
+⸻
+
+5. Nutrition Section
+	•	Eaten, Burned, Remaining calories → circular shapes
+	•	Integrate Smart Food Log inside Today’s Log section and highlight it visually
+	•	Calories section animations → floating, ripple, or subtle water-like movement
+
+⸻
+
+6. AI Coach / Voice Input
+	•	Fix issue: voice input should allow direct sending, not just “listening…”
+	•	Show live microphone recording animation while speaking
+	•	Correctly request and handle microphone permissions
+
+⸻
+
+7. AI Food Scanner
+	•	On click:
+	•	Center “Take Photo / Upload” banner
+	•	Camera logo → cute, glowing, visually highlighted
+	•	UX should clearly indicate the user should take/upload photo
+
+⸻
+
+8. Ads
+	•	Remove all ad banners completely
+
+⸻
+
+9. Animations & App Feel
+	•	Add subtle dynamic animations across the app to make it feel alive:
+	•	Calories section → ripple/water movement behind numbers
+	•	Dashboard icons → small floating/glow animations
+	•	Buttons (AI Coach, Food Scanner, Smart Food Log) → hover/focus glow
+	•	Smooth transitions for background & section changes
+
+⸻
+
+10. Performance & UX Enhancements
+	•	Optimize exercise loading → lazy load or pre-fetch
+	•	Touch-friendly sliders on mobile
+	•	Dashboard sections smaller → fit more content per page
+	•	Smooth background transitions based on greeting time
