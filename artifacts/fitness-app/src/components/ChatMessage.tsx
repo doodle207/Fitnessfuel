@@ -1,4 +1,4 @@
-import { Brain } from "lucide-react";
+import doctorImg from "@assets/IMG_3514_1774455847548.jpeg";
 
 interface Props {
   role: "user" | "coach";
@@ -126,8 +126,8 @@ export default function ChatMessage({ role, content }: Props) {
 
   return (
     <div className="flex gap-2.5">
-      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-600 flex items-center justify-center shrink-0 mt-0.5 shadow-[0_0_10px_rgba(124,58,237,0.3)]">
-        <Brain className="w-4 h-4 text-white" />
+      <div className="w-8 h-8 rounded-xl overflow-hidden border border-violet-500/30 shrink-0 mt-0.5 shadow-[0_0_10px_rgba(124,58,237,0.25)]">
+        <img src={doctorImg} alt="AI Coach" className="w-full h-full object-cover object-top" />
       </div>
       <div className="max-w-[82%] rounded-2xl rounded-tl-sm px-4 py-3 bg-white/[0.07] border border-white/[0.09]">
         {parseCoachMessage(content)}

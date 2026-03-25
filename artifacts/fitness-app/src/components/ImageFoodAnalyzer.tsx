@@ -65,6 +65,27 @@ export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
+  const compressImage = (file: File): Promise<File> => new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 900;
+      let { width, height } = img;
+      if (width > MAX || height > MAX) {
+        const ratio = Math.min(MAX / width, MAX / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(blob => resolve(blob ? new File([blob], "food.jpg", { type: "image/jpeg" }) : file), "image/jpeg", 0.78);
+    };
+    img.onerror = () => resolve(file);
+    img.src = url;
+  });
+
   const handleFile = async (file: File) => {
     if (!file.type.startsWith("image/") && !isHeic(file)) {
       setErrorMsg("Please upload a valid image file (JPG, PNG, WEBP, or HEIC).");
@@ -75,6 +96,7 @@ export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose
     try {
       setLoadingStep(isHeic(file) ? "converting" : "analyzing");
       uploadFile = await normalizeToJpeg(file);
+      uploadFile = await compressImage(uploadFile);
     } catch (err: any) {
       setErrorMsg(err?.message ?? "Failed to process the image.");
       setPhase("error"); return;
