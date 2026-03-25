@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useGetProfile, getGetProfileQueryKey } from "@workspace/api-client-react";
 import React, { useEffect, useState } from "react";
-import { Activity, Zap, TrendingUp, ChevronRight } from "lucide-react";
+import { Activity, Zap, TrendingUp, ChevronRight, Mail, ShieldCheck, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Shell } from "@/components/layout/Shell";
@@ -123,20 +123,28 @@ function WelcomeScreen({ onContinue }: { onContinue: () => void }) {
   );
 }
 
-type EmailStep = "email" | "password" | "register";
+type EmailStep = "email" | "otp" | "name";
 
 function LoginScreen() {
   const { loginWithGoogle } = useAuth();
 
   const [step, setStep] = useState<EmailStep>("email");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
   const [firstName, setFirstName] = useState("");
   const [isNewUser, setIsNewUser] = useState(false);
+  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resendTimer, setResendTimer] = useState(0);
 
   const urlError = new URLSearchParams(window.location.search).get("error");
+
+  React.useEffect(() => {
+    if (resendTimer <= 0) return;
+    const t = setTimeout(() => setResendTimer(r => r - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendTimer]);
 
   async function handleEmailContinue(e: React.FormEvent) {
     e.preventDefault();
@@ -144,20 +152,18 @@ function LoginScreen() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/auth/email/check", {
+      const res = await fetch("/api/auth/email/request-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ email: email.trim() }),
       });
       const data = await res.json();
-      if (data.exists) {
-        setIsNewUser(false);
-        setStep("password");
-      } else {
-        setIsNewUser(true);
-        setStep("register");
-      }
+      if (!res.ok) { setError(data.error || "Failed to send code."); return; }
+      setIsNewUser(!!data.isNewUser);
+      setDevOtp(data.otp ?? null);
+      setStep("otp");
+      setResendTimer(30);
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -165,27 +171,23 @@ function LoginScreen() {
     }
   }
 
-  async function handlePasswordSubmit(e: React.FormEvent) {
+  async function handleOtpSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!password) return;
+    if (!otp.trim() || otp.length < 6) return;
     setLoading(true);
     setError(null);
-    const endpoint = isNewUser ? "/api/auth/email/register" : "/api/auth/email/login";
-    const body = isNewUser
-      ? { email, password, firstName }
-      : { email, password };
     try {
-      const res = await fetch(endpoint, {
+      const res = await fetch("/api/auth/email/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(body),
+        body: JSON.stringify({ email: email.trim(), otp: otp.trim(), firstName: firstName.trim() || undefined }),
       });
+      const data = await res.json();
       if (res.ok) {
         window.location.reload();
       } else {
-        const data = await res.json();
-        setError(data.error || "Authentication failed. Please try again.");
+        setError(data.error || "Invalid code. Please try again.");
       }
     } catch {
       setError("Network error. Please try again.");
@@ -279,34 +281,49 @@ function LoginScreen() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   disabled={loading || !email.trim()}
-                  className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-base text-white bg-[#2d2d3a] hover:bg-[#363645] transition-all disabled:opacity-60"
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-base text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all disabled:opacity-60 shadow-[0_0_20px_rgba(124,58,237,0.3)]"
                 >
-                  {loading ? "Checking..." : <>Continue <ChevronRight className="w-4 h-4" /></>}
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending code...</> : <><Mail className="w-4 h-4" /> Send Verification Code</>}
                 </motion.button>
               </form>
             </motion.div>
           )}
 
-          {(step === "password" || step === "register") && (
+          {step === "otp" && (
             <motion.div
-              key="password-step"
+              key="otp-step"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
+              exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.25 }}
             >
               <button
                 type="button"
-                onClick={() => { setStep("email"); setError(null); setPassword(""); setFirstName(""); }}
+                onClick={() => { setStep("email"); setError(null); setOtp(""); setDevOtp(null); }}
                 className="flex items-center gap-1 text-white/50 hover:text-white/80 text-sm mb-5 transition-colors"
               >
                 ← {email}
               </button>
 
-              <form onSubmit={handlePasswordSubmit} className="space-y-3">
+              <div className="mb-5 p-4 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-center">
+                <ShieldCheck className="w-8 h-8 text-violet-400 mx-auto mb-2" />
+                <p className="font-semibold text-white text-sm">
+                  {isNewUser ? "Create your account" : "Welcome back!"}
+                </p>
+                <p className="text-white/50 text-xs mt-1">
+                  Enter the 6-digit code sent to <span className="text-violet-300 font-medium">{email}</span>
+                </p>
+                {devOtp && (
+                  <div className="mt-3 px-3 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20">
+                    <p className="text-xs text-cyan-400 font-medium">Your code: <span className="font-mono font-bold text-lg tracking-widest">{devOtp}</span></p>
+                  </div>
+                )}
+              </div>
+
+              <form onSubmit={handleOtpSubmit} className="space-y-3">
                 {isNewUser && (
                   <div>
-                    <label className="block text-white font-semibold text-sm mb-2">First name</label>
+                    <label className="block text-white font-semibold text-sm mb-2">Your first name</label>
                     <input
                       type="text"
                       value={firstName}
@@ -317,28 +334,37 @@ function LoginScreen() {
                   </div>
                 )}
                 <div>
-                  <label className="block text-white font-semibold text-sm mb-2">
-                    {isNewUser ? "Create a password" : "Password"}
-                  </label>
+                  <label className="block text-white font-semibold text-sm mb-2">Verification code</label>
                   <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder={isNewUser ? "At least 8 characters" : "Enter your password"}
-                    required
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => { setOtp(e.target.value.replace(/\D/g, "")); setError(null); }}
+                    placeholder="000000"
                     autoFocus
-                    className="w-full px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-base focus:outline-none focus:border-violet-500/60 transition-all"
+                    className="w-full px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-2xl font-mono tracking-[0.5em] text-center focus:outline-none focus:border-violet-500/60 transition-all"
                   />
                 </div>
                 <motion.button
                   type="submit"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  disabled={loading || !password}
-                  className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-base text-white bg-[#2d2d3a] hover:bg-[#363645] transition-all disabled:opacity-60"
+                  disabled={loading || otp.length < 6}
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-base text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all disabled:opacity-60 shadow-[0_0_20px_rgba(124,58,237,0.3)]"
                 >
-                  {loading ? (isNewUser ? "Creating account..." : "Signing in...") : <>{isNewUser ? "Create account" : "Sign in"} <ChevronRight className="w-4 h-4" /></>}
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</> : <><ShieldCheck className="w-4 h-4" /> {isNewUser ? "Create Account" : "Sign In"}</>}
                 </motion.button>
+                <div className="text-center">
+                  {resendTimer > 0 ? (
+                    <p className="text-xs text-white/30">Resend code in {resendTimer}s</p>
+                  ) : (
+                    <button type="button" onClick={handleEmailContinue} disabled={loading}
+                      className="text-xs text-violet-400 hover:text-violet-300 transition-colors disabled:opacity-50">
+                      Resend code
+                    </button>
+                  )}
+                </div>
               </form>
             </motion.div>
           )}

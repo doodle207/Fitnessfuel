@@ -175,13 +175,34 @@ export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose
                 <p className="text-xs text-muted-foreground">JPG, PNG, WEBP, HEIC · Max 10MB</p>
               </div>
 
-              <button onClick={() => cameraInputRef.current?.click()}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-violet-600/20 to-cyan-600/20 border-2 border-violet-500/40 text-white font-bold text-sm flex items-center justify-center gap-3 hover:from-violet-600/30 hover:to-cyan-600/30 transition-all shadow-[0_0_20px_rgba(124,58,237,0.2)] hover:shadow-[0_0_30px_rgba(124,58,237,0.4)]">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center shadow-[0_0_12px_rgba(124,58,237,0.5)]">
-                  <Camera className="w-4 h-4 text-white" />
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => cameraInputRef.current?.click()}
+                className="relative w-full py-5 rounded-3xl text-white font-bold text-base flex flex-col items-center justify-center gap-3 overflow-hidden transition-all"
+                style={{
+                  background: "linear-gradient(135deg, rgba(6,182,212,0.2), rgba(59,130,246,0.15), rgba(124,58,237,0.2))",
+                  border: "2px solid rgba(6,182,212,0.4)",
+                  boxShadow: "0 0 30px rgba(6,182,212,0.25), 0 0 60px rgba(6,182,212,0.1), inset 0 0 30px rgba(6,182,212,0.05)",
+                }}
+              >
+                <div className="absolute inset-0 rounded-3xl animate-pulse opacity-30"
+                  style={{ background: "radial-gradient(ellipse at center, rgba(6,182,212,0.3) 0%, transparent 70%)", animationDuration: "2s" }} />
+                <div className="relative flex flex-col items-center gap-2">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                      style={{ background: "linear-gradient(135deg, #0891b2, #3b82f6, #7c3aed)", boxShadow: "0 0 24px rgba(6,182,212,0.6), 0 0 48px rgba(6,182,212,0.3)" }}>
+                      <Camera className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="absolute inset-0 rounded-2xl animate-ping opacity-30"
+                      style={{ background: "rgba(6,182,212,0.4)", animationDuration: "2.5s" }} />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-bold text-base text-white">📸 Take a Photo</p>
+                    <p className="text-xs font-medium mt-0.5" style={{ color: "rgba(6,182,212,0.8)" }}>Instant AI macro detection</p>
+                  </div>
                 </div>
-                📸 Take a Photo
-              </button>
+              </motion.button>
 
               <p className="text-center text-xs text-muted-foreground">
                 Powered by <span className="text-violet-400 font-semibold">AI Vision</span> + <span className="text-cyan-400 font-semibold">OpenFoodFacts</span>
