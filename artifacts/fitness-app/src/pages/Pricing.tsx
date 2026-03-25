@@ -31,13 +31,22 @@ export default function Pricing() {
   const [, setLocation] = useLocation();
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [subscription, setSubscription] = useState<any>(null);
+  const [userCountry, setUserCountry] = useState<string>("");
 
   useEffect(() => {
     fetch(`${BASE}/api/payments/subscription`, { credentials: "include" })
       .then(r => r.ok ? r.json() : null)
       .then(d => d && setSubscription(d))
       .catch(() => {});
+    fetch(`${BASE}/api/profile`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d?.country && setUserCountry(d.country))
+      .catch(() => {});
   }, []);
+
+  const isUSA = userCountry === "USA" || userCountry === "United States";
+  const premiumPrice = isUSA ? "$5.99" : "₹199";
+  const proPrice = isUSA ? "$9.99" : "₹349";
 
   const isPremium = subscription?.isPremium;
 
@@ -68,7 +77,7 @@ export default function Pricing() {
           </motion.div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Free Plan */}
           <div className="glass-card rounded-3xl p-5 border border-white/5 space-y-4">
             <div>
@@ -94,6 +103,46 @@ export default function Pricing() {
             )}
           </div>
 
+          {/* Pro Plan */}
+          <div className="glass-card rounded-3xl p-5 border border-cyan-500/25 bg-gradient-to-br from-cyan-950/30 to-blue-950/15 space-y-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-1">Pro</p>
+              <div className="flex items-end gap-1">
+                <span className="text-4xl font-display font-black text-white">{proPrice}</span>
+                <span className="text-muted-foreground text-sm mb-1">/ month</span>
+              </div>
+              <p className="text-xs text-muted-foreground">Best results + priority support.</p>
+            </div>
+            <div className="space-y-2">
+              {[
+                "Everything in Premium",
+                "Priority AI responses",
+                "Advanced analytics",
+                "Early feature access",
+              ].map(f => (
+                <div key={f} className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md bg-cyan-500/15 flex items-center justify-center shrink-0">
+                    <Crown className="w-3 h-3 text-cyan-400" />
+                  </div>
+                  <span className="text-sm text-white/85">{f}</span>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-green-400 ml-auto shrink-0" />
+                </div>
+              ))}
+            </div>
+            {!isPremium ? (
+              <button
+                onClick={() => setShowUpgrade(true)}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold text-sm hover:opacity-90 transition-opacity"
+              >
+                Upgrade to Pro
+              </button>
+            ) : (
+              <div className="py-2.5 rounded-xl bg-white/5 text-sm text-center text-muted-foreground font-medium">
+                Coming Soon
+              </div>
+            )}
+          </div>
+
           {/* Premium Plan */}
           <div className="relative glass-card rounded-3xl p-5 border border-violet-500/30 bg-gradient-to-br from-violet-950/40 to-purple-950/20 space-y-4">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -104,7 +153,7 @@ export default function Pricing() {
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-violet-400 mb-1">Premium</p>
               <div className="flex items-end gap-1">
-                <span className="text-4xl font-display font-black text-white">₹199</span>
+                <span className="text-4xl font-display font-black text-white">{premiumPrice}</span>
                 <span className="text-muted-foreground text-sm mb-1">/ month</span>
               </div>
               <p className="text-xs text-muted-foreground">Unlimited everything.</p>

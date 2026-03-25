@@ -43,7 +43,11 @@ function getTextModel(): string {
   return "gpt-4o";
 }
 
-export async function chatComplete(systemPrompt: string, userPrompt: string): Promise<string> {
+export async function chatComplete(
+  systemPrompt: string,
+  userPrompt: string,
+  options?: { max_tokens?: number; temperature?: number }
+): Promise<string> {
   const ai = getAI();
   const resp = await ai.chat.completions.create({
     model: getTextModel(),
@@ -51,8 +55,8 @@ export async function chatComplete(systemPrompt: string, userPrompt: string): Pr
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
     ],
-    temperature: 0.7,
-    max_tokens: 1024,
+    temperature: options?.temperature ?? 0.7,
+    max_tokens: options?.max_tokens ?? 1024,
   });
   return resp.choices[0]?.message?.content?.trim() || "";
 }

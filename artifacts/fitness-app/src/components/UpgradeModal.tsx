@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles, Zap, Crown, CheckCircle2, Loader2, Gift, Brain, Camera, UtensilsCrossed } from "lucide-react";
 
@@ -32,12 +32,26 @@ const triggerMessages: Record<string, { title: string; desc: string }> = {
   general: { title: "Unlock Full Access", desc: "Go unlimited with CaloForgeX Premium." },
 };
 
+const BASE2 = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 export default function UpgradeModal({ trigger = "general", usage, onClose, onSuccess }: Props) {
   const [coupon, setCoupon] = useState("");
   const [couponError, setCouponError] = useState("");
   const [couponSuccess, setCouponSuccess] = useState("");
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [activeTab, setActiveTab] = useState<"upgrade" | "coupon">("upgrade");
+  const [userCountry, setUserCountry] = useState<string>("");
+
+  useEffect(() => {
+    fetch(`${BASE2}/api/profile`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d?.country && setUserCountry(d.country))
+      .catch(() => {});
+  }, []);
+
+  const isUSA = userCountry === "USA" || userCountry === "United States";
+  const premiumPrice = isUSA ? "$5.99" : "₹199";
+  const proPrice = isUSA ? "$9.99" : "₹349";
 
   const msg = triggerMessages[trigger] || triggerMessages.general;
 
@@ -174,7 +188,7 @@ export default function UpgradeModal({ trigger = "general", usage, onClose, onSu
                         <p className="text-xs text-muted-foreground">All features unlocked</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-display font-black text-2xl text-white">₹199</p>
+                        <p className="font-display font-black text-2xl text-white">{premiumPrice}</p>
                         <p className="text-[10px] text-muted-foreground">/ month</p>
                       </div>
                     </div>
@@ -187,7 +201,7 @@ export default function UpgradeModal({ trigger = "general", usage, onClose, onSu
                         <p className="text-xs text-muted-foreground">Best results + priority support</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-display font-black text-2xl text-white">₹349</p>
+                        <p className="font-display font-black text-2xl text-white">{proPrice}</p>
                         <p className="text-[10px] text-muted-foreground">/ month</p>
                       </div>
                     </div>

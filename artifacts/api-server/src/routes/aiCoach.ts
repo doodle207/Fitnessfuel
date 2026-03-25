@@ -92,6 +92,20 @@ async function getUserContext(userId: string) {
   };
 }
 
+function buildChatSystemPrompt(ctx: Awaited<ReturnType<typeof getUserContext>>) {
+  return buildSystemPrompt(ctx) + `
+
+RESPONSE FORMAT FOR CHAT:
+- Always structure your response — NEVER write a single wall of text
+- Use **bold** for key numbers, food names, and action items
+- Use bullet points (- item) for lists of 3+ things
+- Use short section headers like "## Nutrition" or "## Action Plan" when covering multiple topics
+- Max 2 sentences per paragraph
+- Keep total response under 180 words unless a full plan is requested
+- Use 1-2 emojis max for energy — don't overdo it
+- Lead with the most important insight, then supporting detail`;
+}
+
 function buildSystemPrompt(ctx: Awaited<ReturnType<typeof getUserContext>>) {
   const p = ctx.profile;
   const today = ctx.today;
@@ -145,20 +159,10 @@ router.get("/ai-coach/insights", async (req, res) => {
     const ctx = await getUserContext(req.user.id);
     const systemPrompt = buildSystemPrompt(ctx);
 
-    const prompt = `Generate a personalized daily coaching report. Return ONLY valid JSON with this exact structure:
-{
-  "todaysFocus": "one sentence — the single most important thing to focus on today (motivating!)",
-  "coachFeedback": "2-3 sentences of specific, encouraging feedback based on actual data",
-  "warningAlert": "one sentence warning if something is off. Empty string if all good.",
-  "quickTip": "one short, actionable tip specific to their goal",
-  "nextBestAction": "one concrete action they should take right now",
-  "weeklyStatus": "one sentence summarizing their week — honest but encouraging",
-  "moodEmoji": "a single emoji that matches the coaching tone (🔥 💪 ⚠️ 😤 ✅ 🚀 etc)"
-}
+    const prompt = `Return ONLY valid JSON, no extra text:
+{"todaysFocus":"1 motivating sentence","coachFeedback":"2 sentences based on numbers","warningAlert":"1 warning or empty string","quickTip":"1 short actionable tip","nextBestAction":"1 concrete action now","weeklyStatus":"1 honest encouraging sentence","moodEmoji":"single emoji"}`;
 
-Base every field on their actual numbers. Be motivating and energetic!`;
-
-    const text = await chatComplete(systemPrompt, prompt);
+    const text = await chatComplete(systemPrompt, prompt, { max_tokens: 320, temperature: 0.65 });
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("Invalid AI response format");
 
@@ -201,7 +205,7 @@ router.post("/ai-coach/chat", checkLimit("aiChat"), async (req, res) => {
 
   try {
     const ctx = await getUserContext(req.user.id);
-    const systemPrompt = buildSystemPrompt(ctx);
+    const systemPrompt = buildChatSystemPrompt(ctx);
 
     const chatHistory = Array.isArray(history) ? history.slice(-8) : [];
     const mappedHistory = chatHistory.map((h: any) => ({
