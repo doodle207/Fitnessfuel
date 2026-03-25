@@ -255,10 +255,11 @@ export default function Diet() {
                       <div className="flex items-center gap-2">
                         <span className={`text-sm font-bold ${mt.color}`}>{mealEntries.reduce((s, f) => s + f.calories, 0)} kcal</span>
                         <button onClick={() => { setActiveMealTab(mt.id); setShowImageAnalyzer(true); }}
-                          className="relative flex items-center justify-center w-8 h-8 rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 transition-all"
+                          className="relative flex items-center justify-center w-9 h-9 rounded-xl transition-all hover:scale-105 active:scale-95"
+                          style={{ background: "linear-gradient(135deg, #0891b2, #3b82f6, #7c3aed)", boxShadow: "0 0 14px rgba(6,182,212,0.5), 0 0 28px rgba(6,182,212,0.2)" }}
                           title="Scan food with AI camera">
-                          <Camera className="w-3.5 h-3.5" />
-                          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-gradient-to-br from-violet-500 to-cyan-500" />
+                          <Camera className="w-4 h-4 text-white" />
+                          <span className="absolute inset-0 rounded-xl animate-pulse opacity-30" style={{ background: "radial-gradient(ellipse at center, rgba(6,182,212,0.4) 0%, transparent 70%)", animationDuration: "2s" }} />
                         </button>
                         <button onClick={() => { setActiveMealTab(mt.id); setShowFoodModal(true); setShowCustomForm(false); }}
                           className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${mt.bg} ${mt.color} border border-opacity-30 hover:opacity-80`}>

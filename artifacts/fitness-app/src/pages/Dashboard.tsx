@@ -313,20 +313,32 @@ export default function Dashboard() {
                 </div>
               </Link>
             ) : (
-              <div className={`rounded-2xl border ${PHASE_DATA[cycleInfo.phaseIdx].border} bg-gradient-to-r ${PHASE_DATA[cycleInfo.phaseIdx].bgFrom} ${PHASE_DATA[cycleInfo.phaseIdx].bgTo} px-4 py-3`}>
-                <div className="flex items-center gap-3">
-                  <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-white/5">{PHASE_DATA[cycleInfo.phaseIdx].emoji}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className={`text-sm font-bold ${PHASE_DATA[cycleInfo.phaseIdx].textColor}`}>{cycleInfo.phase}</span>
-                      <span className="text-xs text-white/40">Day {cycleInfo.cycleDay}/28 · Next in {cycleInfo.nextPeriodDays}d</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full transition-all duration-700 bg-gradient-to-r ${PHASE_DATA[cycleInfo.phaseIdx].barColor}`} style={{ width: `${cycleInfo.cycleProgress}%` }} />
-                    </div>
-                    <p className="text-[11px] text-white/40 mt-1 truncate">{cycleInfo.phaseTip}</p>
+              <div className={`rounded-2xl border ${PHASE_DATA[cycleInfo.phaseIdx].border} px-4 py-3`}
+                style={{ background: "linear-gradient(135deg, rgba(15,3,8,0.9), rgba(20,4,10,0.85))" }}>
+                <div className="flex items-center justify-between mb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{PHASE_DATA[cycleInfo.phaseIdx].emoji}</span>
+                    <span className={`text-sm font-bold ${PHASE_DATA[cycleInfo.phaseIdx].textColor}`}>{cycleInfo.phase}</span>
                   </div>
+                  <span className="text-[11px] text-white/35">Day {cycleInfo.cycleDay}/28 · Next in {cycleInfo.nextPeriodDays}d</span>
                 </div>
+                <div className="grid grid-cols-4 gap-1.5 mb-2.5">
+                  {PHASE_DATA.map((ph, i) => {
+                    const isActive = i === cycleInfo.phaseIdx;
+                    const phaseDays = [5, 8, 3, 12];
+                    const dayStart = phaseDays.slice(0, i).reduce((a, b) => a + b, 0) + 1;
+                    return (
+                      <div key={ph.name} className={`rounded-xl px-2 py-1.5 text-center border transition-all ${isActive ? ph.border : "border-white/5"}`}
+                        style={isActive ? { background: "rgba(255,255,255,0.07)" } : { background: "rgba(255,255,255,0.02)" }}>
+                        <div className="text-sm mb-0.5">{ph.emoji}</div>
+                        <div className={`text-[9px] font-bold leading-tight ${isActive ? ph.textColor : "text-white/30"}`}>{ph.name.length > 7 ? ph.name.slice(0, 6) : ph.name}</div>
+                        <div className={`text-[8px] mt-0.5 ${isActive ? "text-white/50" : "text-white/20"}`}>{dayStart}–{dayStart + phaseDays[i] - 1}d</div>
+                        {isActive && <div className={`h-0.5 rounded-full mt-1 bg-gradient-to-r ${ph.barColor}`} />}
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-white/40 truncate">{cycleInfo.phaseTip}</p>
               </div>
             )}
           </motion.div>
