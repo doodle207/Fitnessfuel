@@ -247,9 +247,9 @@ export default function AICoach() {
           ))}
         </div>
 
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="sync">
           {activeTab === "coach" && (
-            <motion.div key="coach" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="space-y-4">
+            <motion.div key="coach" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }} className="space-y-4">
               {isLoadingInsights ? (
                 <div className="glass-card rounded-3xl p-8 flex flex-col items-center gap-4 border border-white/5">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600/20 to-cyan-600/20 flex items-center justify-center">
@@ -357,7 +357,7 @@ export default function AICoach() {
           )}
 
           {activeTab === "chat" && (
-            <motion.div key="chat" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="space-y-3">
+            <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }} className="space-y-3">
               <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
                 {QUICK_QUESTIONS.map(q => (
                   <button key={q} onClick={() => sendMessage(q)} disabled={isChatLoading}
@@ -461,7 +461,7 @@ export default function AICoach() {
           )}
 
           {activeTab === "meal" && (
-            <motion.div key="meal" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="space-y-4">
+            <motion.div key="meal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }} className="space-y-4">
               <div className="glass-card rounded-3xl p-5 border border-white/5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-display font-bold text-lg flex items-center gap-2"><UtensilsCrossed className="w-5 h-5 text-violet-400" /> AI Meal Plan</h3>
