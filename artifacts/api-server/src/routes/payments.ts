@@ -5,8 +5,9 @@ import { sql } from "drizzle-orm";
 const router: IRouter = Router();
 
 function getValidCoupons(): string[] {
-  const raw = process.env.COUPON_VOUCHER || "";
-  return raw.split(",").map(c => c.trim().toUpperCase()).filter(Boolean);
+  const fromVoucher = (process.env.COUPON_VOUCHER || "").split(",").map(c => c.trim().toUpperCase()).filter(Boolean);
+  const fromCode = (process.env.COUPON_CODE || "").split(",").map(c => c.trim().toUpperCase()).filter(Boolean);
+  return Array.from(new Set([...fromVoucher, ...fromCode]));
 }
 
 router.get("/payments/subscription", async (req: Request, res: Response): Promise<void> => {

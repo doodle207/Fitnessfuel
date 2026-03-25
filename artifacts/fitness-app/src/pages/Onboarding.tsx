@@ -7,7 +7,7 @@ import { useAuth } from "@workspace/replit-auth-web";
 import {
   Target, ChevronRight, ChevronLeft,
   User, Scale, CheckCircle2,
-  TrendingDown, TrendingUp, Minus
+  TrendingDown, TrendingUp, Heart, Calendar
 } from "lucide-react";
 
 const STEPS = [
@@ -19,7 +19,6 @@ const STEPS = [
 const GENDER_OPTIONS = [
   { value: "male",   label: "Male",   emoji: "\u2642\uFE0F" },
   { value: "female", label: "Female", emoji: "\u2640\uFE0F" },
-  { value: "other",  label: "Other",  emoji: "\u26A7\uFE0F" },
 ];
 
 const DIET_OPTIONS = [
@@ -100,7 +99,10 @@ function calculatePlan(form: FormData): PlanResult {
   let proteinFoods: string[];
   if (dietPreference === "vegan") proteinFoods = ["Tofu", "Tempeh", "Lentils", "Chickpeas", "Edamame", "Seitan", "Hemp seeds"];
   else if (dietPreference === "veg") proteinFoods = ["Eggs", "Greek yoghurt", "Paneer", "Lentils", "Cottage cheese", "Chickpeas", "Milk"];
-  else proteinFoods = ["Chicken breast", "Eggs", "Tuna", "Greek yoghurt", "Lean beef", "Salmon", "Whey protein"];
+  else {
+    const allNonVeg = ["Chicken breast", "Eggs", "Tuna", "Greek yoghurt", "Lean beef", "Salmon", "Whey protein"];
+    proteinFoods = form.country === "India" ? allNonVeg.filter(f => f !== "Lean beef") : allNonVeg;
+  }
 
   return { bmr, tdee, calories, proteinG, carbsG, fatG, deficit, workoutDays, workoutSplit, workoutExercises, proteinFoods };
 }
@@ -108,6 +110,7 @@ function calculatePlan(form: FormData): PlanResult {
 interface FormData {
   name: string; age: number; gender: string; heightCm: number; weightKg: number;
   fitnessGoal: string; activityLevel: string; experienceLevel: string; dietPreference: string; country: string;
+  cycleRegularity: string; periodStartDate: string; periodEndDate: string;
 }
 
 export default function Onboarding() {
@@ -129,6 +132,9 @@ export default function Onboarding() {
     experienceLevel: "beginner",
     dietPreference:  "non-veg",
     country:         "USA",
+    cycleRegularity: "regular",
+    periodStartDate: "",
+    periodEndDate:   "",
   });
   const [heightStr, setHeightStr] = useState("170");
   const [weightStr, setWeightStr] = useState("70");
@@ -227,18 +233,78 @@ export default function Onboarding() {
 
                     <div>
                       <label className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-2 block">Gender</label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {GENDER_OPTIONS.map(g => (
-                          <button key={g.value} type="button" onClick={() => set("gender", g.value)}
-                            className={`py-3 rounded-xl border text-sm font-semibold transition-all ${
-                              form.gender === g.value
-                                ? "bg-violet-600/30 border-violet-500/60 text-violet-300 shadow-[0_0_12px_rgba(124,58,237,0.2)]"
-                                : "bg-white/3 border-white/8 text-white/50 hover:bg-white/8"
-                            }`}>
-                            <span className="block text-lg mb-0.5">{g.emoji}</span>{g.label}
-                          </button>
-                        ))}
+                      <div className="grid grid-cols-2 gap-3">
+                        {GENDER_OPTIONS.map(g => {
+                          const isFemale = g.value === "female";
+                          const isSelected = form.gender === g.value;
+                          return (
+                            <motion.button
+                              key={g.value}
+                              type="button"
+                              whileHover={{ scale: 1.03 }}
+                              whileTap={{ scale: 0.97 }}
+                              onClick={() => set("gender", g.value)}
+                              className={`py-4 rounded-2xl border text-sm font-semibold transition-all duration-200 ${
+                                isSelected && isFemale
+                                  ? "border-pink-400/60 shadow-[0_0_16px_rgba(255,182,193,0.25)]"
+                                  : isSelected
+                                  ? "bg-violet-600/30 border-violet-500/60 text-violet-300 shadow-[0_0_12px_rgba(124,58,237,0.2)]"
+                                  : "bg-white/3 border-white/8 text-white/50 hover:bg-white/8"
+                              }`}
+                              style={isSelected && isFemale ? { background: "linear-gradient(135deg, rgba(255,182,193,0.18), rgba(236,72,153,0.08))", color: "#FFB6C1" } : {}}
+                            >
+                              <span className="block text-2xl mb-1">{g.emoji}</span>
+                              {g.label}
+                            </motion.button>
+                          );
+                        })}
                       </div>
+
+                      {form.gender === "female" && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mt-4 space-y-3 p-4 rounded-2xl border"
+                          style={{ background: "linear-gradient(135deg, rgba(255,182,193,0.08), rgba(236,72,153,0.04))", borderColor: "rgba(255,182,193,0.2)" }}
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <Heart className="w-4 h-4" style={{ color: "#FFB6C1" }} />
+                            <p className="text-sm font-semibold" style={{ color: "#FFB6C1" }}>Cycle Information</p>
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-white/40 mb-2 block">Cycle Regularity</label>
+                            <div className="grid grid-cols-2 gap-2">
+                              {["regular", "irregular"].map(r => (
+                                <button key={r} type="button" onClick={() => set("cycleRegularity", r)}
+                                  className={`py-2.5 rounded-xl border text-xs font-semibold capitalize transition-all ${
+                                    form.cycleRegularity === r
+                                      ? "border-pink-400/50"
+                                      : "bg-white/3 border-white/8 text-white/40 hover:bg-white/6"
+                                  }`}
+                                  style={form.cycleRegularity === r ? { background: "rgba(255,182,193,0.12)", color: "#FFB6C1" } : {}}
+                                >{r.charAt(0).toUpperCase() + r.slice(1)}</button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-xs font-semibold text-white/40 mb-1 flex items-center gap-1 block">
+                                <Calendar className="w-3 h-3" /> Period Start
+                              </label>
+                              <input type="date" value={form.periodStartDate} onChange={e => set("periodStartDate", e.target.value)}
+                                className="w-full px-3 py-2.5 rounded-xl bg-black/30 border border-white/10 focus:border-pink-400/40 outline-none text-xs text-white [color-scheme:dark] transition-colors" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-white/40 mb-1 flex items-center gap-1 block">
+                                <Calendar className="w-3 h-3" /> Period End
+                              </label>
+                              <input type="date" value={form.periodEndDate} onChange={e => set("periodEndDate", e.target.value)}
+                                className="w-full px-3 py-2.5 rounded-xl bg-black/30 border border-white/10 focus:border-pink-400/40 outline-none text-xs text-white [color-scheme:dark] transition-colors" />
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
                     </div>
 
                     <div>
@@ -355,52 +421,72 @@ export default function Onboarding() {
                     <div>
                       <label className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-2 block">Experience Level</label>
                       <div className="grid grid-cols-3 gap-2">
-                        {EXPERIENCE_OPTIONS.map(e => (
-                          <button key={e.value} type="button" onClick={() => set("experienceLevel", e.value)}
-                            className={`py-2.5 px-2 rounded-xl border text-center transition-all ${
-                              form.experienceLevel === e.value
-                                ? "bg-cyan-600/20 border-cyan-500/40 text-cyan-300"
-                                : "bg-white/3 border-white/8 text-white/50 hover:bg-white/6"
-                            }`}>
-                            <p className="text-sm font-semibold">{e.label}</p>
-                            <p className="text-[9px] text-white/35">{e.desc}</p>
-                          </button>
-                        ))}
+                        {EXPERIENCE_OPTIONS.map(e => {
+                          const isSelected = form.experienceLevel === e.value;
+                          const styles: Record<string, { active: string; glow: string; dot: string }> = {
+                            beginner:     { active: "bg-blue-600/20 border-blue-500/50 text-blue-300", glow: "shadow-[0_0_12px_rgba(59,130,246,0.3)]", dot: "bg-blue-400" },
+                            intermediate: { active: "bg-yellow-500/20 border-yellow-500/50 text-yellow-300", glow: "shadow-[0_0_12px_rgba(234,179,8,0.3)]", dot: "bg-yellow-400" },
+                            advanced:     { active: "bg-red-600/20 border-red-500/50 text-red-300", glow: "shadow-[0_0_12px_rgba(239,68,68,0.3)]", dot: "bg-red-400" },
+                          };
+                          const s = styles[e.value];
+                          return (
+                            <motion.button key={e.value} type="button"
+                              whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+                              onClick={() => set("experienceLevel", e.value)}
+                              className={`py-3 px-2 rounded-xl border text-center transition-all ${
+                                isSelected ? `${s.active} ${s.glow}` : "bg-white/3 border-white/8 text-white/50 hover:bg-white/6"
+                              }`}>
+                              {isSelected && <div className={`w-2 h-2 rounded-full ${s.dot} mx-auto mb-1`} />}
+                              <p className="text-sm font-bold">{e.label}</p>
+                              <p className="text-[9px] text-white/35 mt-0.5">{e.desc}</p>
+                            </motion.button>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
                 )}
 
                 {step === 2 && plan && (
-                  <div className="space-y-5">
+                  <div className="space-y-4">
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.97 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="relative rounded-2xl overflow-hidden p-5"
+                      style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.25), rgba(6,182,212,0.15))", border: "1px solid rgba(124,58,237,0.3)" }}
+                    >
+                      <div className="absolute inset-0 opacity-10"
+                        style={{ backgroundImage: "radial-gradient(circle at 70% 50%, rgba(124,58,237,0.8) 0%, transparent 60%)" }} />
+                      <div className="relative z-10">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center mb-3 shadow-[0_0_16px_rgba(124,58,237,0.5)]">
+                          <Target className="w-5 h-5 text-white" />
+                        </div>
+                        <p className="font-display font-black text-lg text-white leading-snug mb-1">
+                          Welcome to your<br />transformation journey.
+                        </p>
+                        <p className="text-sm text-white/60 leading-relaxed">
+                          We help you stay consistent, build strength, and become your best version — one day at a time.
+                        </p>
+                        <div className="mt-3 flex gap-2 flex-wrap">
+                          {["Stay Consistent", "Build Strength", "Track Progress"].map(tag => (
+                            <span key={tag} className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white/10 text-white/70 border border-white/10">{tag}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { label: "Calories", value: `${plan.calories}`, unit: "kcal/day", color: "text-violet-400" },
-                        { label: "Protein", value: `${plan.proteinG}g`, unit: "per day", color: "text-blue-400" },
-                        { label: "Carbs", value: `${plan.carbsG}g`, unit: "per day", color: "text-green-400" },
-                      ].map(({ label, value, unit, color }) => (
-                        <div key={label} className="rounded-xl bg-white/5 border border-white/5 p-3 text-center">
+                        { label: "Calories", value: `${plan.calories}`, unit: "kcal/day", color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/15" },
+                        { label: "Protein", value: `${plan.proteinG}g`, unit: "per day", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/15" },
+                        { label: "Carbs", value: `${plan.carbsG}g`, unit: "per day", color: "text-green-400", bg: "bg-green-500/10 border-green-500/15" },
+                      ].map(({ label, value, unit, color, bg }) => (
+                        <div key={label} className={`rounded-xl border p-3 text-center ${bg}`}>
                           <p className={`text-xl font-display font-bold ${color}`}>{value}</p>
-                          <p className="text-[10px] text-white/40">{label} {unit}</p>
+                          <p className="text-[10px] text-white/40">{label}</p>
+                          <p className="text-[9px] text-white/25">{unit}</p>
                         </div>
                       ))}
-                    </div>
-
-                    <div className="rounded-xl bg-white/4 border border-white/5 p-4 space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-white/40">Your Workout Plan</p>
-                      <p className="font-semibold text-sm text-white">{plan.workoutSplit}</p>
-                      {plan.workoutExercises.map((ex, i) => (
-                        <p key={i} className="text-xs text-white/60">{"\u2022"} {ex}</p>
-                      ))}
-                    </div>
-
-                    <div className="rounded-xl bg-white/4 border border-white/5 p-4 space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-white/40">Top Protein Sources</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {plan.proteinFoods.map(f => (
-                          <span key={f} className="px-2.5 py-1 text-xs font-medium rounded-full bg-violet-500/10 border border-violet-500/15 text-violet-300">{f}</span>
-                        ))}
-                      </div>
                     </div>
 
                     {plan.deficit !== 0 && (
@@ -412,6 +498,19 @@ export default function Onboarding() {
                         </p>
                       </div>
                     )}
+
+                    <div className="rounded-xl bg-white/4 border border-white/5 p-4 space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-white/40">Top Protein Sources</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {plan.proteinFoods.map(f => (
+                          <span key={f} className="px-2.5 py-1 text-xs font-medium rounded-full bg-violet-500/10 border border-violet-500/15 text-violet-300">{f}</span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <p className="text-center text-xs text-white/30 pt-1">
+                      🔥 {plan.workoutDays} training days/week · {plan.workoutSplit.split("·")[1]?.trim() || "Your program"}
+                    </p>
                   </div>
                 )}
               </motion.div>
