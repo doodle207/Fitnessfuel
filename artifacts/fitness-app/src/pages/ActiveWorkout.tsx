@@ -119,8 +119,11 @@ export default function ActiveWorkout() {
 
   const { mutate: addSet, isPending: isAddingSet } = useAddSet({
     mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: [`/api/workouts/${workoutId}`] });
+      onSuccess: (_data, variables) => {
+        queryClient.invalidateQueries({ queryKey: ['fitness', 'workout', workoutId] });
+        const exId = variables.data.exerciseId;
+        setWeightMap(m => { const n = { ...m }; delete n[exId]; return n; });
+        setRepsMap(m => { const n = { ...m }; delete n[exId]; return n; });
       },
       onError: () => {
         toast({ title: "Couldn't log set", description: "Server unavailable. Try again.", variant: "destructive" });

@@ -260,51 +260,65 @@ export default function Onboarding() {
                         })}
                       </div>
 
-                      {form.gender === "female" && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="mt-4 space-y-3 p-4 rounded-2xl border"
-                          style={{ background: "linear-gradient(135deg, rgba(255,182,193,0.08), rgba(236,72,153,0.04))", borderColor: "rgba(255,182,193,0.2)" }}
-                        >
-                          <div className="flex items-center gap-2 mb-2">
-                            <Heart className="w-4 h-4" style={{ color: "#FFB6C1" }} />
-                            <p className="text-sm font-semibold" style={{ color: "#FFB6C1" }}>Cycle Information</p>
-                          </div>
-                          <div>
-                            <label className="text-xs font-semibold text-white/40 mb-2 block">Cycle Regularity</label>
-                            <div className="grid grid-cols-2 gap-2">
-                              {["regular", "irregular"].map(r => (
-                                <button key={r} type="button" onClick={() => set("cycleRegularity", r)}
-                                  className={`py-2.5 rounded-xl border text-xs font-semibold capitalize transition-all ${
-                                    form.cycleRegularity === r
-                                      ? "border-pink-400/50"
-                                      : "bg-white/3 border-white/8 text-white/40 hover:bg-white/6"
-                                  }`}
-                                  style={form.cycleRegularity === r ? { background: "rgba(255,182,193,0.12)", color: "#FFB6C1" } : {}}
-                                >{r.charAt(0).toUpperCase() + r.slice(1)}</button>
-                              ))}
+                      <AnimatePresence>
+                        {form.gender === "female" && (
+                          <motion.div
+                            key="cycle-section"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.25, ease: "easeOut" }}
+                            className="mt-4 rounded-2xl border overflow-hidden"
+                            style={{ background: "linear-gradient(135deg, rgba(190,24,93,0.12), rgba(157,23,77,0.08))", borderColor: "rgba(190,24,93,0.35)" }}
+                          >
+                            <div className="p-4 space-y-3">
+                              <div className="flex items-center gap-2">
+                                <Heart className="w-4 h-4" style={{ color: "#f472b6" }} />
+                                <p className="text-sm font-semibold" style={{ color: "#f472b6" }}>Cycle Information</p>
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold mb-2 block" style={{ color: "rgba(244,114,182,0.6)" }}>Cycle Regularity</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {["regular", "irregular"].map(r => (
+                                    <button key={r} type="button" onClick={() => set("cycleRegularity", r)}
+                                      className={`py-2.5 rounded-xl border text-xs font-semibold capitalize transition-all ${
+                                        form.cycleRegularity === r
+                                          ? ""
+                                          : "bg-black/20 text-white/40 hover:bg-black/30"
+                                      }`}
+                                      style={form.cycleRegularity === r
+                                        ? { background: "rgba(190,24,93,0.25)", borderColor: "rgba(190,24,93,0.6)", color: "#f472b6" }
+                                        : { borderColor: "rgba(190,24,93,0.2)" }}
+                                    >{r.charAt(0).toUpperCase() + r.slice(1)}</button>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <div>
+                                  <label className="text-xs font-semibold mb-1 flex items-center gap-1 block" style={{ color: "rgba(244,114,182,0.6)" }}>
+                                    <Calendar className="w-3 h-3" /> Last Period Start
+                                  </label>
+                                  <input type="date" value={form.periodStartDate} onChange={e => set("periodStartDate", e.target.value)}
+                                    className="w-full px-3 py-2.5 rounded-xl outline-none text-xs text-white [color-scheme:dark] transition-colors"
+                                    style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(190,24,93,0.25)" }}
+                                    onFocus={e => (e.target.style.borderColor = "rgba(190,24,93,0.6)")}
+                                    onBlur={e => (e.target.style.borderColor = "rgba(190,24,93,0.25)")} />
+                                </div>
+                                <div>
+                                  <label className="text-xs font-semibold mb-1 flex items-center gap-1 block" style={{ color: "rgba(244,114,182,0.6)" }}>
+                                    <Calendar className="w-3 h-3" /> Last Period End
+                                  </label>
+                                  <input type="date" value={form.periodEndDate} onChange={e => set("periodEndDate", e.target.value)}
+                                    className="w-full px-3 py-2.5 rounded-xl outline-none text-xs text-white [color-scheme:dark] transition-colors"
+                                    style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(190,24,93,0.25)" }}
+                                    onFocus={e => (e.target.style.borderColor = "rgba(190,24,93,0.6)")}
+                                    onBlur={e => (e.target.style.borderColor = "rgba(190,24,93,0.25)")} />
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="text-xs font-semibold text-white/40 mb-1 flex items-center gap-1 block">
-                                <Calendar className="w-3 h-3" /> Period Start
-                              </label>
-                              <input type="date" value={form.periodStartDate} onChange={e => set("periodStartDate", e.target.value)}
-                                className="w-full px-3 py-2.5 rounded-xl bg-black/30 border border-white/10 focus:border-pink-400/40 outline-none text-xs text-white [color-scheme:dark] transition-colors" />
-                            </div>
-                            <div>
-                              <label className="text-xs font-semibold text-white/40 mb-1 flex items-center gap-1 block">
-                                <Calendar className="w-3 h-3" /> Period End
-                              </label>
-                              <input type="date" value={form.periodEndDate} onChange={e => set("periodEndDate", e.target.value)}
-                                className="w-full px-3 py-2.5 rounded-xl bg-black/30 border border-white/10 focus:border-pink-400/40 outline-none text-xs text-white [color-scheme:dark] transition-colors" />
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
 
                     <div>
