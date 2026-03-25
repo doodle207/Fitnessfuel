@@ -44,9 +44,9 @@ export default function Pricing() {
       .catch(() => {});
   }, []);
 
-  const isUSA = userCountry === "USA" || userCountry === "United States";
-  const premiumPrice = isUSA ? "$5.99" : "₹199";
-  const proPrice = isUSA ? "$9.99" : "₹349";
+  const isIndia = userCountry === "India";
+  const premiumPrice = isIndia ? "₹199" : "$5.99";
+  const proPrice = isIndia ? "₹349" : "$9.99";
 
   const isPremium = subscription?.isPremium;
 
