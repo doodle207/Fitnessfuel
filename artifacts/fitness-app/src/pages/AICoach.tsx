@@ -7,6 +7,7 @@ import {
   MessageSquare, ChevronRight, Flame, Dumbbell, Sparkles, Activity, UtensilsCrossed,
   Mic, MicOff
 } from "lucide-react";
+import doctorImg from "@assets/IMG_3514_1774455847548.jpeg";
 import AdBanner from "@/components/AdBanner";
 import ChatMessage from "@/components/ChatMessage";
 import UpgradeModal from "@/components/UpgradeModal";
@@ -205,13 +206,13 @@ export default function AICoach() {
       <div className="max-w-3xl mx-auto space-y-5 pb-8">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl md:text-4xl font-display font-bold flex items-center gap-3">
-              <span className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-cyan-600 flex items-center justify-center shadow-[0_0_20px_rgba(124,58,237,0.4)]">
-                <Brain className="w-5 h-5 text-white" />
+            <h1 className="text-2xl md:text-3xl font-display font-bold flex items-center gap-3">
+              <span className="w-12 h-12 rounded-2xl overflow-hidden border border-violet-500/30 shadow-[0_0_20px_rgba(124,58,237,0.35)] shrink-0">
+                <img src={doctorImg} alt="AI Coach" className="w-full h-full object-cover object-top" />
               </span>
               AI Coach
             </h1>
-            <p className="text-muted-foreground text-sm mt-1">Personalized coaching based on your real data</p>
+            <p className="text-muted-foreground text-xs mt-1">Personalized coaching based on your real data</p>
           </div>
           <span className="text-xs font-bold text-violet-400 bg-violet-500/15 border border-violet-500/30 px-3 py-1.5 rounded-full">AI</span>
         </header>
@@ -356,29 +357,28 @@ export default function AICoach() {
           )}
 
           {activeTab === "chat" && (
-            <motion.div key="chat" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="space-y-4">
-              <div>
-                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-2">Quick Questions</p>
-                <div className="flex flex-wrap gap-2">
-                  {QUICK_QUESTIONS.map(q => (
-                    <button key={q} onClick={() => sendMessage(q)} disabled={isChatLoading}
-                      className="text-xs px-3 py-1.5 rounded-full border border-violet-500/25 bg-violet-500/8 text-violet-300 hover:bg-violet-500/20 hover:border-violet-500/40 transition-all disabled:opacity-40">
-                      {q}
-                    </button>
-                  ))}
-                </div>
+            <motion.div key="chat" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="space-y-3">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                {QUICK_QUESTIONS.map(q => (
+                  <button key={q} onClick={() => sendMessage(q)} disabled={isChatLoading}
+                    className="shrink-0 text-[11px] px-2.5 py-1.5 rounded-full border border-violet-500/25 bg-violet-500/8 text-violet-300 hover:bg-violet-500/20 hover:border-violet-500/40 transition-all disabled:opacity-40 whitespace-nowrap">
+                    {q}
+                  </button>
+                ))}
               </div>
 
               <div className="glass-card rounded-3xl border border-white/5 overflow-hidden">
-                <div className="flex items-center gap-3 px-5 py-4 border-b border-white/5">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-600 flex items-center justify-center"><Brain className="w-4 h-4 text-white" /></div>
+                <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5">
+                  <div className="w-8 h-8 rounded-xl overflow-hidden border border-violet-500/30 shrink-0">
+                    <img src={doctorImg} alt="AI Coach" className="w-full h-full object-cover object-top" />
+                  </div>
                   <div>
                     <p className="font-semibold text-sm">AI Coach</p>
                     <p className="text-xs text-emerald-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" /> Online {"\u00B7"} Using your real data</p>
                   </div>
                 </div>
 
-                <div className="p-4 space-y-4 max-h-[420px] sm:max-h-[480px] overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
+                <div className="p-3 space-y-3 max-h-[52vh] overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
                   {chatMessages.map((msg, i) => (
                     <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                       <ChatMessage role={msg.role} content={msg.content} />
@@ -386,8 +386,8 @@ export default function AICoach() {
                   ))}
                   {isChatLoading && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-600 flex items-center justify-center shrink-0 mt-0.5">
-                        <Brain className="w-4 h-4 text-white" />
+                      <div className="w-8 h-8 rounded-xl overflow-hidden border border-violet-500/30 shrink-0 mt-0.5">
+                        <img src={doctorImg} alt="AI Coach" className="w-full h-full object-cover object-top" />
                       </div>
                       <div className="bg-white/[0.07] border border-white/[0.09] rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
                         {[0, 1, 2].map(i => (<div key={i} className="w-2 h-2 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />))}
