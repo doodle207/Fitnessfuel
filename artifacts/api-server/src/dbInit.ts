@@ -253,6 +253,22 @@ async function createTables() {
     )
   `);
 
+  // OTP table for email verification
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS email_otps (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR NOT NULL,
+      otp_code VARCHAR(6) NOT NULL,
+      is_used BOOLEAN NOT NULL DEFAULT FALSE,
+      expires_at TIMESTAMP NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    )
+  `);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS "IDX_email_otps_email" ON email_otps (email)`);
+
+  // Add cycle_regularity to user_profiles if missing
+  await db.execute(sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS cycle_regularity TEXT DEFAULT 'regular'`);
+
   // Usage tracking table (daily/weekly limits for free users)
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS usage_tracking (

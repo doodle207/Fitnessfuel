@@ -1,0 +1,82 @@
+Implement the following features and UI/UX improvements in my fitness web app:
+
+1) EMAIL LOGIN WITH VERIFICATION  
+- When a user selects “Login with Email”, they must verify their email (OTP or magic link).  
+- Do NOT allow access to dashboard without verification.  
+- Logic:
+  - If email already exists → after verification → redirect to dashboard  
+  - If email is new → after verification → redirect to profile info page  
+- Fix current issue where any email directly logs into dashboard (add proper authentication/session validation).
+
+2) PROFILE INFO PAGE (GENDER + FEMALE FEATURES)  
+- Remove “Other” option from gender. Only keep:
+  - Male
+  - Female  
+- If Female is selected:
+  - Ask additional questions:
+    - Cycle type (Regular / Irregular)
+    - Last period start date
+    - Last period end date  
+- UI Changes:
+  - Highlight female selection with light pink color (#FFB6C1)
+  - Add smooth selection animation  
+- Dashboard:
+  - Add a menstrual cycle tracker card
+  - Use light pink theme with subtle animation (pulse or progress effect)
+  - Show current cycle day and basic prediction logic
+
+3) EXPERIENCE LEVEL UI COLORS  
+- Apply color coding:
+  - Beginner → Blue  
+  - Intermediate → Yellow  
+  - Advanced → Red  
+- Apply colors to buttons/cards with hover animation (scale + glow)
+
+4) “YOUR PLAN” SECTION CHANGES  
+- Remove:
+  - “Your Workout Plan”
+  - “Lean Beef” for users with country = India  
+- Replace section with motivational content:
+  - Example text:
+    “Welcome to your transformation journey. We help you stay consistent, build strength, and become your best version.”  
+- Add modern UI:
+  - Gradient background (purple to blue)
+  - Small animations (glow or floating effect)
+
+5) AI FOOD SCANNER UI IMPROVEMENT  
+- Increase the size of the camera button  
+- Add glowing blue effect around the button  
+- Make it visually attractive and easy to tap (mobile-first design)  
+- Add subtle pulse animation to indicate scanning action  
+
+6) WORKOUT SECTION FIX + IMPROVEMENTS  
+- Fix issue where exercises are not being added properly  
+- Ensure selected exercises persist and display correctly  
+
+- New Flow:
+  - If user selects a single exercise → open that exercise directly  
+  - Show input fields:
+    - Weight
+    - Reps  
+
+- Allow adding more exercises below (multi-exercise flow)
+
+- Smart Input Logic:
+  - If exercise involves equipment (dumbbell, barbell, machine):
+    → Ask for weight + reps  
+  - If exercise is bodyweight-based (push-ups, pull-ups, etc.):
+    → Ask for body weight instead of external weight  
+
+- UI Improvements:
+  - Clean card layout for each exercise  
+  - Smooth transition when opening exercise  
+  - Add “+ Add Exercise” button below  
+
+7) GENERAL IMPROVEMENTS  
+- Add route protection:
+  - Users must be authenticated to access dashboard  
+- Improve performance of body weight logging:
+  - Use debounce or local state before saving  
+- Ensure clean, fast, responsive UI across devices  
+
+Focus on smooth UX, modern design, smart personalization, and secure authentication.
