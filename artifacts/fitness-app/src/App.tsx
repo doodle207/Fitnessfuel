@@ -20,6 +20,7 @@ import Diet from "@/pages/Diet";
 import Profile from "@/pages/Profile";
 import AICoach from "@/pages/AICoach";
 import Pricing from "@/pages/Pricing";
+import FutureBodySimulator from "@/pages/FutureBodySimulator";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -432,6 +433,7 @@ function Router() {
         <Route path="/profile" component={Profile} />
         <Route path="/ai-coach" component={AICoach} />
         <Route path="/pricing" component={Pricing} />
+        <Route path="/future-body" component={FutureBodySimulator} />
         <Route component={NotFound} />
       </Switch>
     </AuthGuard>

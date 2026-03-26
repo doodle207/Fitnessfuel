@@ -4,7 +4,7 @@ import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
 import { format, startOfWeek, addDays, differenceInDays, parseISO } from "date-fns";
 import {
   Flame, Activity, Trophy, ArrowRight, Utensils, Droplets, Footprints,
-  Target, TrendingUp, Zap, ChevronRight, UserCircle2, Crown
+  Target, TrendingUp, Zap, ChevronRight, UserCircle2, Crown, Brain
 } from "lucide-react";
 import UpgradeModal from "@/components/UpgradeModal";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
@@ -413,6 +413,42 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+
+          {/* Future Body Simulator Banner */}
+          <Link href="/future-body">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+              className="relative w-full flex items-center justify-between px-4 py-3.5 rounded-2xl mt-2 overflow-hidden cursor-pointer group"
+              style={{
+                background: "linear-gradient(135deg, rgba(124,58,237,0.18) 0%, rgba(6,182,212,0.12) 100%)",
+                border: "1px solid rgba(124,58,237,0.35)",
+                boxShadow: "0 0 20px rgba(124,58,237,0.25), 0 0 40px rgba(6,182,212,0.1)",
+              }}
+            >
+              {/* animated glow pulse */}
+              <motion.div
+                animate={{ opacity: [0.4, 0.8, 0.4] }}
+                transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute inset-0 rounded-2xl pointer-events-none"
+                style={{ boxShadow: "inset 0 0 20px rgba(124,58,237,0.15)" }}
+              />
+              <span className="flex items-center gap-2.5 text-sm font-bold text-white">
+                <span className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-violet-600/30 border border-violet-500/40">
+                  <Brain className="w-4 h-4 text-violet-300" />
+                  <motion.span
+                    animate={{ scale: [1, 1.6, 1], opacity: [0.6, 0, 0.6] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="absolute inset-0 rounded-xl border border-violet-400/50"
+                  />
+                </span>
+                <span>
+                  <span className="block text-white">Future Body Simulator</span>
+                  <span className="text-[11px] font-normal text-violet-300/80">See your body in 7, 30 & 90 days</span>
+                </span>
+              </span>
+              <ChevronRight className="w-4 h-4 text-violet-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+            </motion.div>
+          </Link>
 
           {/* Steps row */}
           <button onClick={() => setShowStepsInput(v => !v)}

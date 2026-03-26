@@ -1,0 +1,231 @@
+Build a “Future Body Simulator” feature for a fitness web app that predicts a user’s future weight, fat loss/gain, and muscle change based on their current habits.
+
+--------------------------------------------------
+
+1. FEATURE OVERVIEW  
+
+Create a section called:
+
+"Future Body Simulator"
+
+Subtitle:
+"See how your body will change based on your current routine"
+
+--------------------------------------------------
+
+2. USER INPUT DATA  
+
+Use existing user profile data:
+
+- Age  
+- Gender  
+- Height  
+- Current weight  
+- Body fat % (if available)  
+- Goal (fat loss / muscle gain / maintain)  
+- Experience level (beginner / intermediate / advanced)  
+
+Daily tracked data:
+- Calories consumed  
+- Protein intake  
+- Workout frequency  
+- Steps / activity level  
+
+--------------------------------------------------
+
+3. CORE CALCULATION LOGIC  
+
+Step 1: Calculate maintenance calories (BMR + activity)
+
+Step 2: Calculate calorie surplus or deficit:
+- Surplus → weight gain  
+- Deficit → weight loss  
+
+Use rule:
+7700 kcal ≈ 1 kg weight change
+
+--------------------------------------------------
+
+4. BODY COMPOSITION SPLIT  
+
+If calorie deficit:
+- 80–90% fat loss  
+- 10–20% muscle loss  
+- Reduce muscle loss if:
+  - High protein intake  
+  - Strength training present  
+
+If calorie surplus:
+- 60–70% muscle gain (if beginner + good protein + training)  
+- Remaining = fat gain  
+
+Adjust based on:
+- Experience level (beginners gain muscle faster)
+- Low protein → reduce muscle gain
+- No workouts → more fat gain
+
+--------------------------------------------------
+
+5. PREDICTION TIME FRAMES  
+
+Allow user to select:
+- 7 days  
+- 30 days  
+- 90 days  
+
+--------------------------------------------------
+
+6. OUTPUT DISPLAY  
+
+Show results in a clean card:
+
+"In 30 days:"
+
+- Weight: 75 → 72.8 kg  
+- Fat: -2.0 kg  
+- Muscle: +0.3 kg  
+
+Add message:
+"You are on track based on your current routine"
+
+--------------------------------------------------
+
+7. VISUAL UI  
+
+Include:
+
+- Line graph for weight prediction  
+- Bar chart for fat vs muscle  
+- Progress indicator  
+
+--------------------------------------------------
+
+8. SMART INSIGHTS  
+
+Show dynamic feedback:
+
+- "Your protein intake is helping preserve muscle"
+- "Low activity may slow fat loss"
+- "You are in a calorie deficit"
+
+--------------------------------------------------
+
+9. WHAT-IF MODE (IMPORTANT FEATURE)  
+
+Allow user to simulate changes:
+
+- Increase protein  
+- Add more workouts  
+- Increase steps  
+
+Instantly update predictions dynamically.
+
+Example:
+"If you increase protein to 120g/day, muscle gain improves"
+
+--------------------------------------------------
+
+10. CONSISTENCY FACTOR  
+
+Track user consistency:
+
+- Workout completion
+- Food logging
+- Activity tracking
+
+Adjust predictions:
+
+"You are 70% consistent, results may be slower"
+
+--------------------------------------------------
+
+11. INTEGRATION WITH WEIGHT PROGRESS SECTION (VERY IMPORTANT)
+
+Enhance the existing weight progress graph:
+
+- Show ACTUAL weight progress as a solid (dark) line
+- Show FUTURE predicted weight as a dotted line
+
+Prediction should extend forward based on selected timeframe (7 / 30 / 90 days)
+
+--------------------------------------------------
+
+12. WEIGHT GOAL CONTROL  
+
+Allow user to:
+
+- Set target weekly weight change (e.g., +0.25 kg/week or -0.5 kg/week)
+- Sync this with Future Body Simulator predictions
+
+--------------------------------------------------
+
+13. CONDITIONAL DISPLAY (IMPORTANT LOGIC)
+
+Only show prediction line IF:
+
+- User has synced or enabled Future Body Simulator
+
+If not enabled:
+- Do NOT show prediction line
+- Show message:
+  "Enable Future Body Simulator to see future predictions"
+
+--------------------------------------------------
+
+14. CONTEXT TEXT IN PROGRESS SECTION  
+
+Display small text near graph:
+
+"Future prediction is based on your Body Simulator data"
+
+--------------------------------------------------
+
+15. DUAL GRAPH SYSTEM  
+
+Graph must clearly show:
+
+- Solid line → Actual logged weight
+- Dotted line → Predicted future weight
+
+Ensure visual distinction is clear and clean.
+
+--------------------------------------------------
+
+16. DISCLAIMER  
+
+Show small text:
+
+"Predictions are estimates based on your data and may vary"
+
+--------------------------------------------------
+
+17. UX REQUIREMENTS  
+
+- Clean, modern UI  
+- Mobile-first design  
+- Smooth animations  
+- Fast updates when inputs change  
+- Keep it visual and simple  
+- Avoid overwhelming numbers  
+
+--------------------------------------------------
+
+18. OPTIONAL ADVANCED FEATURES  
+
+- Add "Future Physique Score"
+- Show motivational messages:
+  - "You are on track 🔥"
+  - "Progress slowing ⚠️"
+
+--------------------------------------------------
+
+IMPORTANT:
+
+- Build modular system
+- Connect with workout logging and nutrition tracking
+- Ensure predictions update dynamically when user data changes
+- Keep UI premium and intuitive
+
+--------------------------------------------------
+
+Fix any inconsistencies and ensure smooth integration across all sections.
