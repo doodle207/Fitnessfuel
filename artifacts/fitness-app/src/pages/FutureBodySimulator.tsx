@@ -172,9 +172,31 @@ export default function FutureBodySimulator() {
     return list;
   }
 
-  function statusFor(result: Prediction, surplus: boolean) {
+  function statusFor(result: Prediction, surplus: boolean, protein: number) {
     if (Math.abs(result.totalChange) < 0.5) return { msg: "Minimal change expected — adjust calories to accelerate", color: "from-yellow-500/20 to-amber-500/10 border-yellow-500/25" };
-    if (surplus && workoutsPerWeek < 2) return { msg: "Add strength training to convert surplus to muscle ⚠️", color: "from-orange-500/20 to-red-500/10 border-orange-500/25" };
+    
+    // Check composition quality
+    const isDeficit = result.dailyBalance < 0;
+    const hasGoodProtein = protein >= weightKg * 1.6;
+    const hasTraining = workoutsPerWeek >= 2;
+    const muscleToFatRatio = result.muscleChange / Math.max(0.01, Math.abs(result.fatChange));
+    
+    // Weight loss scenario: should lose fat, not muscle
+    if (isDeficit) {
+      if (result.fatChange < -0.5 && result.muscleChange > -0.3) return { msg: "Excellent fat loss while preserving muscle 💪", color: "from-green-500/20 to-emerald-500/10 border-green-500/25" };
+      if (result.muscleChange < -0.5) return { msg: "Risk of muscle loss — increase protein & training ⚠️", color: "from-orange-500/20 to-red-500/10 border-orange-500/25" };
+      return { msg: "You are on track 🔥", color: "from-green-500/20 to-emerald-500/10 border-green-500/25" };
+    }
+    
+    // Surplus/bulk scenario: should gain muscle, limit fat
+    if (surplus) {
+      if (result.muscleChange > 0.5 && result.fatChange < 2) return { msg: "Excellent muscle gain with controlled fat gain 💪", color: "from-green-500/20 to-emerald-500/10 border-green-500/25" };
+      if (result.muscleChange < 0.3 && workoutsPerWeek < 2) return { msg: "Add strength training to build muscle from surplus ⚠️", color: "from-orange-500/20 to-red-500/10 border-orange-500/25" };
+      if (result.fatChange > 3 && protein < weightKg * 1.5) return { msg: "Too much fat gain — increase protein & training ⚠️", color: "from-orange-500/20 to-red-500/10 border-orange-500/25" };
+      return { msg: "You are on track 🔥", color: "from-green-500/20 to-emerald-500/10 border-green-500/25" };
+    }
+    
+    // Maintenance scenario
     return { msg: "You are on track 🔥", color: "from-green-500/20 to-emerald-500/10 border-green-500/25" };
   }
 
@@ -184,7 +206,7 @@ export default function FutureBodySimulator() {
   }) {
     const surplus = result.dailyBalance > 0;
     const deficit = result.dailyBalance < 0;
-    const status = statusFor(result, surplus);
+    const status = statusFor(result, surplus, protein);
     const insights = buildInsights(protein, result.dailyBalance, workoutsPerWeek);
     const wChange = result.weightKg - weightKg;
 
