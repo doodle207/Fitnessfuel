@@ -1,0 +1,161 @@
+Build a modern fitness web app workout system with the following features and UI/UX:
+
+1. WORKOUT ENTRY SCREEN  
+- Show title: "Your Workout Plan"  
+- Subtitle: "Recommended for you based on your goal, time, and experience"  
+- Add a "Change Plan" button  
+
+- Show 4 workout split options as selectable cards:
+  1. Push Pull Legs (mark as ⭐ Recommended)
+  2. Upper Lower
+  3. Bro Split
+  4. Full Body
+
+Each card must include:
+- Name of split
+- Days per week
+- Best for (Beginner / Intermediate)
+- Short description
+
+- Add optional toggle: "Let AI choose for me"
+
+--------------------------------------------------
+
+2. SPLIT SELECTION LOGIC  
+- Based on user goal, experience, and available days:
+  - Recommend Push Pull Legs by default
+- Highlight recommended split visually
+
+--------------------------------------------------
+
+3. WEEKLY WORKOUT STRUCTURE  
+
+After selecting split, generate weekly plan:
+
+Example:
+
+Push Pull Legs:
+- Monday: Push
+- Tuesday: Pull
+- Wednesday: Legs
+- Thursday: Rest or Repeat
+
+Upper Lower:
+- Monday: Upper
+- Tuesday: Lower
+
+Bro Split:
+- Monday: Chest
+- Tuesday: Back
+
+Full Body:
+- Monday, Wednesday, Friday: Full Body
+
+--------------------------------------------------
+
+4. WORKOUT SCREEN UI  
+
+Top section:
+- "Today's Workout: Push"
+- "Focus: Chest, Shoulders, Triceps"
+- Progress indicator: "0/6 exercises completed"
+
+Below: Exercise list (card layout)
+
+Each exercise card must include:
+- Exercise image or GIF
+- Name
+- Target muscle
+- Sets & reps
+- 1-line tip
+
+--------------------------------------------------
+
+5. EXERCISE DATA STRUCTURE  
+
+Use structured JSON like:
+
+{
+  "name": "Bench Press",
+  "muscle": "Chest",
+  "sets": 3,
+  "reps": "8-10",
+  "image": "bench_press.gif",
+  "tip": "Lower slowly and push explosively"
+}
+
+--------------------------------------------------
+
+6. EXERCISE LOGGING SYSTEM  
+
+For each exercise:
+
+Show table:
+
+Set | Weight | Reps | Done
+
+Features:
+- Pre-fill weight & reps from last workout
+- Tap to edit weight/reps
+- Checkbox to mark set complete
+- Quick buttons: +2.5kg, +5kg, Repeat last
+
+--------------------------------------------------
+
+7. REST TIMER  
+
+- When user marks a set complete:
+  - Start automatic rest timer (60–90 sec)
+  - Show countdown
+
+--------------------------------------------------
+
+8. SMART FEEDBACK  
+
+After each exercise:
+- Suggest progression:
+  Example: "Try 62.5 kg next time"
+
+- Detect personal records:
+  Show: "🏆 New Personal Record!"
+
+--------------------------------------------------
+
+9. END OF WORKOUT SUMMARY  
+
+Show:
+- Workout completed
+- Total sets
+- Total volume (weight × reps)
+- Estimated calories burned
+
+--------------------------------------------------
+
+10. CONNECTION TO FUTURE PREDICTION FEATURE  
+
+After workout, display:
+
+"Today's workout contributes to your muscle gain and fat loss prediction"
+
+--------------------------------------------------
+
+11. UX RULES  
+
+- Clean modern UI (card-based design)
+- Minimal typing required
+- Fast interactions (1–2 taps per action)
+- Mobile-first responsive design
+- Smooth transitions and animations
+
+--------------------------------------------------
+
+12. OPTIONAL ADVANCED FEATURES  
+
+- "Why this plan?" explanation section
+- Ability to skip or replace exercise
+- Save favorite exercises
+- Weekly progress tracking
+
+--------------------------------------------------
+
+Make the UI visually appealing, similar to top fitness apps. Focus on simplicity, speed, and clarity. Use reusable components and clean state management.
