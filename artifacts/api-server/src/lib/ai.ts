@@ -20,9 +20,15 @@ export function getAI(): OpenAI {
     });
     console.log("[AI] Using Groq:", getGroqModel());
   } else {
+    const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.GEMINI_API_KEY || "";
+    const baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1";
+    console.log("[AI] OpenAI config - Key present:", !!apiKey, "Base URL:", baseURL);
+    if (!apiKey) {
+      console.warn("[AI] WARNING: No OpenAI API key found! AI features will not work. Set AI_INTEGRATIONS_OPENAI_API_KEY.");
+    }
     _textClient = new OpenAI({
-      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.GEMINI_API_KEY || "",
-      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1",
+      apiKey: apiKey,
+      baseURL: baseURL,
     });
     console.log("[AI] Using Replit AI proxy / OpenAI");
   }
@@ -31,8 +37,12 @@ export function getAI(): OpenAI {
 
 function getVisionAI(): OpenAI {
   if (_visionClient) return _visionClient;
+  const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || "";
+  if (!apiKey) {
+    console.warn("[AI Vision] WARNING: No OpenAI API key found! Vision features will not work.");
+  }
   _visionClient = new OpenAI({
-    apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || "",
+    apiKey: apiKey,
     baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1",
   });
   return _visionClient;
