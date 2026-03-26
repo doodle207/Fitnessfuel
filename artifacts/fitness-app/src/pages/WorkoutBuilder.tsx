@@ -32,6 +32,20 @@ const muscleGroups = [
   { id: "Full Body", color: "from-gray-600/80 to-gray-800/80", emoji: "🔥" },
 ];
 
+const splitMuscleMap: Record<string, string[]> = {
+  Push: ["Chest", "Shoulders", "Triceps"],
+  Pull: ["Back", "Biceps"],
+  Legs: ["Quads", "Hamstrings", "Glutes", "Calves"],
+  Upper: ["Chest", "Back", "Shoulders", "Biceps", "Triceps"],
+  Lower: ["Quads", "Hamstrings", "Glutes", "Calves"],
+  Chest: ["Chest"],
+  Back: ["Back"],
+  Shoulders: ["Shoulders"],
+  Arms: ["Biceps", "Triceps"],
+  LegsFull: ["Quads", "Hamstrings", "Glutes", "Calves"],
+  FullBody: ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Quads", "Hamstrings", "Glutes", "Calves"],
+};
+
 const repSchemes: Record<string, { sets: string; reps: string; rest: string; focus: string; tempo: string }> = {
   Beginner:     { sets: "3", reps: "12–15", rest: "60 sec",    focus: "Learn the movement. Light weight, perfect form.", tempo: "2-0-2" },
   Intermediate: { sets: "4", reps: "8–12",  rest: "60–90 sec", focus: "Hypertrophy — constant tension every rep.",        tempo: "3-1-2" },
@@ -205,11 +219,11 @@ export default function WorkoutBuilder() {
   });
 
   const handleStartWithExercise = (exerciseId: number, exerciseName: string) => {
-    createWorkout({ data: { name: `${exerciseName} & More`, muscleGroup: selectedGroup, date: new Date().toISOString(), durationMinutes: 0, caloriesBurned: 0, notes: String(exerciseId) } });
+    createWorkout({ data: { name: `${exerciseName} & More`, muscleGroup: selectedGroup, date: new Date().toISOString(), durationMinutes: 0, caloriesBurned: 0, notes: `exercise:${exerciseId}` } });
   };
 
   const handleStartGroup = () => {
-    createWorkout({ data: { name: `${selectedGroup} Day`, muscleGroup: selectedGroup, date: new Date().toISOString(), durationMinutes: 0, caloriesBurned: 0, notes: "" } });
+    createWorkout({ data: { name: `${selectedGroup} Day`, muscleGroup: selectedGroup, date: new Date().toISOString(), durationMinutes: 0, caloriesBurned: 0, notes: `type:${selectedGroup}` } });
   };
 
   const filteredExercises = exercises.filter(ex => !search || ex.name.toLowerCase().includes(search.toLowerCase()));

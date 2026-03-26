@@ -11,6 +11,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
+const splitMuscleMap: Record<string, string[]> = {
+  Push: ["Chest", "Shoulders", "Triceps"],
+  Pull: ["Back", "Biceps"],
+  Legs: ["Quads", "Hamstrings", "Glutes", "Calves"],
+  Upper: ["Chest", "Back", "Shoulders", "Biceps", "Triceps"],
+  Lower: ["Quads", "Hamstrings", "Glutes", "Calves"],
+  Chest: ["Chest"],
+  Back: ["Back"],
+  Shoulders: ["Shoulders"],
+  Arms: ["Biceps", "Triceps"],
+  LegsFull: ["Quads", "Hamstrings", "Glutes", "Calves"],
+  FullBody: ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Quads", "Hamstrings", "Glutes", "Calves"],
+};
+
 const repSchemes: Record<string, { sets: string; reps: string; rest: string; focus: string; tempo: string }> = {
   Beginner:     { sets: "3", reps: "12–15", rest: "60 sec",    focus: "Learn the movement. Light weight, perfect form.", tempo: "2-0-2" },
   Intermediate: { sets: "4", reps: "8–12",  rest: "60–90 sec", focus: "Hypertrophy — keep tension on the muscle throughout.", tempo: "3-1-2" },
@@ -152,6 +166,8 @@ export default function ActiveWorkout() {
   const [prExerciseName, setPrExerciseName] = useState<string | null>(null);
   // Track personal bests per exercise (max weight logged)
   const [personalBests, setPersonalBests] = useState<Record<number, number>>({});
+  // Set-based progress tracking
+  const [completedSets, setCompletedSets] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000)), 1000);
@@ -171,6 +187,9 @@ export default function ActiveWorkout() {
         queryClient.invalidateQueries({ queryKey: ['fitness', 'workout', workoutId] });
         const exId = variables.data.exerciseId;
         const weight = parseFloat(variables.data.weightKg as any) || 0;
+
+        // Increment completed sets
+        setCompletedSets(prev => prev + 1);
 
         // Check for PR
         const prevBest = personalBests[exId] || 0;
@@ -277,6 +296,12 @@ export default function ActiveWorkout() {
   const totalSets = sets.length;
   const totalVolume = sets.reduce((s: number, set: any) => s + (set.weightKg || 0) * (set.reps || 0), 0);
 
+  // Extract day type from workout notes
+  const workoutNotes = workoutData.notes || "";
+  const dayTypeMatch = workoutNotes.match(/type:(\w+)/);
+  const dayType = dayTypeMatch ? dayTypeMatch[1] : null;
+  const focusMuscles = dayType && splitMuscleMap[dayType] ? splitMuscleMap[dayType].join(", ") : "";
+
   return (
     <PageTransition>
       <div className="max-w-3xl mx-auto space-y-4 pb-28">
@@ -286,14 +311,16 @@ export default function ActiveWorkout() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-                <h1 className="text-lg md:text-xl font-display font-bold truncate max-w-[200px] sm:max-w-none">{workoutData.name}</h1>
+                <div>
+                  <h1 className="text-lg md:text-xl font-display font-bold">Today's Workout: <span className="text-violet-400">{dayType || "Custom"}</span></h1>
+                  {focusMuscles && <p className="text-xs text-muted-foreground mt-0.5">Focus: <span className="text-cyan-300">{focusMuscles}</span></p>}
+                </div>
               </div>
-              <div className="flex items-center gap-3 md:gap-4 mt-1 text-xs text-muted-foreground flex-wrap">
+              <div className="flex items-center gap-3 md:gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
                 <span className="flex items-center gap-1 text-violet-400 font-semibold">
                   <Timer className="w-3 h-3" /> {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
                 </span>
-                <span className="flex items-center gap-1"><Dumbbell className="w-3 h-3" /> {allDisplayIds.length} exercises</span>
-                <span className="flex items-center gap-1"><Check className="w-3 h-3 text-green-400" /> {totalSets} sets</span>
+                <span className="flex items-center gap-1"><Check className="w-3 h-3 text-green-400 font-bold" /> {completedSets}/{totalSets} sets completed</span>
                 {totalVolume > 0 && <span className="flex items-center gap-1 text-cyan-400"><Flame className="w-3 h-3" /> {Math.round(totalVolume).toLocaleString()} kg vol</span>}
               </div>
             </div>
