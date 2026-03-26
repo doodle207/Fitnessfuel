@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useGetProfile, getGetProfileQueryKey } from "@workspace/api-client-react";
 import React, { useEffect, useState } from "react";
-import { Activity, Zap, TrendingUp, ChevronRight, ChevronLeft, Mail, ShieldCheck, Loader2, User, Scale, Target, Flame, ArrowRight } from "lucide-react";
+import { Activity, Zap, TrendingUp, ChevronRight, Mail, ShieldCheck, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Shell } from "@/components/layout/Shell";
@@ -124,44 +124,20 @@ function WelcomeScreen({ onContinue }: { onContinue: () => void }) {
   );
 }
 
-// Pre-auth signup with profile form
-const GOAL_LABELS = [
-  { value: "weight loss", label: "Lose Fat", emoji: "🔥" },
-  { value: "muscle gain", label: "Build Muscle", emoji: "💪" },
-  { value: "maintenance", label: "Maintain", emoji: "⚖️" },
-  { value: "recomposition", label: "Recompose", emoji: "🔄" },
-  { value: "general fitness", label: "General Fitness", emoji: "❤️" },
-];
-
-function SignupScreen({ onBack, onContinueWithAuth }: { onBack: () => void; onContinueWithAuth: () => void }) {
+function SignupScreen({ onBack }: { onBack: () => void }) {
   const { loginWithGoogle } = useAuth();
-  const [step, setStep] = useState<"basics" | "body" | "auth">("basics");
-  const [form, setForm] = useState({
-    firstName: "", age: "", gender: "male",
-    weightKg: "", heightCm: "", fitnessGoal: "weight loss",
-    activityLevel: "moderate",
-  });
   const [authEmail, setAuthEmail] = useState("");
   const [authOtp, setAuthOtp] = useState("");
   const [authStep, setAuthStep] = useState<"email" | "otp">("email");
   const [loading, setLoading] = useState(false);
-  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [resendTimer, setResendTimer] = useState(0);
 
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
-
-  const saveAndContinue = () => {
-    localStorage.setItem("cfx_pending_profile", JSON.stringify({
-      firstName: form.firstName.trim(),
-      age: parseInt(form.age) || 25,
-      gender: form.gender,
-      weightKg: parseFloat(form.weightKg) || 70,
-      heightCm: parseFloat(form.heightCm) || 170,
-      fitnessGoal: form.fitnessGoal,
-      activityLevel: form.activityLevel,
-    }));
-    setStep("auth");
-  };
+  React.useEffect(() => {
+    if (resendTimer <= 0) return;
+    const t = setTimeout(() => setResendTimer(r => r - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendTimer]);
 
   const handleEmailOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,9 +149,9 @@ function SignupScreen({ onBack, onContinueWithAuth }: { onBack: () => void; onCo
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Failed to send code."); return; }
-      setDevOtp(data.otp ?? null);
       setAuthStep("otp");
-    } catch { setError("Network error."); } finally { setLoading(false); }
+      setResendTimer(30);
+    } catch { setError("Network error. Please try again."); } finally { setLoading(false); }
   };
 
   const handleOtpVerify = async (e: React.FormEvent) => {
@@ -184,11 +160,11 @@ function SignupScreen({ onBack, onContinueWithAuth }: { onBack: () => void; onCo
     try {
       const res = await fetch("/api/auth/email/verify-otp", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        credentials: "include", body: JSON.stringify({ email: authEmail.trim(), otp: authOtp.trim(), firstName: form.firstName.trim() || undefined }),
+        credentials: "include", body: JSON.stringify({ email: authEmail.trim(), otp: authOtp.trim() }),
       });
       if (res.ok) { window.location.reload(); }
       else { const d = await res.json(); setError(d.error || "Invalid code."); }
-    } catch { setError("Network error."); } finally { setLoading(false); }
+    } catch { setError("Network error. Please try again."); } finally { setLoading(false); }
   };
 
   return (
@@ -197,124 +173,140 @@ function SignupScreen({ onBack, onContinueWithAuth }: { onBack: () => void; onCo
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-violet-600/20 rounded-full blur-[120px]" />
         <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-cyan-500/10 rounded-full blur-[120px]" />
       </div>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md relative z-10">
-        <button onClick={step === "basics" ? onBack : () => setStep(step === "auth" ? "body" : "basics")} className="flex items-center gap-1 text-white/50 hover:text-white/80 text-sm mb-6 transition-colors">
-          <ChevronLeft className="w-4 h-4" /> {step === "basics" ? "Back to Sign In" : "Back"}
-        </button>
-
-        {/* Progress dots */}
-        <div className="flex items-center gap-2 mb-8">
-          {(["basics", "body", "auth"] as const).map((s, i) => (
-            <div key={s} className={`h-1.5 flex-1 rounded-full transition-all ${step === s || (step === "body" && i < 1) || (step === "auth" && i < 2) ? "bg-violet-500" : "bg-white/10"} ${step === s ? "bg-violet-500" : step === "body" && i === 0 ? "bg-violet-500" : step === "auth" && i < 2 ? "bg-violet-500" : "bg-white/10"}`} />
-          ))}
+      <div className="absolute inset-0 z-0 opacity-[0.03]"
+        style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "40px 40px" }}
+      />
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="w-full max-w-md relative z-10"
+      >
+        <div className="text-center mb-10">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.5 }}
+            className="w-20 h-20 mx-auto rounded-2xl overflow-hidden mb-6 relative"
+            style={{ boxShadow: "0 0 40px rgba(124,58,237,0.5), 0 0 80px rgba(6,182,212,0.2)" }}
+          >
+            <img src="/logo.jpeg" alt="CaloForgeX" className="w-full h-full object-cover" />
+          </motion.div>
+          <h1 className="text-5xl font-display font-black mb-2 tracking-tight">
+            Calo<span style={{ background: "linear-gradient(90deg, #7c3aed, #06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Forge</span><span className="text-cyan-400">X</span>
+          </h1>
+          <p className="text-white/50 text-base mt-2">Create your account to get started</p>
         </div>
 
+        {error && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
+            {error}
+          </div>
+        )}
+
         <AnimatePresence mode="wait">
-          {step === "basics" && (
-            <motion.div key="basics" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
-              <div>
-                <h2 className="text-3xl font-display font-black text-white mb-1">Let's start <span style={{ background: "linear-gradient(90deg,#7c3aed,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>fresh</span></h2>
-                <p className="text-white/50 text-sm">Tell us a bit about yourself</p>
-              </div>
-              <div>
-                <label className="block text-white/70 text-sm font-medium mb-2">Your first name</label>
-                <input value={form.firstName} onChange={e => set("firstName", e.target.value)} placeholder="First name"
-                  className="w-full px-4 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-violet-500/60 transition-all text-base" />
-              </div>
-              <div>
-                <label className="block text-white/70 text-sm font-medium mb-2">Age</label>
-                <input type="number" min="12" max="100" value={form.age} onChange={e => set("age", e.target.value)} placeholder="Your age"
-                  className="w-full px-4 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-violet-500/60 transition-all text-base" />
-              </div>
-              <div>
-                <label className="block text-white/70 text-sm font-medium mb-3">Gender</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {[{ value: "male", label: "Male", emoji: "♂️" }, { value: "female", label: "Female", emoji: "♀️" }].map(g => (
-                    <button key={g.value} onClick={() => set("gender", g.value)}
-                      className={`py-3 rounded-2xl font-semibold border transition-all ${form.gender === g.value ? "bg-violet-600 border-violet-500 text-white" : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"}`}>
-                      {g.emoji} {g.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button onClick={() => setStep("body")} disabled={!form.firstName.trim() || !form.age}
-                className="w-full py-4 rounded-2xl font-semibold text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all disabled:opacity-40 flex items-center justify-center gap-2">
-                Continue <ArrowRight className="w-4 h-4" />
-              </button>
-            </motion.div>
-          )}
-
-          {step === "body" && (
-            <motion.div key="body" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
-              <div>
-                <h2 className="text-3xl font-display font-black text-white mb-1">Your <span style={{ background: "linear-gradient(90deg,#7c3aed,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>body</span></h2>
-                <p className="text-white/50 text-sm">We'll personalize your plan</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-white/70 text-sm font-medium mb-2">Weight (kg)</label>
-                  <input type="number" step="0.1" value={form.weightKg} onChange={e => set("weightKg", e.target.value)} placeholder="70"
-                    className="w-full px-4 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-violet-500/60 transition-all text-base" />
-                </div>
-                <div>
-                  <label className="block text-white/70 text-sm font-medium mb-2">Height (cm)</label>
-                  <input type="number" value={form.heightCm} onChange={e => set("heightCm", e.target.value)} placeholder="170"
-                    className="w-full px-4 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-violet-500/60 transition-all text-base" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-white/70 text-sm font-medium mb-3">Primary Goal</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {GOAL_LABELS.map(g => (
-                    <button key={g.value} onClick={() => set("fitnessGoal", g.value)}
-                      className={`py-3 px-4 rounded-2xl font-semibold text-sm border transition-all text-left ${form.fitnessGoal === g.value ? "bg-violet-600 border-violet-500 text-white" : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"}`}>
-                      {g.emoji} {g.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button onClick={saveAndContinue} disabled={!form.weightKg || !form.heightCm}
-                className="w-full py-4 rounded-2xl font-semibold text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all disabled:opacity-40 flex items-center justify-center gap-2">
-                Continue to Sign Up <ArrowRight className="w-4 h-4" />
-              </button>
-            </motion.div>
-          )}
-
-          {step === "auth" && (
-            <motion.div key="auth" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
-              <div>
-                <h2 className="text-3xl font-display font-black text-white mb-1">Create your <span style={{ background: "linear-gradient(90deg,#7c3aed,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>account</span></h2>
-                <p className="text-white/50 text-sm">Your profile is ready — just sign up to save it</p>
-              </div>
-              {error && <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{error}</div>}
-              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={loginWithGoogle}
-                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-semibold text-[#1a1a2e] bg-white hover:bg-white/95 transition-all shadow-lg">
+          {authStep === "email" && (
+            <motion.div key="email" initial={{ opacity: 0, x: 0 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+              <motion.button
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                onClick={loginWithGoogle}
+                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-semibold text-base text-[#1a1a2e] bg-white hover:bg-white/95 transition-all shadow-lg"
+              >
                 <GoogleIcon /> Sign up with Google
               </motion.button>
-              <div className="flex items-center gap-3"><div className="flex-1 h-px bg-white/10" /><span className="text-white/40 text-sm">or</span><div className="flex-1 h-px bg-white/10" /></div>
-              {authStep === "email" ? (
-                <form onSubmit={handleEmailOtp} className="space-y-3">
-                  <input type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} placeholder="Your email address" required
-                    className="w-full px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-violet-500/60 transition-all" />
-                  <button type="submit" disabled={loading || !authEmail.trim()}
-                    className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all disabled:opacity-60">
-                    {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</> : <><Mail className="w-4 h-4" /> Continue with Email</>}
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleOtpVerify} className="space-y-3">
-                  {devOtp && <div className="px-3 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs text-cyan-400 text-center">Your code: <span className="font-mono font-bold text-lg tracking-widest">{devOtp}</span></div>}
-                  <input type="text" inputMode="numeric" maxLength={6} value={authOtp} onChange={e => setAuthOtp(e.target.value.replace(/\D/g, ""))} placeholder="000000" autoFocus
-                    className="w-full px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-2xl font-mono tracking-[0.5em] text-center focus:outline-none focus:border-violet-500/60 transition-all" />
-                  <button type="submit" disabled={loading || authOtp.length < 6}
-                    className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all disabled:opacity-60">
-                    {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating account...</> : <><ShieldCheck className="w-4 h-4" /> Create Account</>}
-                  </button>
-                </form>
-              )}
+
+              <div className="flex items-center gap-3 my-2">
+                <div className="flex-1 h-px bg-white/10" />
+                <span className="text-white/40 text-sm">or</span>
+                <div className="flex-1 h-px bg-white/10" />
+              </div>
+
+              <form onSubmit={handleEmailOtp} className="space-y-3">
+                <div>
+                  <label className="block text-white font-semibold text-sm mb-2">Email address</label>
+                  <input
+                    type="email"
+                    value={authEmail}
+                    onChange={e => setAuthEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    required
+                    className="w-full px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-base focus:outline-none focus:border-violet-500/60 focus:bg-white/8 transition-all"
+                  />
+                </div>
+                <motion.button
+                  type="submit"
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                  disabled={loading || !authEmail.trim()}
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-base text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all disabled:opacity-60 shadow-[0_0_20px_rgba(124,58,237,0.3)]"
+                >
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending code...</> : <><Mail className="w-4 h-4" /> Send Verification Code</>}
+                </motion.button>
+              </form>
+            </motion.div>
+          )}
+
+          {authStep === "otp" && (
+            <motion.div key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+              <button
+                type="button"
+                onClick={() => { setAuthStep("email"); setError(null); setAuthOtp(""); }}
+                className="flex items-center gap-1 text-white/50 hover:text-white/80 text-sm mb-1 transition-colors"
+              >
+                ← {authEmail}
+              </button>
+
+              <div className="p-4 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-center">
+                <ShieldCheck className="w-8 h-8 text-violet-400 mx-auto mb-2" />
+                <p className="font-semibold text-white text-sm">Check your inbox</p>
+                <p className="text-white/50 text-xs mt-1">
+                  Enter the 6-digit code sent to <span className="text-violet-300 font-medium">{authEmail}</span>
+                </p>
+              </div>
+
+              <form onSubmit={handleOtpVerify} className="space-y-3">
+                <div>
+                  <label className="block text-white font-semibold text-sm mb-2">Verification code</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={authOtp}
+                    onChange={e => { setAuthOtp(e.target.value.replace(/\D/g, "")); setError(null); }}
+                    placeholder="000000"
+                    autoFocus
+                    className="w-full px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-2xl font-mono tracking-[0.5em] text-center focus:outline-none focus:border-violet-500/60 transition-all"
+                  />
+                </div>
+                <motion.button
+                  type="submit"
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                  disabled={loading || authOtp.length < 6}
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-base text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all disabled:opacity-60 shadow-[0_0_20px_rgba(124,58,237,0.3)]"
+                >
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating account...</> : <><ShieldCheck className="w-4 h-4" /> Create Account</>}
+                </motion.button>
+                <div className="text-center">
+                  {resendTimer > 0 ? (
+                    <p className="text-xs text-white/30">Resend code in {resendTimer}s</p>
+                  ) : (
+                    <button type="button" onClick={handleEmailOtp} disabled={loading}
+                      className="text-xs text-violet-400 hover:text-violet-300 transition-colors disabled:opacity-50">
+                      Resend code
+                    </button>
+                  )}
+                </div>
+              </form>
             </motion.div>
           )}
         </AnimatePresence>
+
+        <p className="text-center text-xs text-white/25 mt-6">By continuing, you agree to our Terms &amp; Privacy Policy</p>
+        <p className="text-center text-sm text-white/40 mt-4">
+          Already have an account?{" "}
+          <button onClick={onBack} className="text-violet-400 hover:text-violet-300 font-semibold transition-colors underline underline-offset-2">
+            Sign in
+          </button>
+        </p>
       </motion.div>
     </div>
   );
@@ -330,7 +322,6 @@ function LoginScreen({ onCreateAccount }: { onCreateAccount: () => void }) {
   const [otp, setOtp] = useState("");
   const [firstName, setFirstName] = useState("");
   const [isNewUser, setIsNewUser] = useState(false);
-  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resendTimer, setResendTimer] = useState(0);
@@ -358,7 +349,6 @@ function LoginScreen({ onCreateAccount }: { onCreateAccount: () => void }) {
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Failed to send code."); return; }
       setIsNewUser(!!data.isNewUser);
-      setDevOtp(data.otp ?? null);
       setStep("otp");
       setResendTimer(30);
     } catch {
@@ -510,11 +500,6 @@ function LoginScreen({ onCreateAccount }: { onCreateAccount: () => void }) {
                 <p className="text-white/50 text-xs mt-1">
                   Enter the 6-digit code sent to <span className="text-violet-300 font-medium">{email}</span>
                 </p>
-                {devOtp && (
-                  <div className="mt-3 px-3 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20">
-                    <p className="text-xs text-cyan-400 font-medium">Your code: <span className="font-mono font-bold text-lg tracking-widest">{devOtp}</span></p>
-                  </div>
-                )}
               </div>
 
               <form onSubmit={handleOtpSubmit} className="space-y-3">
@@ -637,7 +622,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       return <WelcomeScreen onContinue={() => { localStorage.setItem("cfx_welcomed", "1"); setShowWelcome(false); }} />;
     }
     if (showSignup) {
-      return <SignupScreen onBack={() => setShowSignup(false)} onContinueWithAuth={() => setShowSignup(false)} />;
+      return <SignupScreen onBack={() => setShowSignup(false)} />;
     }
     return <LoginScreen onCreateAccount={() => setShowSignup(true)} />;
   }
