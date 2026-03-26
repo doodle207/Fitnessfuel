@@ -277,6 +277,7 @@ async function createTables() {
       ai_chats_today INTEGER NOT NULL DEFAULT 0,
       scans_today INTEGER NOT NULL DEFAULT 0,
       meal_plans_this_week INTEGER NOT NULL DEFAULT 0,
+      future_body_simulator_uses_this_week INTEGER NOT NULL DEFAULT 0,
       last_daily_reset DATE,
       last_weekly_reset DATE
     )

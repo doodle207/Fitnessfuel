@@ -41,8 +41,8 @@ router.get("/payments/subscription", async (req: Request, res: Response): Promis
         usage = { ...usage, ai_chats_today: 0, scans_today: 0 };
       }
       if (lastWeekly < startOfWeek) {
-        await db.execute(sql`UPDATE usage_tracking SET meal_plans_this_week = 0, last_weekly_reset = ${startOfWeek} WHERE user_id = ${userId}`);
-        usage = { ...usage, meal_plans_this_week: 0 };
+        await db.execute(sql`UPDATE usage_tracking SET meal_plans_this_week = 0, future_body_simulator_uses_this_week = 0, last_weekly_reset = ${startOfWeek} WHERE user_id = ${userId}`);
+        usage = { ...usage, meal_plans_this_week: 0, future_body_simulator_uses_this_week: 0 };
       }
     }
 
@@ -55,8 +55,14 @@ router.get("/payments/subscription", async (req: Request, res: Response): Promis
         aiChatsToday: usage?.ai_chats_today ?? 0,
         scansToday: usage?.scans_today ?? 0,
         mealPlansThisWeek: usage?.meal_plans_this_week ?? 0,
+        futureBodySimulatorUsesThisWeek: usage?.future_body_simulator_uses_this_week ?? 0,
       },
-      limits: { aiChatsPerDay: 2, scansPerDay: 2, mealPlansPerWeek: 1 },
+      limits: {
+        aiChatsPerDay: 2,
+        scansPerDay: 2,
+        mealPlansPerWeek: 1,
+        futureBodySimulatorPerWeek: premium ? Infinity : 1,
+      },
     });
   } catch (err: any) {
     console.error("[payments/subscription]", err);
@@ -135,6 +141,66 @@ router.post("/payments/redeem-coupon", async (req: Request, res: Response): Prom
       return;
     }
     res.status(500).json({ error: "Failed to redeem coupon. Please try again." });
+  }
+});
+
+router.post("/payments/future-body-simulator-use", async (req: Request, res: Response): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const userId = req.user.id;
+
+  try {
+    const { rows: subRows } = await db.execute(
+      sql`SELECT * FROM subscriptions WHERE user_id = ${userId} LIMIT 1`
+    );
+    const sub = subRows[0] as any;
+    const isPremium = sub?.is_premium && sub?.expiry_date && new Date(sub.expiry_date) > new Date();
+
+    if (!isPremium) {
+      const startOfWeek = (() => {
+        const d = new Date();
+        d.setDate(d.getDate() - d.getDay());
+        return d.toISOString().split("T")[0];
+      })();
+
+      const { rows: usageRows } = await db.execute(
+        sql`SELECT * FROM usage_tracking WHERE user_id = ${userId} LIMIT 1`
+      );
+      const usage = usageRows[0] as any;
+
+      if (usage && usage.future_body_simulator_uses_this_week >= 1) {
+        const nextAvailableDate = (() => {
+          const d = new Date();
+          d.setDate(d.getDate() + (7 - d.getDay()));
+          return d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+        })();
+        res.status(429).json({
+          error: "Free users can only use the Future Body Simulator once per week",
+          usesRemaining: 0,
+          nextAvailableDate,
+        });
+        return;
+      }
+
+      await db.execute(
+        sql`INSERT INTO usage_tracking (user_id, future_body_simulator_uses_this_week, last_weekly_reset)
+            VALUES (${userId}, 1, ${startOfWeek})
+            ON CONFLICT (user_id) DO UPDATE SET
+              future_body_simulator_uses_this_week = future_body_simulator_uses_this_week + 1,
+              last_weekly_reset = CASE WHEN last_weekly_reset < ${startOfWeek} THEN ${startOfWeek} ELSE last_weekly_reset END`
+      );
+    }
+
+    res.json({
+      success: true,
+      isPremium,
+      usesRemaining: isPremium ? Infinity : 0,
+    });
+  } catch (err: any) {
+    console.error("[payments/future-body-simulator-use]", err);
+    res.status(500).json({ error: "Failed to process request" });
   }
 });
 
