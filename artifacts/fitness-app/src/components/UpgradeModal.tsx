@@ -32,8 +32,6 @@ const triggerMessages: Record<string, { title: string; desc: string }> = {
   general: { title: "Unlock Full Access", desc: "Go unlimited with CaloForgeX Premium." },
 };
 
-const BASE2 = import.meta.env.BASE_URL.replace(/\/$/, "");
-
 export default function UpgradeModal({ trigger = "general", usage, onClose, onSuccess }: Props) {
   const [coupon, setCoupon] = useState("");
   const [couponError, setCouponError] = useState("");
@@ -43,7 +41,7 @@ export default function UpgradeModal({ trigger = "general", usage, onClose, onSu
   const [userCountry, setUserCountry] = useState<string>("");
 
   useEffect(() => {
-    fetch(`${BASE2}/api/profile`, { credentials: "include" })
+    fetch(`${BASE}/api/profile`, { credentials: "include" })
       .then(r => r.ok ? r.json() : null)
       .then(d => d?.country && setUserCountry(d.country))
       .catch(() => {});
