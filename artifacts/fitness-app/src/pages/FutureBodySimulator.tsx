@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useGetProfile } from "@workspace/api-client-react";
 import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
 import { motion } from "framer-motion";
@@ -107,8 +107,12 @@ export default function FutureBodySimulator() {
   const [subscription, setSubscription] = useState<any>(null);
   const [usageExceeded, setUsageExceeded] = useState(false);
   const [nextAvailableDate, setNextAvailableDate] = useState<string | null>(null);
+  const usageCheckDone = useRef(false);
 
   useEffect(() => {
+    if (usageCheckDone.current) return;
+    usageCheckDone.current = true;
+
     fetch(`${BASE}/api/payments/subscription`, { credentials: "include" })
       .then(r => r.json())
       .then(async (data) => {
