@@ -108,6 +108,7 @@ export default function FutureBodySimulator() {
   const [usageExceeded, setUsageExceeded] = useState(false);
   const [nextAvailableDate, setNextAvailableDate] = useState<string | null>(null);
   const usageCheckDone = useRef(false);
+  const foodLogFetchDone = useRef(false);
 
   useEffect(() => {
     if (usageCheckDone.current) return;
@@ -157,7 +158,9 @@ export default function FutureBodySimulator() {
   const suggestedProtein = Math.round(weightKg * 2.2);
 
   useEffect(() => {
-    if (actualLoaded) return;
+    if (foodLogFetchDone.current || actualLoaded) return;
+    foodLogFetchDone.current = true;
+
     fetch(`${BASE}/api/diet/food-log`, { credentials: "include" })
       .then(r => r.json())
       .then((logs: any[]) => {
@@ -179,7 +182,7 @@ export default function FutureBodySimulator() {
         setWhatIfProtein(Math.round(weightKg * 1.8));
         setActualLoaded(true);
       });
-  }, [tdee, weightKg, actualLoaded]);
+  }, [tdee, weightKg]);
 
   if (isLoading) return <LoadingState message="Loading your data..." />;
 
