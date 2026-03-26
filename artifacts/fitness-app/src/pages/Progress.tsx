@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useGetBodyweightLogs, useAddBodyweightLog, useGetProfile } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, Legend } from "recharts";
 import { format, addDays } from "date-fns";
 import { Scale, Plus, Award, Camera, Trash2, TrendingUp, X, BarChart2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -62,22 +62,29 @@ export default function Progress() {
   const [photoLabel, setPhotoLabel] = useState("");
   const [activeTab, setActiveTab] = useState<"weight" | "strength" | "photos" | "badges">("weight");
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>(["Chest", "Back", "Legs"]);
+  const [avgDailyCals, setAvgDailyCals] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [photosRes, strengthRes, achievementsRes] = await Promise.all([
+        const [photosRes, strengthRes, achievementsRes, foodLogRes] = await Promise.all([
           fetch(`${BASE}/api/progress/photos`, { credentials: "include" }),
           fetch(`${BASE}/api/progress/strength`, { credentials: "include" }),
-          fetch(`${BASE}/api/achievements`, { credentials: "include" })
+          fetch(`${BASE}/api/achievements`, { credentials: "include" }),
+          fetch(`${BASE}/api/diet/food-log`, { credentials: "include" }),
         ]);
         const photos = await photosRes.json();
         const strength = await strengthRes.json();
         const achievements = await achievementsRes.json();
-        
+        const foodLog = await foodLogRes.json();
+
         if (Array.isArray(photos)) setPhotos(photos);
         if (strength && typeof strength === "object" && !Array.isArray(strength)) setStrengthData(strength);
         if (Array.isArray(achievements)) setAchievements(achievements);
+        if (Array.isArray(foodLog) && foodLog.length > 0) {
+          const totalCals = foodLog.reduce((s: number, l: any) => s + (l.calories || 0), 0);
+          setAvgDailyCals(Math.round(totalCals / Math.max(1, new Set(foodLog.map((l: any) => l.loggedAt?.split("T")[0] || l.date)).size)));
+        }
       } catch {}
     };
     fetchData();
@@ -147,32 +154,47 @@ export default function Progress() {
     predicted: undefined as number | undefined,
   }));
 
-  // Compute 7-day prediction from last entry
+  // Calorie-based 7-day weight prediction
   let predictionData: { displayDate: string; actual?: number; predicted: number }[] = [];
   if (actualData.length >= 1) {
     const lastEntry = actualData[actualData.length - 1];
     const lastWeight = lastEntry.weightKg;
-    // Rate of change: avg daily change over all entries, else use TDEE-based estimate
-    let dailyChange = 0;
-    if (actualData.length >= 2) {
-      const first = actualData[0];
-      const daysDiff = Math.max(1, Math.round((new Date(lastEntry.date).getTime() - new Date(first.date).getTime()) / 86400000));
-      dailyChange = (lastWeight - first.weightKg) / daysDiff;
+
+    // Compute TDEE from profile
+    const wkg = safeProfile.weightKg || lastWeight;
+    const hcm = safeProfile.heightCm || 170;
+    const age = safeProfile.age || 25;
+    const gender = safeProfile.gender || "male";
+    const act = safeProfile.activityLevel || "moderate";
+    const actMul: Record<string, number> = {
+      sedentary: 1.2, light: 1.375, "lightly active": 1.375,
+      moderate: 1.55, "moderately active": 1.55, active: 1.725, "very active": 1.725, athlete: 1.9
+    };
+    const bmr = 10 * wkg + 6.25 * hcm - 5 * age + (gender === "female" ? -161 : 5);
+    const tdee = bmr * (actMul[act] || 1.55);
+
+    // Use actual logged calories if available, otherwise infer from goal
+    let dailyIntakeCals: number;
+    if (avgDailyCals !== null && avgDailyCals > 500) {
+      dailyIntakeCals = avgDailyCals;
     } else {
-      // Use profile TDEE to estimate
-      const wkg = safeProfile.weightKg || lastWeight;
-      const hcm = safeProfile.heightCm || 170;
-      const age = safeProfile.age || 25;
-      const gender = safeProfile.gender || "male";
-      const act = safeProfile.activityLevel || "moderate";
-      const actMul: Record<string, number> = { sedentary: 1.2, light: 1.375, "lightly active": 1.375, moderate: 1.55, "moderately active": 1.55, active: 1.725, "very active": 1.725 };
-      const bmr = 10 * wkg + 6.25 * hcm - 5 * age + (gender === "female" ? -161 : 5);
-      const tdee = bmr * (actMul[act] || 1.55);
       const goal = safeProfile.fitnessGoal || "maintenance";
-      const goalAdj: Record<string, number> = { "weight loss": -500, "fat loss": -500, "muscle gain": 300, maintenance: 0, "general fitness": 0 };
-      const dailyCals = tdee + (goalAdj[goal] || 0);
-      dailyChange = (dailyCals - tdee) / 7700;
+      const goalAdj: Record<string, number> = {
+        "weight loss": -500, "fat loss": -500, "muscle gain": 300,
+        maintenance: 0, "general fitness": 0, "athletic performance": 200, recomposition: -200
+      };
+      dailyIntakeCals = tdee + (goalAdj[goal] || 0);
     }
+
+    // Calorie balance → weight change
+    const dailyBalance = dailyIntakeCals - tdee;
+    // 7700 kcal = 1 kg body weight
+    let dailyKgChange = dailyBalance / 7700;
+
+    // Safety limits: max fat loss -1 kg/week, max gain +0.5 kg/week
+    const maxLossPerDay = -1 / 7;   // -0.143 kg/day
+    const maxGainPerDay = 0.5 / 7;  // +0.071 kg/day
+    dailyKgChange = Math.max(maxLossPerDay, Math.min(maxGainPerDay, dailyKgChange));
 
     const lastDate = new Date(lastEntry.date);
     for (let d = 1; d <= 7; d++) {
@@ -180,7 +202,7 @@ export default function Progress() {
       predictionData.push({
         displayDate: format(futureDate, "MMM d"),
         actual: undefined,
-        predicted: parseFloat((lastWeight + dailyChange * d).toFixed(2)),
+        predicted: parseFloat((lastWeight + dailyKgChange * d).toFixed(2)),
       });
     }
   }
