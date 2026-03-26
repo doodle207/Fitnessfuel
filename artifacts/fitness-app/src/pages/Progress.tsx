@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { useGetBodyweightLogs, useAddBodyweightLog } from "@workspace/api-client-react";
+import { useGetBodyweightLogs, useAddBodyweightLog, useGetProfile } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
-import { format } from "date-fns";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
+import { format, addDays } from "date-fns";
 import { Scale, Plus, Award, Camera, Trash2, TrendingUp, X, BarChart2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -113,15 +113,66 @@ export default function Progress() {
     } catch {}
   };
 
+  const { data: rawProfile } = useGetProfile({ query: { queryKey: ["fitness", "profile"] } });
+  const safeProfile = rawProfile && typeof rawProfile === "object" && !Array.isArray(rawProfile) ? rawProfile as any : {};
+
   if (isLoading) return <LoadingState message="Loading progress..." />;
 
-  const chartData = [...weightLogs]
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .map(log => ({
-      ...log,
-      date: log.date.toString(),
-      displayDate: (() => { try { return format(new Date(log.date), 'MMM d'); } catch { return String(log.date); } })()
-    }));
+  const sortedLogs = [...weightLogs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  const actualData = sortedLogs.map(log => ({
+    ...log,
+    date: log.date.toString(),
+    displayDate: (() => { try { return format(new Date(log.date), 'MMM d'); } catch { return String(log.date); } })(),
+    actual: log.weightKg,
+    predicted: undefined as number | undefined,
+  }));
+
+  // Compute 7-day prediction from last entry
+  let predictionData: { displayDate: string; actual?: number; predicted: number }[] = [];
+  if (actualData.length >= 1) {
+    const lastEntry = actualData[actualData.length - 1];
+    const lastWeight = lastEntry.weightKg;
+    // Rate of change: avg daily change over all entries, else use TDEE-based estimate
+    let dailyChange = 0;
+    if (actualData.length >= 2) {
+      const first = actualData[0];
+      const daysDiff = Math.max(1, Math.round((new Date(lastEntry.date).getTime() - new Date(first.date).getTime()) / 86400000));
+      dailyChange = (lastWeight - first.weightKg) / daysDiff;
+    } else {
+      // Use profile TDEE to estimate
+      const wkg = safeProfile.weightKg || lastWeight;
+      const hcm = safeProfile.heightCm || 170;
+      const age = safeProfile.age || 25;
+      const gender = safeProfile.gender || "male";
+      const act = safeProfile.activityLevel || "moderate";
+      const actMul: Record<string, number> = { sedentary: 1.2, light: 1.375, "lightly active": 1.375, moderate: 1.55, "moderately active": 1.55, active: 1.725, "very active": 1.725 };
+      const bmr = 10 * wkg + 6.25 * hcm - 5 * age + (gender === "female" ? -161 : 5);
+      const tdee = bmr * (actMul[act] || 1.55);
+      const goal = safeProfile.fitnessGoal || "maintenance";
+      const goalAdj: Record<string, number> = { "weight loss": -500, "fat loss": -500, "muscle gain": 300, maintenance: 0, "general fitness": 0 };
+      const dailyCals = tdee + (goalAdj[goal] || 0);
+      dailyChange = (dailyCals - tdee) / 7700;
+    }
+
+    const lastDate = new Date(lastEntry.date);
+    for (let d = 1; d <= 7; d++) {
+      const futureDate = addDays(lastDate, d);
+      predictionData.push({
+        displayDate: format(futureDate, "MMM d"),
+        actual: undefined,
+        predicted: parseFloat((lastWeight + dailyChange * d).toFixed(2)),
+      });
+    }
+  }
+
+  // Merge: actual entries + last actual point anchor + prediction dots
+  const chartData: any[] = [
+    ...actualData,
+    // anchor the last point for both lines
+    ...(actualData.length >= 1 ? [{ ...actualData[actualData.length - 1], predicted: actualData[actualData.length - 1].weightKg }] : []),
+    ...predictionData,
+  ];
 
   const allDates = [...new Set(
     selectedMuscles.flatMap(mg => (strengthData[mg] || []).map(e => e.date))
@@ -178,26 +229,51 @@ export default function Progress() {
                 </div>
 
                 <div className="h-[300px]">
-                  {chartData.length > 1 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                        <XAxis dataKey="displayDate" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} />
-                        <YAxis domain={['auto', 'auto']} axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} />
-                        <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }} itemStyle={{ color: 'hsl(262 83% 58%)' }} />
-                        <Line type="monotone" dataKey="weightKg" stroke="hsl(262 83% 58%)" strokeWidth={3} dot={{ fill: 'hsl(262 83% 58%)', r: 4 }} activeDot={{ r: 6 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
+                  {actualData.length >= 1 ? (
+                    <>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                          <XAxis dataKey="displayDate" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} />
+                          <YAxis domain={['auto', 'auto']} axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} />
+                          <Tooltip
+                            contentStyle={{ backgroundColor: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                            formatter={(v: any, name: string) => [v ? `${v} kg` : null, name === "actual" ? "Actual" : "Predicted (7d)"]}
+                          />
+                          {/* Actual weight — dark solid line */}
+                          <Line
+                            type="monotone" dataKey="actual" connectNulls={false}
+                            stroke="#1e1e2e" strokeWidth={3.5}
+                            dot={{ fill: '#ffffff', stroke: '#1e1e2e', strokeWidth: 2, r: 4 }}
+                            activeDot={{ r: 6, fill: '#7c3aed' }}
+                          />
+                          {/* Predicted — dotted violet line */}
+                          <Line
+                            type="monotone" dataKey="predicted" connectNulls={false}
+                            stroke="#7c3aed" strokeWidth={2} strokeDasharray="5 4"
+                            dot={{ fill: '#7c3aed', r: 3 }} activeDot={{ r: 5 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                      <div className="flex items-center gap-4 justify-center mt-2">
+                        <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                          <span className="w-5 h-0.5 bg-[#1e1e2e] border border-white/20 rounded inline-block" /> Actual weight
+                        </span>
+                        <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                          <span className="w-5 h-0.5 bg-violet-500 rounded inline-block" style={{ backgroundImage: "repeating-linear-gradient(90deg, #7c3aed 0, #7c3aed 5px, transparent 5px, transparent 9px)" }} /> 7-day prediction
+                        </span>
+                      </div>
+                    </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center border border-dashed border-white/10 rounded-2xl text-muted-foreground text-sm">
-                      {chartData.length === 1 ? "Add more entries to see a trend" : "Log your weight to see the chart"}
+                      Log your weight to see the chart
                     </div>
                   )}
                 </div>
 
-                {chartData.length > 1 && (
+                {actualData.length >= 1 && (
                   <div className="mt-4 grid grid-cols-3 gap-3">
-                    {[["Start", chartData[0].weightKg], ["Current", chartData[chartData.length - 1].weightKg], ["Change", `${(chartData[chartData.length - 1].weightKg - chartData[0].weightKg).toFixed(1)} kg`]].map(([label, val]) => (
+                    {[["Start", actualData[0].weightKg], ["Current", actualData[actualData.length - 1].weightKg], ["Change", `${(actualData[actualData.length - 1].weightKg - actualData[0].weightKg).toFixed(1)} kg`]].map(([label, val]) => (
                       <div key={label as string} className="bg-black/30 rounded-xl p-3 text-center border border-white/5">
                         <p className="text-xs text-muted-foreground mb-1">{label}</p>
                         <p className="font-bold">{val}</p>
