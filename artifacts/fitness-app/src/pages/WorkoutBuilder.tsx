@@ -371,6 +371,19 @@ export default function WorkoutBuilder() {
 
         {/* Exercise Browser */}
         <div>
+          {/* Focus Muscles Banner */}
+          {activeSplit && (
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+              className="mb-4 rounded-2xl p-4 bg-gradient-to-r from-violet-500/10 to-cyan-500/10 border border-violet-500/25">
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Today's Focus</p>
+              <p className="text-sm font-display font-bold text-white">
+                <span className="text-violet-400">{activeSplit.name}</span>
+                <span className="text-muted-foreground mx-2">—</span>
+                <span className="text-cyan-300">{activeSplit.schedule[today === 0 ? 6 : today - 1].muscles}</span>
+              </p>
+            </motion.div>
+          )}
+
           <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Muscle Group</p>
           <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
             {muscleGroups.map((group, idx) => {
