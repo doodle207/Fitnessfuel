@@ -1,0 +1,148 @@
+Fix and improve the workout system logic and UI in my fitness web app with the following requirements:
+
+--------------------------------------------------
+
+1. FIX WORKOUT SPLIT MAPPING (VERY IMPORTANT)
+
+Do NOT treat "Push" as "Chest Day".
+
+Use correct muscle group mapping:
+
+const splitMuscleMap = {
+  Push: ["Chest", "Shoulders", "Triceps"],
+  Pull: ["Back", "Biceps"],
+  Legs: ["Quads", "Hamstrings", "Glutes", "Calves"],
+
+  Upper: ["Chest", "Back", "Shoulders", "Biceps", "Triceps"],
+  Lower: ["Quads", "Hamstrings", "Glutes", "Calves"],
+
+  Chest: ["Chest"],
+  Back: ["Back"],
+  Shoulders: ["Shoulders"],
+  Arms: ["Biceps", "Triceps"],
+  LegsFull: ["Quads", "Hamstrings", "Glutes", "Calves"],
+
+  FullBody: ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Quads", "Hamstrings", "Glutes", "Calves"]
+};
+
+--------------------------------------------------
+
+2. APPLY THIS FOR ALL SPLITS
+
+Support these splits:
+
+1. Push Pull Legs
+   - Day types: Push, Pull, Legs
+
+2. Upper Lower
+   - Day types: Upper, Lower
+
+3. Bro Split
+   - Day types: Chest, Back, Shoulders, Arms, LegsFull
+
+4. Full Body
+   - Day type: FullBody
+
+--------------------------------------------------
+
+3. DYNAMIC EXERCISE LOADING
+
+Load exercises based on selected day type:
+
+Example logic:
+
+const todayType = selectedDay.type;
+
+const exercises = allExercises.filter(exercise =>
+  splitMuscleMap[todayType].includes(exercise.muscle)
+);
+
+--------------------------------------------------
+
+4. CORRECT WORKOUT HEADER UI
+
+At top of workout screen, show:
+
+- "Today's Workout: Push" (dynamic)
+- "Focus: Chest, Shoulders, Triceps" (from mapping)
+- Progress text: "0/18 sets completed"
+
+--------------------------------------------------
+
+5. PROGRESS TRACKING (SETS BASED)
+
+Do NOT track per exercise. Track per set.
+
+Calculate total sets:
+
+const totalSets = exercises.reduce((sum, ex) => sum + ex.sets, 0);
+
+Track completed sets:
+
+const [completedSets, setCompletedSets] = useState(0);
+
+When user marks a set complete:
+
+setCompletedSets(prev => prev + 1);
+
+Display:
+
+{completedSets}/{totalSets} sets completed
+
+--------------------------------------------------
+
+6. RESET WORKOUT STATE
+
+When user starts a new workout:
+
+- Reset completedSets to 0
+- Reset all sets to incomplete
+
+--------------------------------------------------
+
+7. EXERCISE STRUCTURE
+
+Ensure each exercise has:
+
+{
+  name: "Bench Press",
+  muscle: "Chest",
+  sets: 3,
+  reps: "8-10",
+  image: "bench_press.gif",
+  tip: "Lower slowly and push explosively"
+}
+
+--------------------------------------------------
+
+8. UI IMPROVEMENTS
+
+- Show exercises in clean card layout
+- Each exercise shows:
+  - Image/GIF
+  - Name
+  - Target muscle
+  - Sets & reps
+- Show set logging table:
+  Set | Weight | Reps | Done checkbox
+
+--------------------------------------------------
+
+9. OPTIONAL IMPROVEMENTS
+
+- Show progress bar based on sets completed
+- Add "Workout Completed" message when all sets done
+- Add smooth UI updates when marking sets complete
+
+--------------------------------------------------
+
+IMPORTANT:
+
+- Use dynamic logic (no hardcoding per split)
+- Ensure all splits behave correctly
+- Keep UI clean and mobile-friendly
+- Make it feel like a premium fitness app
+
+--------------------------------------------------
+
+Fix existing bugs and refactor code to follow this structure.
