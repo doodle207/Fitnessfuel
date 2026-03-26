@@ -64,12 +64,27 @@ export default function Progress() {
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>(["Chest", "Back", "Legs"]);
 
   useEffect(() => {
-    fetch(`${BASE}/api/progress/photos`, { credentials: "include" })
-      .then(r => r.json()).then(d => Array.isArray(d) && setPhotos(d)).catch(() => {});
-    fetch(`${BASE}/api/progress/strength`, { credentials: "include" })
-      .then(r => r.json()).then(d => d && typeof d === "object" && !Array.isArray(d) && setStrengthData(d)).catch(() => {});
-    fetch(`${BASE}/api/achievements`, { credentials: "include" })
-      .then(r => r.json()).then(d => Array.isArray(d) && setAchievements(d)).catch(() => {});
+    const fetchData = async () => {
+      try {
+        const [photosRes, strengthRes, achievementsRes] = await Promise.all([
+          fetch(`${BASE}/api/progress/photos`, { credentials: "include" }),
+          fetch(`${BASE}/api/progress/strength`, { credentials: "include" }),
+          fetch(`${BASE}/api/achievements`, { credentials: "include" })
+        ]);
+        const photos = await photosRes.json();
+        const strength = await strengthRes.json();
+        const achievements = await achievementsRes.json();
+        
+        if (Array.isArray(photos)) setPhotos(photos);
+        if (strength && typeof strength === "object" && !Array.isArray(strength)) setStrengthData(strength);
+        if (Array.isArray(achievements)) setAchievements(achievements);
+      } catch {}
+    };
+    fetchData();
+    
+    const handleFocus = () => fetchData();
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, []);
 
   const handleLogWeight = (e: React.FormEvent) => {
@@ -85,23 +100,27 @@ export default function Progress() {
     reader.onload = async (ev) => {
       const dataUrl = ev.target?.result as string;
       const today = new Date().toISOString().split("T")[0];
+      const tempId = Date.now();
+      const tempPhoto: Photo = { id: tempId, photoDataUrl: dataUrl, label: photoLabel || format(new Date(), "MMM d, yyyy"), date: today };
+      
+      setPhotos(prev => [tempPhoto, ...prev]);
       try {
         const r = await fetch(`${BASE}/api/progress/photos`, {
           method: "POST", credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ photoDataUrl: dataUrl, label: photoLabel || format(new Date(), "MMM d, yyyy"), date: today })
         });
+        if (!r.ok) throw new Error("Upload failed");
         const d = await r.json();
-        if (d.id) setPhotos(prev => [d, ...prev]);
-        else {
-          const tempPhoto: Photo = { id: Date.now(), photoDataUrl: dataUrl, label: photoLabel || format(new Date(), "MMM d, yyyy"), date: today };
-          setPhotos(prev => [tempPhoto, ...prev]);
+        if (d.id) {
+          setPhotos(prev => prev.map(p => p.id === tempId ? d : p));
+          toast({ title: "Photo saved!", description: "Your progress photo has been stored." });
         }
       } catch {
-        const tempPhoto: Photo = { id: Date.now(), photoDataUrl: dataUrl, label: photoLabel || format(new Date(), "MMM d, yyyy"), date: today };
-        setPhotos(prev => [tempPhoto, ...prev]);
+        toast({ title: "Couldn't save photo", description: "The photo was kept locally but not stored to server. Check your connection.", variant: "destructive" });
       }
       setPhotoLabel("");
+      if (fileRef.current) fileRef.current.value = "";
     };
     reader.readAsDataURL(file);
   };
