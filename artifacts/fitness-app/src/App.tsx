@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useGetProfile, getGetProfileQueryKey } from "@workspace/api-client-react";
 import React, { useEffect, useState } from "react";
-import { Activity, Zap, TrendingUp, ChevronRight, Mail, ShieldCheck, Loader2 } from "lucide-react";
+import { Activity, Zap, TrendingUp, ChevronRight, ChevronLeft, Mail, ShieldCheck, Loader2, User, Scale, Target, Flame, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Shell } from "@/components/layout/Shell";
@@ -124,9 +124,205 @@ function WelcomeScreen({ onContinue }: { onContinue: () => void }) {
   );
 }
 
+// Pre-auth signup with profile form
+const GOAL_LABELS = [
+  { value: "weight loss", label: "Lose Fat", emoji: "🔥" },
+  { value: "muscle gain", label: "Build Muscle", emoji: "💪" },
+  { value: "maintenance", label: "Maintain", emoji: "⚖️" },
+  { value: "recomposition", label: "Recompose", emoji: "🔄" },
+  { value: "general fitness", label: "General Fitness", emoji: "❤️" },
+];
+
+function SignupScreen({ onBack, onContinueWithAuth }: { onBack: () => void; onContinueWithAuth: () => void }) {
+  const { loginWithGoogle } = useAuth();
+  const [step, setStep] = useState<"basics" | "body" | "auth">("basics");
+  const [form, setForm] = useState({
+    firstName: "", age: "", gender: "male",
+    weightKg: "", heightCm: "", fitnessGoal: "weight loss",
+    activityLevel: "moderate",
+  });
+  const [authEmail, setAuthEmail] = useState("");
+  const [authOtp, setAuthOtp] = useState("");
+  const [authStep, setAuthStep] = useState<"email" | "otp">("email");
+  const [loading, setLoading] = useState(false);
+  const [devOtp, setDevOtp] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  const saveAndContinue = () => {
+    localStorage.setItem("cfx_pending_profile", JSON.stringify({
+      firstName: form.firstName.trim(),
+      age: parseInt(form.age) || 25,
+      gender: form.gender,
+      weightKg: parseFloat(form.weightKg) || 70,
+      heightCm: parseFloat(form.heightCm) || 170,
+      fitnessGoal: form.fitnessGoal,
+      activityLevel: form.activityLevel,
+    }));
+    setStep("auth");
+  };
+
+  const handleEmailOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true); setError(null);
+    try {
+      const res = await fetch("/api/auth/email/request-otp", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        credentials: "include", body: JSON.stringify({ email: authEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Failed to send code."); return; }
+      setDevOtp(data.otp ?? null);
+      setAuthStep("otp");
+    } catch { setError("Network error."); } finally { setLoading(false); }
+  };
+
+  const handleOtpVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true); setError(null);
+    try {
+      const res = await fetch("/api/auth/email/verify-otp", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        credentials: "include", body: JSON.stringify({ email: authEmail.trim(), otp: authOtp.trim(), firstName: form.firstName.trim() || undefined }),
+      });
+      if (res.ok) { window.location.reload(); }
+      else { const d = await res.json(); setError(d.error || "Invalid code."); }
+    } catch { setError("Network error."); } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#080810] flex flex-col items-center justify-center relative overflow-hidden px-4">
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-violet-600/20 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-cyan-500/10 rounded-full blur-[120px]" />
+      </div>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md relative z-10">
+        <button onClick={step === "basics" ? onBack : () => setStep(step === "auth" ? "body" : "basics")} className="flex items-center gap-1 text-white/50 hover:text-white/80 text-sm mb-6 transition-colors">
+          <ChevronLeft className="w-4 h-4" /> {step === "basics" ? "Back to Sign In" : "Back"}
+        </button>
+
+        {/* Progress dots */}
+        <div className="flex items-center gap-2 mb-8">
+          {(["basics", "body", "auth"] as const).map((s, i) => (
+            <div key={s} className={`h-1.5 flex-1 rounded-full transition-all ${step === s || (step === "body" && i < 1) || (step === "auth" && i < 2) ? "bg-violet-500" : "bg-white/10"} ${step === s ? "bg-violet-500" : step === "body" && i === 0 ? "bg-violet-500" : step === "auth" && i < 2 ? "bg-violet-500" : "bg-white/10"}`} />
+          ))}
+        </div>
+
+        <AnimatePresence mode="wait">
+          {step === "basics" && (
+            <motion.div key="basics" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
+              <div>
+                <h2 className="text-3xl font-display font-black text-white mb-1">Let's start <span style={{ background: "linear-gradient(90deg,#7c3aed,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>fresh</span></h2>
+                <p className="text-white/50 text-sm">Tell us a bit about yourself</p>
+              </div>
+              <div>
+                <label className="block text-white/70 text-sm font-medium mb-2">Your first name</label>
+                <input value={form.firstName} onChange={e => set("firstName", e.target.value)} placeholder="First name"
+                  className="w-full px-4 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-violet-500/60 transition-all text-base" />
+              </div>
+              <div>
+                <label className="block text-white/70 text-sm font-medium mb-2">Age</label>
+                <input type="number" min="12" max="100" value={form.age} onChange={e => set("age", e.target.value)} placeholder="Your age"
+                  className="w-full px-4 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-violet-500/60 transition-all text-base" />
+              </div>
+              <div>
+                <label className="block text-white/70 text-sm font-medium mb-3">Gender</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[{ value: "male", label: "Male", emoji: "♂️" }, { value: "female", label: "Female", emoji: "♀️" }].map(g => (
+                    <button key={g.value} onClick={() => set("gender", g.value)}
+                      className={`py-3 rounded-2xl font-semibold border transition-all ${form.gender === g.value ? "bg-violet-600 border-violet-500 text-white" : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"}`}>
+                      {g.emoji} {g.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button onClick={() => setStep("body")} disabled={!form.firstName.trim() || !form.age}
+                className="w-full py-4 rounded-2xl font-semibold text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all disabled:opacity-40 flex items-center justify-center gap-2">
+                Continue <ArrowRight className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+
+          {step === "body" && (
+            <motion.div key="body" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
+              <div>
+                <h2 className="text-3xl font-display font-black text-white mb-1">Your <span style={{ background: "linear-gradient(90deg,#7c3aed,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>body</span></h2>
+                <p className="text-white/50 text-sm">We'll personalize your plan</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-white/70 text-sm font-medium mb-2">Weight (kg)</label>
+                  <input type="number" step="0.1" value={form.weightKg} onChange={e => set("weightKg", e.target.value)} placeholder="70"
+                    className="w-full px-4 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-violet-500/60 transition-all text-base" />
+                </div>
+                <div>
+                  <label className="block text-white/70 text-sm font-medium mb-2">Height (cm)</label>
+                  <input type="number" value={form.heightCm} onChange={e => set("heightCm", e.target.value)} placeholder="170"
+                    className="w-full px-4 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-violet-500/60 transition-all text-base" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-white/70 text-sm font-medium mb-3">Primary Goal</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {GOAL_LABELS.map(g => (
+                    <button key={g.value} onClick={() => set("fitnessGoal", g.value)}
+                      className={`py-3 px-4 rounded-2xl font-semibold text-sm border transition-all text-left ${form.fitnessGoal === g.value ? "bg-violet-600 border-violet-500 text-white" : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"}`}>
+                      {g.emoji} {g.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button onClick={saveAndContinue} disabled={!form.weightKg || !form.heightCm}
+                className="w-full py-4 rounded-2xl font-semibold text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all disabled:opacity-40 flex items-center justify-center gap-2">
+                Continue to Sign Up <ArrowRight className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+
+          {step === "auth" && (
+            <motion.div key="auth" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
+              <div>
+                <h2 className="text-3xl font-display font-black text-white mb-1">Create your <span style={{ background: "linear-gradient(90deg,#7c3aed,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>account</span></h2>
+                <p className="text-white/50 text-sm">Your profile is ready — just sign up to save it</p>
+              </div>
+              {error && <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{error}</div>}
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={loginWithGoogle}
+                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-semibold text-[#1a1a2e] bg-white hover:bg-white/95 transition-all shadow-lg">
+                <GoogleIcon /> Sign up with Google
+              </motion.button>
+              <div className="flex items-center gap-3"><div className="flex-1 h-px bg-white/10" /><span className="text-white/40 text-sm">or</span><div className="flex-1 h-px bg-white/10" /></div>
+              {authStep === "email" ? (
+                <form onSubmit={handleEmailOtp} className="space-y-3">
+                  <input type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} placeholder="Your email address" required
+                    className="w-full px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-violet-500/60 transition-all" />
+                  <button type="submit" disabled={loading || !authEmail.trim()}
+                    className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all disabled:opacity-60">
+                    {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</> : <><Mail className="w-4 h-4" /> Continue with Email</>}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleOtpVerify} className="space-y-3">
+                  {devOtp && <div className="px-3 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs text-cyan-400 text-center">Your code: <span className="font-mono font-bold text-lg tracking-widest">{devOtp}</span></div>}
+                  <input type="text" inputMode="numeric" maxLength={6} value={authOtp} onChange={e => setAuthOtp(e.target.value.replace(/\D/g, ""))} placeholder="000000" autoFocus
+                    className="w-full px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-2xl font-mono tracking-[0.5em] text-center focus:outline-none focus:border-violet-500/60 transition-all" />
+                  <button type="submit" disabled={loading || authOtp.length < 6}
+                    className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all disabled:opacity-60">
+                    {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating account...</> : <><ShieldCheck className="w-4 h-4" /> Create Account</>}
+                  </button>
+                </form>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </div>
+  );
+}
+
 type EmailStep = "email" | "otp" | "name";
 
-function LoginScreen() {
+function LoginScreen({ onCreateAccount }: { onCreateAccount: () => void }) {
   const { loginWithGoogle } = useAuth();
 
   const [step, setStep] = useState<EmailStep>("email");
@@ -374,6 +570,12 @@ function LoginScreen() {
         <p className="text-center text-xs text-white/25 mt-6">
           By continuing, you agree to our Terms & Privacy Policy
         </p>
+        <p className="text-center text-sm text-white/40 mt-4">
+          Don't have an account?{" "}
+          <button onClick={onCreateAccount} className="text-violet-400 hover:text-violet-300 font-semibold transition-colors underline underline-offset-2">
+            Create here
+          </button>
+        </p>
       </motion.div>
     </div>
   );
@@ -383,15 +585,60 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [location, setLocation] = useLocation();
   const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem("cfx_welcomed"));
+  const [showSignup, setShowSignup] = useState(false);
+  const [restoredRoute, setRestoredRoute] = useState(false);
 
-  const { data: profile, isLoading: isProfileLoading, error: profileError } = useGetProfile({
+  const { data: profile, isLoading: isProfileLoading, error: profileError, refetch: refetchProfile } = useGetProfile({
     query: { queryKey: getGetProfileQueryKey(), enabled: isAuthenticated }
   });
 
   const needsOnboarding = isAuthenticated && !isProfileLoading && profileError && (profileError as any).status === 404;
 
+  // Save last visited route to localStorage for restoration on next login
   useEffect(() => {
-    if (needsOnboarding && location !== "/onboarding") {
+    if (isAuthenticated && !isProfileLoading && profile) {
+      const skipRoutes = ["/onboarding", "/pricing"];
+      if (!skipRoutes.includes(location) && location !== "/") {
+        localStorage.setItem("cfx_last_route", location);
+      }
+    }
+  }, [location, isAuthenticated, isProfileLoading, profile]);
+
+  // Restore last route once after login
+  useEffect(() => {
+    if (isAuthenticated && !isProfileLoading && profile && !restoredRoute) {
+      setRestoredRoute(true);
+      const saved = localStorage.getItem("cfx_last_route");
+      if (saved && saved !== "/" && saved !== location) {
+        setLocation(saved);
+      }
+    }
+  }, [isAuthenticated, isProfileLoading, profile, restoredRoute, location, setLocation]);
+
+  // Auto-create profile if pending signup data exists (from pre-auth signup flow)
+  useEffect(() => {
+    if (!isAuthenticated || isProfileLoading) return;
+    if (!needsOnboarding) return;
+    const pending = localStorage.getItem("cfx_pending_profile");
+    if (!pending) return;
+    const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+    try {
+      const profileData = JSON.parse(pending);
+      fetch(`${BASE}/api/profile`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...profileData, dietPreference: "non-veg", experienceLevel: "beginner", country: "USA" }),
+      }).then(r => {
+        if (r.ok) {
+          localStorage.removeItem("cfx_pending_profile");
+          refetchProfile();
+        }
+      }).catch(() => {});
+    } catch {}
+  }, [isAuthenticated, isProfileLoading, needsOnboarding, refetchProfile]);
+
+  useEffect(() => {
+    if (needsOnboarding && location !== "/onboarding" && !localStorage.getItem("cfx_pending_profile")) {
       setLocation("/onboarding");
     }
   }, [needsOnboarding, location, setLocation]);
@@ -411,7 +658,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     if (showWelcome) {
       return <WelcomeScreen onContinue={() => { localStorage.setItem("cfx_welcomed", "1"); setShowWelcome(false); }} />;
     }
-    return <LoginScreen />;
+    if (showSignup) {
+      return <SignupScreen onBack={() => setShowSignup(false)} onContinueWithAuth={() => setShowSignup(false)} />;
+    }
+    return <LoginScreen onCreateAccount={() => setShowSignup(true)} />;
   }
 
   if (needsOnboarding && location !== "/onboarding") return null;
