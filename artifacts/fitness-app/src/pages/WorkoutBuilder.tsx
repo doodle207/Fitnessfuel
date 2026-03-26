@@ -225,6 +225,11 @@ export default function WorkoutBuilder() {
     createWorkout({ data: { name: `${selectedGroup} Day`, muscleGroup: selectedGroup, date: new Date().toISOString(), durationMinutes: 0, caloriesBurned: 0, notes: `type:${selectedGroup}` } });
   };
 
+  const handleStartSplitDay = (dayType: string) => {
+    const muscles = splitMuscleMap[dayType] || [];
+    createWorkout({ data: { name: `${dayType} Day`, muscleGroup: muscles[0] || dayType, date: new Date().toISOString(), durationMinutes: 0, caloriesBurned: 0, notes: `type:${dayType}` } });
+  };
+
   const filteredExercises = exercises.filter(ex => !search || ex.name.toLowerCase().includes(search.toLowerCase()));
 
   const diffColor = (d?: string | null) =>
@@ -261,11 +266,11 @@ export default function WorkoutBuilder() {
             </div>
             {todaySchedule.focus !== "Rest" && (
               <button
-                onClick={() => { setSelectedGroup(todaySchedule.focus === "Push" ? "Chest" : todaySchedule.focus === "Pull" ? "Back" : todaySchedule.focus === "Legs" ? "Legs" : todaySchedule.focus === "Upper" ? "Chest" : "Legs"); handleStartGroup(); }}
+                onClick={() => handleStartSplitDay(todaySchedule.focus)}
                 disabled={isPending}
                 className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-bold hover:bg-violet-500 transition-colors shadow-[0_0_16px_rgba(124,58,237,0.5)]"
               >
-                <Play className="w-3.5 h-3.5 fill-current" /> Start
+                <Play className="w-3.5 h-3.5 fill-current" /> {isPending ? "Starting..." : "Start"}
               </button>
             )}
           </motion.div>

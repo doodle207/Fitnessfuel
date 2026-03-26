@@ -450,22 +450,6 @@ export default function Dashboard() {
             </motion.div>
           </Link>
 
-          {/* Steps row */}
-          <button onClick={() => setShowStepsInput(v => !v)}
-            className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-violet-500/8 border border-violet-500/20 hover:bg-violet-500/15 transition-colors mt-2">
-            <span className="flex items-center gap-2 text-sm font-semibold text-violet-300">
-              <Footprints className="w-4 h-4 text-violet-400" /> Step Count
-            </span>
-            <span className="text-sm font-display font-bold text-violet-400">{steps.toLocaleString()} <span className="text-xs text-muted-foreground font-normal">≈ {stepCalories} kcal</span></span>
-          </button>
-          {showStepsInput && (
-            <div className="flex gap-2 mt-2">
-              <input type="number" value={stepsInput} onChange={e => setStepsInput(e.target.value)} onKeyDown={e => e.key === "Enter" && (() => { const n = parseInt(stepsInput); if (!isNaN(n) && n >= 0) setSteps(n); setStepsInput(""); setShowStepsInput(false); })()}
-                placeholder="Enter today's step count" className="flex-1 px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 focus:border-violet-500 outline-none text-sm" />
-              <button onClick={() => { const n = parseInt(stepsInput); if (!isNaN(n) && n >= 0) setSteps(n); setStepsInput(""); setShowStepsInput(false); }}
-                className="px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors">Save</button>
-            </div>
-          )}
         </motion.div>
 
         {/* ── Hydration + Workout & Streaks (Hydration first / on top) ── */}
@@ -549,6 +533,26 @@ export default function Dashboard() {
               <ChevronRight className="w-3.5 h-3.5 text-violet-400 group-hover:translate-x-1 transition-transform" />
             </Link>
           </motion.div>
+        </div>
+
+        {/* Step Count — below hydration */}
+        <div>
+          <button onClick={() => setShowStepsInput(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-violet-500/8 border border-violet-500/20 hover:bg-violet-500/15 transition-colors">
+            <span className="flex items-center gap-2 text-sm font-semibold text-violet-300">
+              <Footprints className="w-4 h-4 text-violet-400" /> Step Count
+            </span>
+            <span className="text-sm font-display font-bold text-violet-400">{steps.toLocaleString()} <span className="text-xs text-muted-foreground font-normal">≈ {stepCalories} kcal</span></span>
+          </button>
+          {showStepsInput && (
+            <div className="flex gap-2 mt-2">
+              <input type="number" value={stepsInput} onChange={e => setStepsInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && (() => { const n = parseInt(stepsInput); if (!isNaN(n) && n >= 0) setSteps(n); setStepsInput(""); setShowStepsInput(false); })()}
+                placeholder="Enter today's step count" className="flex-1 px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 focus:border-violet-500 outline-none text-sm" />
+              <button onClick={() => { const n = parseInt(stepsInput); if (!isNaN(n) && n >= 0) setSteps(n); setStepsInput(""); setShowStepsInput(false); }}
+                className="px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors">Save</button>
+            </div>
+          )}
         </div>
 
         {/* Weekly Volume full width */}
