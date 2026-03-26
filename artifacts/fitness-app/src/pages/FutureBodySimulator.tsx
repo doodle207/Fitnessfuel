@@ -3,7 +3,7 @@ import { useGetProfile } from "@workspace/api-client-react";
 import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
 import { motion } from "framer-motion";
 import {
-  Brain, Zap, Dumbbell, Flame, Scale, Target, Info, ChevronRight
+  Brain, Zap, Dumbbell, Flame, Scale, Target, Info, ChevronRight, Lock
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -104,6 +104,35 @@ export default function FutureBodySimulator() {
   const [whatIfProtein, setWhatIfProtein] = useState(0);
   const [workoutsPerWeek, setWorkoutsPerWeek] = useState(3);
 
+  const [subscription, setSubscription] = useState<any>(null);
+  const [usageExceeded, setUsageExceeded] = useState(false);
+  const [nextAvailableDate, setNextAvailableDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`${BASE}/api/payments/subscription`, { credentials: "include" })
+      .then(r => r.json())
+      .then(async (data) => {
+        setSubscription(data);
+        if (!data.isPremium) {
+          try {
+            const res = await fetch(`${BASE}/api/payments/future-body-simulator-use`, {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+            });
+            const usageData = await res.json();
+            if (!res.ok) {
+              setUsageExceeded(true);
+              setNextAvailableDate(usageData.nextAvailableDate || null);
+            }
+          } catch (err) {
+            console.error("Failed to check usage", err);
+          }
+        }
+      })
+      .catch(() => setSubscription(null));
+  }, []);
+
   const profile = rawProfile && typeof rawProfile === "object" && !Array.isArray(rawProfile)
     ? rawProfile as any : {};
 
@@ -149,6 +178,48 @@ export default function FutureBodySimulator() {
   }, [tdee, weightKg, actualLoaded]);
 
   if (isLoading) return <LoadingState message="Loading your data..." />;
+
+  if (usageExceeded) {
+    return (
+      <PageTransition>
+        <div className="min-h-screen flex items-center justify-center px-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md glass-card rounded-3xl p-8 border border-white/8 text-center space-y-6"
+          >
+            <div className="flex justify-center">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 border border-amber-500/30 flex items-center justify-center">
+                <Lock className="w-8 h-8 text-amber-400" />
+              </div>
+            </div>
+            <div>
+              <h2 className="text-2xl font-display font-black text-white mb-2">Weekly Limit Reached</h2>
+              <p className="text-sm text-white/50">Free users can use the Future Body Simulator once per week.</p>
+            </div>
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+              <p className="text-xs text-amber-300 font-medium">Next available: {nextAvailableDate || "Next Monday"}</p>
+            </div>
+            <div className="space-y-3">
+              <button
+                onClick={() => setLocation("/pricing")}
+                className="w-full py-3 rounded-2xl font-semibold text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all"
+              >
+                Upgrade to Premium
+              </button>
+              <button
+                onClick={() => setLocation("/")}
+                className="w-full py-3 rounded-2xl font-semibold text-white/60 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
+              >
+                Go Back Home
+              </button>
+            </div>
+            <p className="text-xs text-white/30">Premium users get unlimited access to all features.</p>
+          </motion.div>
+        </div>
+      </PageTransition>
+    );
+  }
 
   const fmt1 = (n: number) => (n >= 0 ? "+" : "") + n.toFixed(1);
 
