@@ -193,7 +193,6 @@ export default function WorkoutBuilder() {
   const [expandedTip, setExpandedTip] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [selectedSplit, setSelectedSplit] = useState<string>("ppl");
-  const [showSchedule, setShowSchedule] = useState(false);
   const [aiChoose, setAiChoose] = useState(false);
   const { toast } = useToast();
 
@@ -274,18 +273,10 @@ export default function WorkoutBuilder() {
 
         {/* Workout Split Selection */}
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-display font-bold text-base">Your Workout Plan</p>
-            <button
-              onClick={() => setShowSchedule(!showSchedule)}
-              className="text-xs text-violet-400 flex items-center gap-1 hover:text-violet-300 transition-colors"
-            >
-              {showSchedule ? "Hide" : "Weekly Schedule"} <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showSchedule ? "rotate-90" : ""}`} />
-            </button>
-          </div>
+          <p className="font-display font-bold text-base mb-3">Your Workout Plan</p>
 
           {/* AI Choose Toggle */}
-          <div className="flex items-center gap-3 mb-3 px-1">
+          <div className="flex items-center gap-3 mb-4 px-1">
             <button
               onClick={() => setAiChoose(!aiChoose)}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${aiChoose ? "bg-violet-500/20 border-violet-500/40 text-violet-300" : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"}`}
@@ -303,71 +294,72 @@ export default function WorkoutBuilder() {
             {WORKOUT_SPLITS.map((split, idx) => {
               const isSelected = selectedSplit === split.id || (aiChoose && split.recommended);
               return (
-                <motion.button
-                  key={split.id}
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
-                  onClick={() => { setSelectedSplit(split.id); setAiChoose(false); }}
-                  className={`relative text-left p-4 rounded-2xl border transition-all ${isSelected ? `bg-gradient-to-br ${split.color} ring-1 ring-violet-500/50` : "bg-white/3 border-white/8 hover:bg-white/6 hover:border-white/15"}`}
-                >
-                  {split.recommended && (
-                    <span className="absolute top-2.5 right-2.5 flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/25 px-2 py-0.5 rounded-full">
-                      <Star className="w-2.5 h-2.5 fill-current" /> Recommended
-                    </span>
-                  )}
-                  {isSelected && (
-                    <div className="absolute top-2.5 right-2.5">
-                      <CheckCircle2 className="w-5 h-5 text-violet-400" />
+                <div key={split.id}>
+                  <motion.button
+                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
+                    onClick={() => { setSelectedSplit(split.id); setAiChoose(false); }}
+                    className={`relative w-full text-left p-4 rounded-2xl border transition-all ${isSelected ? `bg-gradient-to-br ${split.color} ring-1 ring-violet-500/50` : "bg-white/3 border-white/8 hover:bg-white/6 hover:border-white/15"}`}
+                  >
+                    {split.recommended && (
+                      <span className="absolute top-2.5 right-2.5 flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/25 px-2 py-0.5 rounded-full">
+                        <Star className="w-2.5 h-2.5 fill-current" /> Recommended
+                      </span>
+                    )}
+                    {isSelected && (
+                      <div className="absolute top-2.5 right-2.5">
+                        <CheckCircle2 className="w-5 h-5 text-violet-400" />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 mb-2 pr-16">
+                      <span className="text-xl">{split.emoji}</span>
+                      <p className="font-display font-bold text-sm">{split.name}</p>
                     </div>
-                  )}
-                  <div className="flex items-center gap-2 mb-2 pr-16">
-                    <span className="text-xl">{split.emoji}</span>
-                    <p className="font-display font-bold text-sm">{split.name}</p>
-                  </div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[11px] bg-white/8 border border-white/10 rounded-full px-2 py-0.5 text-white/60">{split.days}x / week</span>
-                    <span className={`text-[11px] border rounded-full px-2 py-0.5 ${diffColor(split.level)}`}>{split.level}</span>
-                  </div>
-                  <p className="text-xs text-white/55 leading-relaxed">{split.desc}</p>
-                </motion.button>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[11px] bg-white/8 border border-white/10 rounded-full px-2 py-0.5 text-white/60">{split.days}x / week</span>
+                      <span className={`text-[11px] border rounded-full px-2 py-0.5 ${diffColor(split.level)}`}>{split.level}</span>
+                    </div>
+                    <p className="text-xs text-white/55 leading-relaxed">{split.desc}</p>
+                  </motion.button>
+
+                  {/* Weekly Schedule - appears right below selected split */}
+                  <AnimatePresence>
+                    {isSelected && (
+                      <motion.div initial={{ opacity: 0, height: 0, marginTop: 0 }} animate={{ opacity: 1, height: "auto", marginTop: 8 }} exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                        className="overflow-hidden">
+                        <div className="glass-card rounded-2xl border border-white/8 overflow-hidden">
+                          <div className="p-4 border-b border-white/5 flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-violet-400" />
+                            <h3 className="font-display font-bold text-sm">{split.name} — Weekly Schedule</h3>
+                          </div>
+                          <div className="divide-y divide-white/5">
+                            {split.schedule.map((day, i) => {
+                              const isToday = i === (today === 0 ? 6 : today - 1);
+                              return (
+                                <div key={day.day} className={`flex items-center gap-3 px-4 py-3 ${isToday ? "bg-violet-500/8" : ""}`}>
+                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm ${isToday ? "bg-violet-500/30 ring-1 ring-violet-500/50" : "bg-white/5"}`}>
+                                    {day.emoji}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <p className={`text-sm font-semibold ${isToday ? "text-violet-300" : "text-white/80"}`}>{day.day}</p>
+                                      {isToday && <span className="text-[10px] bg-violet-500/20 text-violet-400 px-1.5 py-0.5 rounded-full font-bold">TODAY</span>}
+                                    </div>
+                                    <p className="text-xs text-white/40">{day.muscles}</p>
+                                  </div>
+                                  <span className={`text-xs font-bold ${day.focus === "Rest" ? "text-white/30" : "text-white/70"}`}>{day.focus}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               );
             })}
           </div>
         </div>
-
-        {/* Weekly Schedule */}
-        <AnimatePresence>
-          {showSchedule && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden">
-              <div className="glass-card rounded-2xl border border-white/8 overflow-hidden">
-                <div className="p-4 border-b border-white/5 flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-violet-400" />
-                  <h3 className="font-display font-bold text-sm">{activeSplit.name} — Weekly Schedule</h3>
-                </div>
-                <div className="divide-y divide-white/5">
-                  {activeSplit.schedule.map((day, i) => {
-                    const isToday = i === (today === 0 ? 6 : today - 1);
-                    return (
-                      <div key={day.day} className={`flex items-center gap-3 px-4 py-3 ${isToday ? "bg-violet-500/8" : ""}`}>
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm ${isToday ? "bg-violet-500/30 ring-1 ring-violet-500/50" : "bg-white/5"}`}>
-                          {day.emoji}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className={`text-sm font-semibold ${isToday ? "text-violet-300" : "text-white/80"}`}>{day.day}</p>
-                            {isToday && <span className="text-[10px] bg-violet-500/20 text-violet-400 px-1.5 py-0.5 rounded-full font-bold">TODAY</span>}
-                          </div>
-                          <p className="text-xs text-white/40">{day.muscles}</p>
-                        </div>
-                        <span className={`text-xs font-bold ${day.focus === "Rest" ? "text-white/30" : "text-white/70"}`}>{day.focus}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Exercise Browser */}
         <div>
