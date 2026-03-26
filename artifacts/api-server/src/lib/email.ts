@@ -24,7 +24,7 @@ export async function sendVerificationEmail(email: string, otp: string): Promise
   const year = new Date().getFullYear();
 
   const { error } = await resend.emails.send({
-    from: "Caloforge <onboarding@resend.dev>",
+    from: "Caloforge <noreply@caloforge.com>",
     to: email,
     subject: "Your Verification Code",
     html: `
