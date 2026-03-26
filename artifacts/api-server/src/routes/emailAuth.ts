@@ -1,10 +1,10 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import crypto from "crypto";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import { createSession, type SessionData } from "../lib/auth";
 import { SESSION_COOKIE, SESSION_TTL } from "../lib/auth";
+import { generateOTP, sendVerificationEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -18,10 +18,6 @@ function setSessionCookie(res: Response, sid: string) {
     path: "/",
     maxAge: SESSION_TTL,
   });
-}
-
-function generateOtp(): string {
-  return String(crypto.randomInt(100000, 999999));
 }
 
 router.post("/auth/email/check", async (req: Request, res: Response) => {
@@ -46,8 +42,8 @@ router.post("/auth/email/request-otp", async (req: Request, res: Response) => {
   }
   const normalizedEmail = email.trim().toLowerCase();
 
-  const otp = generateOtp();
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  const otp = generateOTP();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
   await db.execute(
     sql`INSERT INTO email_otps (email, otp_code, expires_at) VALUES (${normalizedEmail}, ${otp}, ${expiresAt})`
@@ -58,12 +54,19 @@ router.post("/auth/email/request-otp", async (req: Request, res: Response) => {
     .from(usersTable)
     .where(eq(usersTable.email, normalizedEmail));
 
-  console.log(`[OTP] Code for ${normalizedEmail}: ${otp}`);
+  try {
+    await sendVerificationEmail(normalizedEmail, otp);
+    console.log(`[OTP] Verification email sent to ${normalizedEmail}`);
+  } catch (err) {
+    console.error(`[OTP] Failed to send email to ${normalizedEmail}:`, err);
+    res.status(500).json({ error: "Failed to send verification email. Please try again." });
+    return;
+  }
 
   res.json({
     success: true,
     isNewUser: !existing,
-    otp,
+    message: "Verification code sent to your email",
   });
 });
 
@@ -78,7 +81,7 @@ router.post("/auth/email/verify-otp", async (req: Request, res: Response) => {
   const normalizedOtp = String(otp).trim();
 
   const { rows } = await db.execute(sql`
-    SELECT * FROM email_otps
+    SELECT id FROM email_otps
     WHERE email = ${normalizedEmail}
       AND otp_code = ${normalizedOtp}
       AND is_used = FALSE
@@ -100,6 +103,8 @@ router.post("/auth/email/verify-otp", async (req: Request, res: Response) => {
     .select()
     .from(usersTable)
     .where(eq(usersTable.email, normalizedEmail));
+
+  const isNewUser = !user;
 
   if (!user) {
     const [newUser] = await db
@@ -129,7 +134,7 @@ router.post("/auth/email/verify-otp", async (req: Request, res: Response) => {
 
   const sid = await createSession(sessionData);
   setSessionCookie(res, sid);
-  res.json({ success: true, isNewUser: !otpRow });
+  res.json({ success: true, isNewUser });
 });
 
 export default router;
