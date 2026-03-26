@@ -126,7 +126,7 @@ export default function Onboarding() {
     const pending = localStorage.getItem("cfx_pending_profile");
     const pendingData = pending ? (() => { try { return JSON.parse(pending); } catch { return null; } })() : null;
     return {
-      name:            pendingData?.firstName || user?.firstName ?? "",
+      name:            (pendingData?.firstName || user?.firstName) ?? "",
       age:             pendingData?.age ?? 25,
       gender:          pendingData?.gender ?? "male",
       heightCm:        pendingData?.heightCm ?? 170,
