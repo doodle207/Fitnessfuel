@@ -121,23 +121,36 @@ export default function Onboarding() {
   const [error, setError] = useState<string | null>(null);
   const [ageStr, setAgeStr] = useState("25");
 
-  const [form, setForm] = useState<FormData>({
-    name:            user?.firstName ?? "",
-    age:             25,
-    gender:          "male",
-    heightCm:        170,
-    weightKg:        70,
-    fitnessGoal:     "muscle gain",
-    activityLevel:   "moderate",
-    experienceLevel: "beginner",
-    dietPreference:  "non-veg",
-    country:         "USA",
-    cycleRegularity: "regular",
-    periodStartDate: "",
-    periodEndDate:   "",
-  });
-  const [heightStr, setHeightStr] = useState("170");
-  const [weightStr, setWeightStr] = useState("70");
+  // Load pre-filled data from signup flow if available
+  const getInitialForm = (): FormData => {
+    const pending = localStorage.getItem("cfx_pending_profile");
+    const pendingData = pending ? (() => { try { return JSON.parse(pending); } catch { return null; } })() : null;
+    return {
+      name:            pendingData?.firstName || user?.firstName ?? "",
+      age:             pendingData?.age ?? 25,
+      gender:          pendingData?.gender ?? "male",
+      heightCm:        pendingData?.heightCm ?? 170,
+      weightKg:        pendingData?.weightKg ?? 70,
+      fitnessGoal:     pendingData?.fitnessGoal ?? "muscle gain",
+      activityLevel:   pendingData?.activityLevel ?? "moderate",
+      experienceLevel: "beginner",
+      dietPreference:  "non-veg",
+      country:         "USA",
+      cycleRegularity: "regular",
+      periodStartDate: "",
+      periodEndDate:   "",
+    };
+  };
+
+  const initialForm = getInitialForm();
+  const [form, setForm] = useState<FormData>(initialForm);
+  const [heightStr, setHeightStr] = useState(String(initialForm.heightCm));
+  const [weightStr, setWeightStr] = useState(String(initialForm.weightKg));
+  
+  // Clear pending profile after onboarding completes
+  const clearPendingProfile = () => {
+    localStorage.removeItem("cfx_pending_profile");
+  };
 
   const set = <K extends keyof FormData>(key: K, val: FormData[K]) =>
     setForm(prev => ({ ...prev, [key]: val }));
@@ -160,6 +173,7 @@ export default function Onboarding() {
 
   const handleFinish = () => {
     setError(null);
+    clearPendingProfile();
     const actMap: Record<string, string> = { active: "very active", athlete: "athlete" };
     const payload = { ...form, activityLevel: actMap[form.activityLevel] ?? form.activityLevel };
     createProfile({ data: payload });

@@ -615,30 +615,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, isProfileLoading, profile, restoredRoute, location, setLocation]);
 
-  // Auto-create profile if pending signup data exists (from pre-auth signup flow)
   useEffect(() => {
-    if (!isAuthenticated || isProfileLoading) return;
-    if (!needsOnboarding) return;
-    const pending = localStorage.getItem("cfx_pending_profile");
-    if (!pending) return;
-    const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-    try {
-      const profileData = JSON.parse(pending);
-      fetch(`${BASE}/api/profile`, {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...profileData, dietPreference: "non-veg", experienceLevel: "beginner", country: "USA" }),
-      }).then(r => {
-        if (r.ok) {
-          localStorage.removeItem("cfx_pending_profile");
-          refetchProfile();
-        }
-      }).catch(() => {});
-    } catch {}
-  }, [isAuthenticated, isProfileLoading, needsOnboarding, refetchProfile]);
-
-  useEffect(() => {
-    if (needsOnboarding && location !== "/onboarding" && !localStorage.getItem("cfx_pending_profile")) {
+    if (needsOnboarding && location !== "/onboarding") {
       setLocation("/onboarding");
     }
   }, [needsOnboarding, location, setLocation]);
