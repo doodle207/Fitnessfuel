@@ -107,6 +107,7 @@ export default function FutureBodySimulator() {
   const [subscription, setSubscription] = useState<any>(null);
   const [usageExceeded, setUsageExceeded] = useState(false);
   const [nextAvailableDate, setNextAvailableDate] = useState<string | null>(null);
+  const [isCheckingAccess, setIsCheckingAccess] = useState(true);
   const usageCheckDone = useRef(false);
   const foodLogFetchDone = useRef(false);
 
@@ -114,9 +115,10 @@ export default function FutureBodySimulator() {
     if (usageCheckDone.current) return;
     usageCheckDone.current = true;
 
-    fetch(`${BASE}/api/payments/subscription`, { credentials: "include" })
-      .then(r => r.json())
-      .then(async (data) => {
+    (async () => {
+      try {
+        const subRes = await fetch(`${BASE}/api/payments/subscription`, { credentials: "include" });
+        const data = await subRes.json();
         setSubscription(data);
         if (!data.isPremium) {
           try {
@@ -134,8 +136,12 @@ export default function FutureBodySimulator() {
             console.error("Failed to check usage", err);
           }
         }
-      })
-      .catch(() => setSubscription(null));
+      } catch {
+        // allow access on error
+      } finally {
+        setIsCheckingAccess(false);
+      }
+    })();
   }, []);
 
   const profile = rawProfile && typeof rawProfile === "object" && !Array.isArray(rawProfile)
@@ -184,7 +190,7 @@ export default function FutureBodySimulator() {
       });
   }, [tdee, weightKg]);
 
-  if (isLoading) return <LoadingState message="Loading your data..." />;
+  if (isLoading || isCheckingAccess) return <LoadingState message="Loading your data..." />;
 
   if (usageExceeded) {
     return (

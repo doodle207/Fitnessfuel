@@ -25,6 +25,7 @@ import FutureBodySimulator from "@/pages/FutureBodySimulator";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      staleTime: 1000 * 60 * 2,
       retry: (failureCount, error: any) => {
         if (error?.status >= 400 && error?.status < 500) return false;
         return failureCount < 2;
