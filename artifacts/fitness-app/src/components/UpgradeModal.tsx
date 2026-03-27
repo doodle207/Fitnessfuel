@@ -73,7 +73,6 @@ export default function UpgradeModal({ trigger = "general", usage, onClose, onSu
   }, []);
 
   const isIndia = userCountry === "India";
-  const hasStripe = true;
   const premiumPrice = isIndia ? "₹199" : "$5.99";
   const proPrice = isIndia ? "₹349" : "$9.99";
 
@@ -97,7 +96,7 @@ export default function UpgradeModal({ trigger = "general", usage, onClose, onSu
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, currency: isIndia ? "INR" : "USD" }),
       });
       const orderData = await orderRes.json();
 
@@ -169,30 +168,6 @@ export default function UpgradeModal({ trigger = "general", usage, onClose, onSu
     } catch {
       setPaymentStatus("failed");
       setPaymentMessage("Something went wrong. Please try again.");
-      setPayingPlan(null);
-    }
-  };
-
-  const handleStripePayment = async (plan: "premium" | "pro") => {
-    setPayingPlan(plan);
-    setPaymentStatus("loading");
-    setPaymentMessage("Redirecting to secure checkout...");
-    try {
-      const res = await fetch(`${BASE}/api/payments/stripe/create-session`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        credentials: "include", body: JSON.stringify({ plan }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setPaymentStatus("failed");
-        setPaymentMessage(data.error || "Failed to open payment. Please try again.");
-        setPayingPlan(null);
-        return;
-      }
-      window.location.href = data.url;
-    } catch {
-      setPaymentStatus("failed");
-      setPaymentMessage("Network error. Please try again.");
       setPayingPlan(null);
     }
   };
@@ -353,31 +328,17 @@ export default function UpgradeModal({ trigger = "general", usage, onClose, onSu
                             <p className="text-[10px] text-muted-foreground">/ month</p>
                           </div>
                         </div>
-                        {isIndia || !userCountry ? (
-                          <button
-                            onClick={() => handleRazorpayPayment("premium")}
-                            disabled={paymentStatus === "loading"}
-                            className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 shadow-[0_0_16px_rgba(124,58,237,0.3)]"
-                          >
-                            {payingPlan === "premium" && paymentStatus === "loading" ? (
-                              <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
-                            ) : (
-                              <><CreditCard className="w-4 h-4" /> Pay {premiumPrice} with Razorpay</>
-                            )}
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleStripePayment("premium")}
-                            disabled={paymentStatus === "loading"}
-                            className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 shadow-[0_0_16px_rgba(124,58,237,0.3)]"
-                          >
-                            {payingPlan === "premium" && paymentStatus === "loading" ? (
-                              <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting...</>
-                            ) : (
-                              <><CreditCard className="w-4 h-4" /> Pay {premiumPrice} with Card</>
-                            )}
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleRazorpayPayment("premium")}
+                          disabled={paymentStatus === "loading"}
+                          className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 shadow-[0_0_16px_rgba(124,58,237,0.3)]"
+                        >
+                          {payingPlan === "premium" && paymentStatus === "loading" ? (
+                            <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+                          ) : (
+                            <><CreditCard className="w-4 h-4" /> Pay {premiumPrice} with Razorpay</>
+                          )}
+                        </button>
                       </div>
 
                       {/* Pro */}
@@ -392,45 +353,26 @@ export default function UpgradeModal({ trigger = "general", usage, onClose, onSu
                             <p className="text-[10px] text-muted-foreground">/ month</p>
                           </div>
                         </div>
-                        {isIndia || !userCountry ? (
-                          <button
-                            onClick={() => handleRazorpayPayment("pro")}
-                            disabled={paymentStatus === "loading"}
-                            className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
-                          >
-                            {payingPlan === "pro" && paymentStatus === "loading" ? (
-                              <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
-                            ) : (
-                              <><CreditCard className="w-4 h-4" /> Pay {proPrice} with Razorpay</>
-                            )}
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleStripePayment("pro")}
-                            disabled={paymentStatus === "loading"}
-                            className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
-                          >
-                            {payingPlan === "pro" && paymentStatus === "loading" ? (
-                              <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting...</>
-                            ) : (
-                              <><CreditCard className="w-4 h-4" /> Pay {proPrice} with Card</>
-                            )}
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleRazorpayPayment("pro")}
+                          disabled={paymentStatus === "loading"}
+                          className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
+                        >
+                          {payingPlan === "pro" && paymentStatus === "loading" ? (
+                            <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+                          ) : (
+                            <><CreditCard className="w-4 h-4" /> Pay {proPrice} with Razorpay</>
+                          )}
+                        </button>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 p-3 rounded-xl bg-white/3 border border-white/5">
-                      {isIndia || !userCountry ? (
-                        <>
-                          <img src="https://razorpay.com/favicon.ico" alt="Razorpay" className="w-4 h-4 rounded" onError={e => (e.currentTarget.style.display = "none")} />
-                          <p className="text-[11px] text-muted-foreground">Secured by Razorpay · UPI, Cards, Net Banking, Wallets</p>
-                        </>
+                      <img src="https://razorpay.com/favicon.ico" alt="Razorpay" className="w-4 h-4 rounded" onError={e => (e.currentTarget.style.display = "none")} />
+                      {isIndia ? (
+                        <p className="text-[11px] text-muted-foreground">Secured by Razorpay · UPI, Cards, Net Banking, Wallets</p>
                       ) : (
-                        <>
-                          <span className="text-sm">🔒</span>
-                          <p className="text-[11px] text-muted-foreground">Secured by Stripe · Visa, Mastercard, Amex &amp; more</p>
-                        </>
+                        <p className="text-[11px] text-muted-foreground">Secured by Razorpay · International Cards (Visa, Mastercard, Amex)</p>
                       )}
                     </div>
 

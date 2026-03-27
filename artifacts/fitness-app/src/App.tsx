@@ -22,6 +22,8 @@ import Profile from "@/pages/Profile";
 import AICoach from "@/pages/AICoach";
 import Pricing from "@/pages/Pricing";
 import FutureBodySimulator from "@/pages/FutureBodySimulator";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsOfService from "@/pages/TermsOfService";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -301,6 +303,7 @@ function LoginScreen({ onCreateAccount }: { onCreateAccount: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resendTimer, setResendTimer] = useState(0);
+  const [agreed, setAgreed] = useState(false);
 
   const urlError = new URLSearchParams(window.location.search).get("error");
 
@@ -410,12 +413,53 @@ function LoginScreen({ onCreateAccount }: { onCreateAccount: () => void }) {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.25 }}
             >
+              <label className="flex items-start gap-3 mb-5 p-4 rounded-2xl bg-white/3 border border-white/8 cursor-pointer group">
+                <div className="relative flex-shrink-0 mt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={agreed}
+                    onChange={e => setAgreed(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${agreed ? "bg-violet-600 border-violet-600" : "border-white/25 bg-white/5 group-hover:border-violet-400/50"}`}>
+                    {agreed && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <span className="text-xs text-white/55 leading-relaxed">
+                  I agree to the{" "}
+                  <a
+                    href="/terms-of-service"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    className="text-violet-400 hover:text-violet-300 underline underline-offset-2"
+                  >
+                    Terms of Service
+                  </a>
+                  {" "}and{" "}
+                  <a
+                    href="/privacy-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    className="text-violet-400 hover:text-violet-300 underline underline-offset-2"
+                  >
+                    Privacy Policy
+                  </a>
+                </span>
+              </label>
+
               <motion.button
                 type="button"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: agreed ? 1.02 : 1 }}
+                whileTap={{ scale: agreed ? 0.98 : 1 }}
                 onClick={loginWithGoogle}
-                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-semibold text-base text-[#1a1a2e] bg-white hover:bg-white/95 transition-all shadow-lg"
+                disabled={!agreed}
+                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-semibold text-base text-[#1a1a2e] bg-white hover:bg-white/95 transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <GoogleIcon />
                 Continue with Google
@@ -443,7 +487,7 @@ function LoginScreen({ onCreateAccount }: { onCreateAccount: () => void }) {
                   type="submit"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  disabled={loading || !email.trim()}
+                  disabled={loading || !email.trim() || !agreed}
                   className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-base text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all disabled:opacity-60 shadow-[0_0_20px_rgba(124,58,237,0.3)]"
                 >
                   {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending code...</> : <><Mail className="w-4 h-4" /> Send Verification Code</>}
@@ -462,7 +506,7 @@ function LoginScreen({ onCreateAccount }: { onCreateAccount: () => void }) {
             >
               <button
                 type="button"
-                onClick={() => { setStep("email"); setError(null); setOtp(""); setDevOtp(null); }}
+                onClick={() => { setStep("email"); setError(null); setOtp(""); }}
                 className="flex items-center gap-1 text-white/50 hover:text-white/80 text-sm mb-5 transition-colors"
               >
                 ← {email}
@@ -527,10 +571,6 @@ function LoginScreen({ onCreateAccount }: { onCreateAccount: () => void }) {
             </motion.div>
           )}
         </AnimatePresence>
-
-        <p className="text-center text-xs text-white/25 mt-6">
-          By continuing, you agree to our Terms & Privacy Policy
-        </p>
 
         <div className="mt-5">
           <div className="flex items-center gap-3 mb-4">
@@ -621,21 +661,27 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
 function Router() {
   return (
-    <AuthGuard>
-      <Switch>
-        <Route path="/onboarding" component={Onboarding} />
-        <Route path="/" component={Dashboard} />
-        <Route path="/workout" component={WorkoutBuilder} />
-        <Route path="/workout/active/:id" component={ActiveWorkout} />
-        <Route path="/progress" component={Progress} />
-        <Route path="/diet" component={Diet} />
-        <Route path="/profile" component={Profile} />
-        <Route path="/ai-coach" component={AICoach} />
-        <Route path="/pricing" component={Pricing} />
-        <Route path="/future-body" component={FutureBodySimulator} />
-        <Route component={NotFound} />
-      </Switch>
-    </AuthGuard>
+    <Switch>
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/terms-of-service" component={TermsOfService} />
+      <Route>
+        <AuthGuard>
+          <Switch>
+            <Route path="/onboarding" component={Onboarding} />
+            <Route path="/" component={Dashboard} />
+            <Route path="/workout" component={WorkoutBuilder} />
+            <Route path="/workout/active/:id" component={ActiveWorkout} />
+            <Route path="/progress" component={Progress} />
+            <Route path="/diet" component={Diet} />
+            <Route path="/profile" component={Profile} />
+            <Route path="/ai-coach" component={AICoach} />
+            <Route path="/pricing" component={Pricing} />
+            <Route path="/future-body" component={FutureBodySimulator} />
+            <Route component={NotFound} />
+          </Switch>
+        </AuthGuard>
+      </Route>
+    </Switch>
   );
 }
 
