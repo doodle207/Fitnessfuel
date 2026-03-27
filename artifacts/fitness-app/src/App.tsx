@@ -126,7 +126,6 @@ function WelcomeScreen({ onContinue }: { onContinue: () => void }) {
 }
 
 function SignupScreen({ onBack }: { onBack: () => void }) {
-  const { loginWithGoogle } = useAuth();
   const [authEmail, setAuthEmail] = useState("");
   const [authOtp, setAuthOtp] = useState("");
   const [authStep, setAuthStep] = useState<"email" | "otp">("email");
@@ -196,7 +195,7 @@ function SignupScreen({ onBack }: { onBack: () => void }) {
           <h1 className="text-5xl font-display font-black mb-2 tracking-tight">
             Calo<span style={{ background: "linear-gradient(90deg, #7c3aed, #06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Forge</span><span className="text-cyan-400">X</span>
           </h1>
-          <p className="text-white/50 text-base mt-2">Create your account to get started</p>
+          <p className="text-white/50 text-base mt-2">Enter your email to get started</p>
         </div>
 
         {error && (
@@ -208,20 +207,6 @@ function SignupScreen({ onBack }: { onBack: () => void }) {
         <AnimatePresence mode="wait">
           {authStep === "email" && (
             <motion.div key="email" initial={{ opacity: 0, x: 0 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-              <motion.button
-                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                onClick={loginWithGoogle}
-                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-semibold text-base text-[#1a1a2e] bg-white hover:bg-white/95 transition-all shadow-lg"
-              >
-                <GoogleIcon /> Sign up with Google
-              </motion.button>
-
-              <div className="flex items-center gap-3 my-2">
-                <div className="flex-1 h-px bg-white/10" />
-                <span className="text-white/40 text-sm">or</span>
-                <div className="flex-1 h-px bg-white/10" />
-              </div>
-
               <form onSubmit={handleEmailOtp} className="space-y-3">
                 <div>
                   <label className="block text-white font-semibold text-sm mb-2">Email address</label>
@@ -556,12 +541,22 @@ function LoginScreen({ onCreateAccount }: { onCreateAccount: () => void }) {
         <p className="text-center text-xs text-white/25 mt-6">
           By continuing, you agree to our Terms & Privacy Policy
         </p>
-        <p className="text-center text-sm text-white/40 mt-4">
-          Don't have an account?{" "}
-          <button onClick={onCreateAccount} className="text-violet-400 hover:text-violet-300 font-semibold transition-colors underline underline-offset-2">
-            Create here
-          </button>
-        </p>
+
+        <div className="mt-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 h-px bg-white/8" />
+            <span className="text-white/30 text-xs font-medium">New to CaloForgeX?</span>
+            <div className="flex-1 h-px bg-white/8" />
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onCreateAccount}
+            className="w-full py-4 rounded-2xl font-semibold text-base text-white border border-white/15 bg-white/5 hover:bg-white/10 hover:border-violet-500/40 transition-all"
+          >
+            Create Account
+          </motion.button>
+        </div>
       </motion.div>
     </div>
   );
