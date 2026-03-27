@@ -129,7 +129,7 @@ router.post("/payments/razorpay/verify", async (req: Request, res: Response): Pr
 
     await db.execute(sql`
       INSERT INTO payment_history (user_id, razorpay_order_id, razorpay_payment_id, plan, amount_paise, status, created_at)
-      VALUES (${userId}, ${razorpay_order_id}, ${razorpay_payment_id}, ${plan}, ${planConfig.amountPaise}, 'success', NOW())
+      VALUES (${userId}, ${razorpay_order_id}, ${razorpay_payment_id}, ${plan}, ${planConfig.amount}, 'success', NOW())
       ON CONFLICT DO NOTHING
     `).catch(() => {});
 
