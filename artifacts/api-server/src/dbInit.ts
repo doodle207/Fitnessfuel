@@ -282,6 +282,20 @@ async function createTables() {
       last_weekly_reset DATE
     )
   `);
+
+  // Razorpay payment history
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS payment_history (
+      id SERIAL PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      razorpay_order_id TEXT NOT NULL UNIQUE,
+      razorpay_payment_id TEXT,
+      plan TEXT NOT NULL,
+      amount_paise INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    )
+  `);
 }
 
 /**
