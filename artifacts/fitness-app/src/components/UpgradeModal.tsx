@@ -311,6 +311,20 @@ export default function UpgradeModal({ trigger = "general", usage, onClose, onSu
                     </div>
 
                     <div className="space-y-3 pt-1">
+                      {/* Non-India: show coming soon banner */}
+                      {userCountry && !isIndia && (
+                        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-3">
+                          <span className="text-xl">🌍</span>
+                          <div>
+                            <p className="font-semibold text-amber-300 text-sm">International payments coming soon</p>
+                            <p className="text-xs text-amber-300/70 mt-0.5">Razorpay payments are currently available for India only. Use a coupon code for free Premium access.</p>
+                            <button onClick={() => setActiveTab("coupon")} className="mt-2 text-xs text-amber-400 underline underline-offset-2 hover:text-amber-300">
+                              Redeem a coupon →
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Premium */}
                       <div className="relative p-4 rounded-2xl border border-violet-500/40 bg-gradient-to-br from-violet-500/10 to-cyan-500/5">
                         <div className="absolute -top-2.5 left-4">
@@ -328,17 +342,23 @@ export default function UpgradeModal({ trigger = "general", usage, onClose, onSu
                             <p className="text-[10px] text-muted-foreground">/ month</p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleRazorpayPayment("premium")}
-                          disabled={paymentStatus === "loading"}
-                          className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 shadow-[0_0_16px_rgba(124,58,237,0.3)]"
-                        >
-                          {payingPlan === "premium" && paymentStatus === "loading" ? (
-                            <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
-                          ) : (
-                            <><CreditCard className="w-4 h-4" /> Pay {premiumPrice} with Razorpay</>
-                          )}
-                        </button>
+                        {isIndia || !userCountry ? (
+                          <button
+                            onClick={() => handleRazorpayPayment("premium")}
+                            disabled={paymentStatus === "loading"}
+                            className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 shadow-[0_0_16px_rgba(124,58,237,0.3)]"
+                          >
+                            {payingPlan === "premium" && paymentStatus === "loading" ? (
+                              <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+                            ) : (
+                              <><CreditCard className="w-4 h-4" /> Pay {premiumPrice} with Razorpay</>
+                            )}
+                          </button>
+                        ) : (
+                          <div className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-muted-foreground text-sm text-center font-medium">
+                            Coming soon for your region
+                          </div>
+                        )}
                       </div>
 
                       {/* Pro */}
@@ -353,17 +373,23 @@ export default function UpgradeModal({ trigger = "general", usage, onClose, onSu
                             <p className="text-[10px] text-muted-foreground">/ month</p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleRazorpayPayment("pro")}
-                          disabled={paymentStatus === "loading"}
-                          className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
-                        >
-                          {payingPlan === "pro" && paymentStatus === "loading" ? (
-                            <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
-                          ) : (
-                            <><CreditCard className="w-4 h-4" /> Pay {proPrice} with Razorpay</>
-                          )}
-                        </button>
+                        {isIndia || !userCountry ? (
+                          <button
+                            onClick={() => handleRazorpayPayment("pro")}
+                            disabled={paymentStatus === "loading"}
+                            className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
+                          >
+                            {payingPlan === "pro" && paymentStatus === "loading" ? (
+                              <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+                            ) : (
+                              <><CreditCard className="w-4 h-4" /> Pay {proPrice} with Razorpay</>
+                            )}
+                          </button>
+                        ) : (
+                          <div className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-muted-foreground text-sm text-center font-medium">
+                            Coming soon for your region
+                          </div>
+                        )}
                       </div>
                     </div>
 
