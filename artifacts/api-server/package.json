@@ -24,6 +24,7 @@
     "openid-client": "^6.8.2",
     "razorpay": "^2.9.6",
     "resend": "^6.9.4",
+    "stripe": "^21.0.0",
     "zod": "catalog:"
   },
   "devDependencies": {

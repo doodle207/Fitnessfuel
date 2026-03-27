@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useCreateProfile } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -571,13 +571,13 @@ export default function Onboarding() {
 
           <div className="px-6 pb-6 flex gap-3">
             {step > 0 && (
-              <button type="button" onClick={() => setStep((s: number) => s - 1)}
+              <button type="button" onClick={() => setStep(s => s - 1)}
                 className="px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-sm font-semibold hover:bg-white/10 transition-colors flex items-center gap-1.5">
                 <ChevronLeft className="w-4 h-4" /> Back
               </button>
             )}
             {step < 2 ? (
-              <button type="button" onClick={() => canProceed() && setStep((s: number) => s + 1)} disabled={!canProceed()}
+              <button type="button" onClick={() => canProceed() && setStep(s => s + 1)} disabled={!canProceed()}
                 className="flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-40 flex items-center justify-center gap-1.5">
                 Continue <ChevronRight className="w-4 h-4" />
               </button>
