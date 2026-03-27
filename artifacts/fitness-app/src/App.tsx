@@ -149,8 +149,7 @@ function SignupScreen({ onBack }: { onBack: () => void }) {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Failed to send code."); return; }
-      setAuthStep("otp");
-      setResendTimer(30);
+      window.location.reload();
     } catch { setError("Network error. Please try again."); } finally { setLoading(false); }
   };
 
@@ -225,62 +224,8 @@ function SignupScreen({ onBack }: { onBack: () => void }) {
                   disabled={loading || !authEmail.trim()}
                   className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-base text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all disabled:opacity-60 shadow-[0_0_20px_rgba(124,58,237,0.3)]"
                 >
-                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending code...</> : <><Mail className="w-4 h-4" /> Send Verification Code</>}
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating account...</> : <>Create Account</>}
                 </motion.button>
-              </form>
-            </motion.div>
-          )}
-
-          {authStep === "otp" && (
-            <motion.div key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-              <button
-                type="button"
-                onClick={() => { setAuthStep("email"); setError(null); setAuthOtp(""); }}
-                className="flex items-center gap-1 text-white/50 hover:text-white/80 text-sm mb-1 transition-colors"
-              >
-                ← {authEmail}
-              </button>
-
-              <div className="p-4 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-center">
-                <ShieldCheck className="w-8 h-8 text-violet-400 mx-auto mb-2" />
-                <p className="font-semibold text-white text-sm">Check your inbox</p>
-                <p className="text-white/50 text-xs mt-1">
-                  Enter the 6-digit code sent to <span className="text-violet-300 font-medium">{authEmail}</span>
-                </p>
-              </div>
-
-              <form onSubmit={handleOtpVerify} className="space-y-3">
-                <div>
-                  <label className="block text-white font-semibold text-sm mb-2">Verification code</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={authOtp}
-                    onChange={e => { setAuthOtp(e.target.value.replace(/\D/g, "")); setError(null); }}
-                    placeholder="000000"
-                    autoFocus
-                    className="w-full px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-2xl font-mono tracking-[0.5em] text-center focus:outline-none focus:border-violet-500/60 transition-all"
-                  />
-                </div>
-                <motion.button
-                  type="submit"
-                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                  disabled={loading || authOtp.length < 6}
-                  className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-base text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all disabled:opacity-60 shadow-[0_0_20px_rgba(124,58,237,0.3)]"
-                >
-                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating account...</> : <><ShieldCheck className="w-4 h-4" /> Create Account</>}
-                </motion.button>
-                <div className="text-center">
-                  {resendTimer > 0 ? (
-                    <p className="text-xs text-white/30">Resend code in {resendTimer}s</p>
-                  ) : (
-                    <button type="button" onClick={handleEmailOtp} disabled={loading}
-                      className="text-xs text-violet-400 hover:text-violet-300 transition-colors disabled:opacity-50">
-                      Resend code
-                    </button>
-                  )}
-                </div>
               </form>
             </motion.div>
           )}
