@@ -11,6 +11,7 @@ import achievementsRouter from "./achievements";
 import imageAnalysisRouter from "./imageAnalysis";
 import aiCoachRouter from "./aiCoach";
 import paymentsRouter from "./payments";
+import razorpayRouter from "./razorpay";
 import emailAuthRouter from "./emailAuth";
 
 const router: IRouter = Router();
@@ -28,5 +29,6 @@ router.use(achievementsRouter);
 router.use(imageAnalysisRouter);
 router.use(aiCoachRouter);
 router.use(paymentsRouter);
+router.use(razorpayRouter);
 
 export default router;

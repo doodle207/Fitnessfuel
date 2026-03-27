@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { PageTransition } from "@/components/ui/LoadingState";
 import { motion } from "framer-motion";
-import { Crown, CheckCircle2, Zap, Brain, Camera, UtensilsCrossed, Sparkles, Gift, ArrowLeft } from "lucide-react";
+import { Crown, CheckCircle2, Zap, Brain, Camera, UtensilsCrossed, Sparkles, Gift, ArrowLeft, CreditCard, ShieldCheck } from "lucide-react";
 import { useLocation } from "wouter";
 import UpgradeModal from "@/components/UpgradeModal";
 
@@ -30,6 +30,7 @@ const PREMIUM_FEATURES = [
 export default function Pricing() {
   const [, setLocation] = useLocation();
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<"premium" | "pro">("premium");
   const [subscription, setSubscription] = useState<any>(null);
   const [userCountry, setUserCountry] = useState<string>("");
 
@@ -47,8 +48,17 @@ export default function Pricing() {
   const isIndia = userCountry === "India";
   const premiumPrice = isIndia ? "₹199" : "$5.99";
   const proPrice = isIndia ? "₹349" : "$9.99";
-
   const isPremium = subscription?.isPremium;
+
+  const openPayment = (plan: "premium" | "pro") => {
+    setSelectedPlan(plan);
+    setShowUpgrade(true);
+  };
+
+  const refreshSubscription = () => {
+    fetch(`${BASE}/api/payments/subscription`, { credentials: "include" })
+      .then(r => r.json()).then(setSubscription).catch(() => {});
+  };
 
   return (
     <PageTransition>
@@ -57,9 +67,7 @@ export default function Pricing() {
           <button onClick={() => setLocation("/")} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-white transition-colors mb-4">
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
-          <h1 className="text-3xl md:text-4xl font-display font-bold">
-            Choose Your Plan
-          </h1>
+          <h1 className="text-3xl md:text-4xl font-display font-bold">Choose Your Plan</h1>
           <p className="text-muted-foreground text-sm mt-1">Unlock your full potential with CaloForgeX Premium</p>
         </header>
 
@@ -114,12 +122,7 @@ export default function Pricing() {
               <p className="text-xs text-muted-foreground">Best results + priority support.</p>
             </div>
             <div className="space-y-2">
-              {[
-                "Everything in Premium",
-                "Priority AI responses",
-                "Advanced analytics",
-                "Early feature access",
-              ].map(f => (
+              {["Everything in Premium", "Priority AI responses", "Advanced analytics", "Early feature access"].map(f => (
                 <div key={f} className="flex items-center gap-2">
                   <div className="w-5 h-5 rounded-md bg-cyan-500/15 flex items-center justify-center shrink-0">
                     <Crown className="w-3 h-3 text-cyan-400" />
@@ -131,15 +134,13 @@ export default function Pricing() {
             </div>
             {!isPremium ? (
               <button
-                onClick={() => setShowUpgrade(true)}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold text-sm hover:opacity-90 transition-opacity"
+                onClick={() => openPayment("pro")}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
               >
-                Upgrade to Pro
+                <CreditCard className="w-4 h-4" /> Upgrade to Pro
               </button>
             ) : (
-              <div className="py-2.5 rounded-xl bg-white/5 text-sm text-center text-muted-foreground font-medium">
-                Coming Soon
-              </div>
+              <div className="py-2.5 rounded-xl bg-white/5 text-sm text-center text-muted-foreground font-medium">Coming Soon</div>
             )}
           </div>
 
@@ -171,10 +172,10 @@ export default function Pricing() {
             </div>
             {!isPremium ? (
               <button
-                onClick={() => setShowUpgrade(true)}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold text-sm hover:opacity-90 transition-opacity shadow-[0_0_16px_rgba(124,58,237,0.3)]"
+                onClick={() => openPayment("premium")}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold text-sm hover:opacity-90 transition-opacity shadow-[0_0_16px_rgba(124,58,237,0.3)] flex items-center justify-center gap-2"
               >
-                Upgrade to Premium
+                <CreditCard className="w-4 h-4" /> Upgrade to Premium
               </button>
             ) : (
               <div className="py-2.5 rounded-xl bg-green-500/10 border border-green-500/20 text-sm text-center text-green-400 font-semibold">
@@ -196,7 +197,7 @@ export default function Pricing() {
               <p className="text-xs text-muted-foreground">Redeem it for 7 days of free Premium access.</p>
             </div>
             <button
-              onClick={() => setShowUpgrade(true)}
+              onClick={() => { setSelectedPlan("premium"); setShowUpgrade(true); }}
               className="px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors shrink-0"
             >
               Redeem
@@ -204,19 +205,19 @@ export default function Pricing() {
           </motion.div>
         )}
 
-        <p className="text-center text-xs text-muted-foreground">
-          Payment gateway integration coming soon. Use coupon codes for free access in the meantime.
-        </p>
+        {/* Security badge */}
+        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <ShieldCheck className="w-4 h-4 text-green-400" />
+          <span>Secured by Razorpay · UPI, Cards, Net Banking & Wallets accepted</span>
+        </div>
 
         {showUpgrade && (
           <UpgradeModal
             trigger="general"
+            defaultPlan={selectedPlan}
             usage={subscription?.usage}
             onClose={() => setShowUpgrade(false)}
-            onSuccess={() => {
-              fetch(`${BASE}/api/payments/subscription`, { credentials: "include" })
-                .then(r => r.json()).then(setSubscription).catch(() => {});
-            }}
+            onSuccess={refreshSubscription}
           />
         )}
       </div>
