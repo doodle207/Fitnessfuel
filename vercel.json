@@ -1,5 +1,20 @@
 {
+  "version": 2,
+  "buildCommand": "pnpm run build",
+  "outputDirectory": "artifacts/fitness-app/dist/public",
+  "functions": {
+    "api/index.ts": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }

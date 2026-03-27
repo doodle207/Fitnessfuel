@@ -22,7 +22,10 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   res.status(status).json({ error: message });
 });
 
-if (process.env.NODE_ENV === "production") {
+if (
+  process.env.NODE_ENV === "production" &&
+  process.env.SERVE_STATIC !== "false"
+) {
   const frontendDist = path.resolve(
     process.cwd(),
     "artifacts/fitness-app/dist/public",
