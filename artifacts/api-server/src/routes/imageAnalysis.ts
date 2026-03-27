@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import multer from "multer";
-import { analyzeImageForFood, estimateFoodMacros } from "../lib/ai";
+import { analyzeImageForFood, estimateFoodMacros, type FoodItem } from "../lib/ai";
 import { db } from "@workspace/db";
 import { foodLogsTable } from "@workspace/db/schema";
 import { z } from "zod/v4";
@@ -52,11 +52,21 @@ async function fetchFromOpenFoodFacts(foodName: string): Promise<FoodMacros | nu
   }
 }
 
-async function getMacrosForFood(foodName: string): Promise<FoodMacros> {
-  const offResult = await fetchFromOpenFoodFacts(foodName);
-  if (offResult) return offResult;
-  const macros = await estimateFoodMacros(foodName);
-  return { foodName, ...macros, source: "ai_estimate" };
+async function getMacrosForFood(item: FoodItem): Promise<FoodMacros> {
+  const offResult = await fetchFromOpenFoodFacts(item.name);
+  if (offResult) {
+    const scale = item.grams / 100;
+    return {
+      foodName: item.name,
+      calories: Math.round(offResult.calories * scale),
+      proteinG: Math.round(offResult.proteinG * scale * 10) / 10,
+      carbsG: Math.round(offResult.carbsG * scale * 10) / 10,
+      fatG: Math.round(offResult.fatG * scale * 10) / 10,
+      source: "openfoodfacts",
+    };
+  }
+  const macros = await estimateFoodMacros(item.name, item.grams);
+  return { foodName: item.name, ...macros, source: "ai_estimate" };
 }
 
 router.post(
@@ -82,23 +92,23 @@ router.post(
       return;
     }
 
-    let foodNames: string[];
+    let foodItems: FoodItem[];
     try {
-      foodNames = await analyzeImageForFood(req.file.buffer.toString("base64"), mimeType);
+      foodItems = await analyzeImageForFood(req.file.buffer.toString("base64"), mimeType);
     } catch (err: any) {
       console.error("[analyze-image] AI error:", err?.message ?? err);
       res.status(502).json({ error: `AI analysis failed: ${err?.message ?? "Unknown error"}` });
       return;
     }
 
-    if (foodNames.length === 0) {
+    if (foodItems.length === 0) {
       res.status(422).json({ error: "No food detected in the image. Please try a clearer photo." });
       return;
     }
 
     let macroResults: FoodMacros[];
     try {
-      macroResults = await Promise.all(foodNames.map(name => getMacrosForFood(name)));
+      macroResults = await Promise.all(foodItems.map(item => getMacrosForFood(item)));
     } catch (err: any) {
       res.status(502).json({ error: `Failed to look up nutrition data: ${err?.message ?? "Unknown error"}` });
       return;

@@ -113,19 +113,34 @@ interface FormData {
   cycleRegularity: string; periodStartDate: string; periodEndDate: string;
 }
 
+const DRAFT_KEY = "cfx_onboarding_draft";
+
 export default function Onboarding() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [ageStr, setAgeStr] = useState("25");
 
-  // Load pre-filled data from signup flow if available
-  const getInitialForm = (): FormData => {
+  // Load pre-filled data — first from saved draft, then from pending profile, then defaults
+  const getInitialState = () => {
+    const draft = localStorage.getItem(DRAFT_KEY);
+    if (draft) {
+      try {
+        const parsed = JSON.parse(draft);
+        if (parsed && parsed.form) {
+          return {
+            form: parsed.form as FormData,
+            step: parsed.step ?? 0,
+            ageStr: parsed.ageStr ?? String(parsed.form.age ?? "25"),
+            heightStr: parsed.heightStr ?? String(parsed.form.heightCm ?? "170"),
+            weightStr: parsed.weightStr ?? String(parsed.form.weightKg ?? "70"),
+          };
+        }
+      } catch {}
+    }
     const pending = localStorage.getItem("cfx_pending_profile");
     const pendingData = pending ? (() => { try { return JSON.parse(pending); } catch { return null; } })() : null;
-    return {
+    const form: FormData = {
       name:            (pendingData?.firstName || user?.firstName) ?? "",
       age:             pendingData?.age ?? 25,
       gender:          pendingData?.gender ?? "male",
@@ -140,16 +155,25 @@ export default function Onboarding() {
       periodStartDate: "",
       periodEndDate:   "",
     };
+    return { form, step: 0, ageStr: String(form.age), heightStr: String(form.heightCm), weightStr: String(form.weightKg) };
   };
 
-  const initialForm = getInitialForm();
-  const [form, setForm] = useState<FormData>(initialForm);
-  const [heightStr, setHeightStr] = useState(String(initialForm.heightCm));
-  const [weightStr, setWeightStr] = useState(String(initialForm.weightKg));
-  
-  // Clear pending profile after onboarding completes
+  const initialState = getInitialState();
+  const [step, setStep] = useState(initialState.step);
+  const [form, setForm] = useState<FormData>(initialState.form);
+  const [heightStr, setHeightStr] = useState(initialState.heightStr);
+  const [weightStr, setWeightStr] = useState(initialState.weightStr);
+  const [ageStr, setAgeStr] = useState(initialState.ageStr);
+
+  // Auto-save draft to localStorage whenever form changes
+  useEffect(() => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, step, ageStr, heightStr, weightStr }));
+  }, [form, step, ageStr, heightStr, weightStr]);
+
+  // Clear pending profile and draft after onboarding completes
   const clearPendingProfile = () => {
     localStorage.removeItem("cfx_pending_profile");
+    localStorage.removeItem(DRAFT_KEY);
   };
 
   const set = <K extends keyof FormData>(key: K, val: FormData[K]) =>

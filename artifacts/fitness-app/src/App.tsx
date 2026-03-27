@@ -139,17 +139,18 @@ function SignupScreen({ onBack }: { onBack: () => void }) {
     return () => clearTimeout(t);
   }, [resendTimer]);
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true); setError(null);
     try {
-      const res = await fetch("/api/auth/email/signup", {
+      const res = await fetch("/api/auth/email/request-otp", {
         method: "POST", headers: { "Content-Type": "application/json" },
         credentials: "include", body: JSON.stringify({ email: authEmail.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Failed to create account. Please try again."); return; }
-      window.location.reload();
+      if (!res.ok) { setError(data.error || "Failed to send verification code. Please try again."); return; }
+      setAuthStep("otp");
+      setResendTimer(60);
     } catch { setError("Network error. Please try again."); } finally { setLoading(false); }
   };
 
@@ -162,7 +163,7 @@ function SignupScreen({ onBack }: { onBack: () => void }) {
         credentials: "include", body: JSON.stringify({ email: authEmail.trim(), otp: authOtp.trim() }),
       });
       if (res.ok) { window.location.reload(); }
-      else { const d = await res.json(); setError(d.error || "Invalid code."); }
+      else { const d = await res.json(); setError(d.error || "Invalid or expired code. Please try again."); }
     } catch { setError("Network error. Please try again."); } finally { setLoading(false); }
   };
 
@@ -194,7 +195,9 @@ function SignupScreen({ onBack }: { onBack: () => void }) {
           <h1 className="text-5xl font-display font-black mb-2 tracking-tight">
             Calo<span style={{ background: "linear-gradient(90deg, #7c3aed, #06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Forge</span><span className="text-cyan-400">X</span>
           </h1>
-          <p className="text-white/50 text-base mt-2">Enter your email to get started</p>
+          <p className="text-white/50 text-base mt-2">
+            {authStep === "email" ? "Enter your email to create an account" : `We sent a 6-digit code to ${authEmail}`}
+          </p>
         </div>
 
         {error && (
@@ -204,9 +207,9 @@ function SignupScreen({ onBack }: { onBack: () => void }) {
         )}
 
         <AnimatePresence mode="wait">
-          {authStep === "email" && (
+          {authStep === "email" ? (
             <motion.div key="email" initial={{ opacity: 0, x: 0 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-              <form onSubmit={handleSignup} className="space-y-3">
+              <form onSubmit={handleSendOtp} className="space-y-3">
                 <div>
                   <label className="block text-white font-semibold text-sm mb-2">Email address</label>
                   <input
@@ -224,9 +227,50 @@ function SignupScreen({ onBack }: { onBack: () => void }) {
                   disabled={loading || !authEmail.trim()}
                   className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-base text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all disabled:opacity-60 shadow-[0_0_20px_rgba(124,58,237,0.3)]"
                 >
-                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating account...</> : <>Create Account</>}
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending code...</> : <>Send Verification Code</>}
                 </motion.button>
               </form>
+            </motion.div>
+          ) : (
+            <motion.div key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+              <form onSubmit={handleOtpVerify} className="space-y-3">
+                <div>
+                  <label className="block text-white font-semibold text-sm mb-2">Verification code</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={authOtp}
+                    onChange={e => setAuthOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="Enter 6-digit code"
+                    autoFocus
+                    required
+                    className="w-full px-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-2xl text-center tracking-[0.5em] font-mono focus:outline-none focus:border-violet-500/60 transition-all"
+                  />
+                </div>
+                <motion.button
+                  type="submit"
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                  disabled={loading || authOtp.length !== 6}
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-base text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 transition-all disabled:opacity-60 shadow-[0_0_20px_rgba(124,58,237,0.3)]"
+                >
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</> : <>Create Account</>}
+                </motion.button>
+              </form>
+              <div className="text-center">
+                {resendTimer > 0 ? (
+                  <p className="text-sm text-white/40">Resend code in {resendTimer}s</p>
+                ) : (
+                  <button onClick={() => { setError(null); handleSendOtp({ preventDefault: () => {} } as any); }}
+                    className="text-sm text-violet-400 hover:text-violet-300 transition-colors">
+                    Didn't receive it? Resend code
+                  </button>
+                )}
+              </div>
+              <button onClick={() => { setAuthStep("email"); setAuthOtp(""); setError(null); }}
+                className="w-full text-sm text-white/40 hover:text-white/60 transition-colors text-center">
+                ← Change email address
+              </button>
             </motion.div>
           )}
         </AnimatePresence>

@@ -91,7 +91,12 @@ export async function chatCompleteWithHistory(
   return resp.choices[0]?.message?.content?.trim() || "";
 }
 
-export async function analyzeImageForFood(imageBase64: string, mimeType: string): Promise<string[]> {
+export interface FoodItem {
+  name: string;
+  grams: number;
+}
+
+export async function analyzeImageForFood(imageBase64: string, mimeType: string): Promise<FoodItem[]> {
   const ai = getVisionAI();
   const resp = await ai.chat.completions.create({
     model: "gpt-4o",
@@ -101,26 +106,50 @@ export async function analyzeImageForFood(imageBase64: string, mimeType: string)
         content: [
           {
             type: "image_url",
-            image_url: { url: `data:${mimeType};base64,${imageBase64}` },
+            image_url: { url: `data:${mimeType};base64,${imageBase64}`, detail: "high" },
           },
           {
             type: "text",
-            text: `You are a food recognition expert. Identify all distinct food items visible in this image.
-Return ONLY a JSON array of food names as plain strings. Be specific but concise.
-Examples: ["dal tadka", "steamed rice", "roti"] or ["chicken curry", "naan"]
-If no food is detected, return an empty array [].`,
+            text: `You are a professional nutritionist and food recognition expert analyzing a meal photo.
+
+For EACH distinct food item visible in the image:
+1. Identify it precisely (e.g. "cooked white basmati rice", "chicken tikka masala", "plain roti", "dal tadka", "mixed vegetable curry")
+2. Estimate the serving weight in grams using visual cues like:
+   - Plate/bowl size (standard dinner plate ≈ 25cm diameter)
+   - Typical restaurant/home portion sizes
+   - Food density and thickness
+   - How much of the plate/bowl is filled
+
+Return ONLY valid JSON — an array of objects like:
+[
+  {"name": "cooked white basmati rice", "grams": 200},
+  {"name": "chicken tikka masala curry", "grams": 180},
+  {"name": "plain roti/chapati", "grams": 40}
+]
+
+Rules:
+- Be specific about cooking method (boiled, fried, baked, etc.)
+- Include any visible sauces, gravies, or garnishes
+- Use realistic home/restaurant serving weights
+- If the item fills a full bowl: 200–350g; half bowl: 100–200g; small portion: 50–100g
+- If no food is visible, return []
+- Return ONLY the JSON array, no explanation`,
           },
         ],
       },
     ],
-    max_tokens: 256,
+    max_tokens: 512,
+    temperature: 0.1,
   });
   const text = resp.choices[0]?.message?.content?.trim() || "[]";
   const jsonMatch = text.match(/\[[\s\S]*\]/);
   if (!jsonMatch) return [];
   try {
     const parsed = JSON.parse(jsonMatch[0]);
-    return Array.isArray(parsed) ? parsed.filter((v: any) => typeof v === "string") : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((v: any) => v && typeof v.name === "string" && typeof v.grams === "number")
+      .map((v: any) => ({ name: v.name.trim(), grams: Math.max(10, Math.round(Number(v.grams))) }));
   } catch {
     return [];
   }
@@ -132,23 +161,34 @@ export async function estimateFoodMacros(foodName: string, weightGrams?: number)
   carbsG: number;
   fatG: number;
 }> {
-  const weightStr = weightGrams ? `${weightGrams}g` : "a standard serving";
+  const weightStr = weightGrams ? `exactly ${weightGrams}g` : "a standard serving (estimate a realistic weight)";
   const ai = getAI();
   const resp = await ai.chat.completions.create({
     model: getTextModel(),
     messages: [
       {
         role: "system",
-        content: "You are a nutritionist. Estimate macros accurately for the given food and portion size. Return ONLY valid JSON.",
+        content: `You are a precise nutritionist with expertise in food composition databases.
+Calculate macronutrients accurately using standard nutritional data (USDA, IFCT, or equivalent).
+Consider cooking methods and regional variations. Always return realistic values.
+Return ONLY valid JSON — no text, no markdown, no explanation.`,
       },
       {
         role: "user",
-        content: `Estimate the nutritional macros for ${weightStr} of "${foodName}".
-Return ONLY a JSON object: {"calories": number, "proteinG": number, "carbsG": number, "fatG": number}
-Be realistic and accurate. No explanation.`,
+        content: `Calculate the exact macros for ${weightStr} of: "${foodName}"
+
+Consider:
+- The specific cooking method if mentioned (boiled, fried, roasted, etc.)
+- Water content changes during cooking
+- Regional recipe variations for Indian/Asian dishes
+
+Return ONLY this JSON (numbers only, no strings):
+{"calories": <number>, "proteinG": <number>, "carbsG": <number>, "fatG": <number>}
+
+Example for 200g cooked basmati rice: {"calories": 260, "proteinG": 5.4, "carbsG": 56, "fatG": 0.6}`,
       },
     ],
-    temperature: 0.3,
+    temperature: 0.1,
     max_tokens: 128,
   });
   const text = resp.choices[0]?.message?.content?.trim() || "";

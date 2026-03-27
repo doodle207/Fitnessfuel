@@ -4,7 +4,7 @@ import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
 import { format, startOfWeek, addDays, differenceInDays, parseISO } from "date-fns";
 import {
   Flame, Activity, Trophy, ArrowRight, Utensils, Droplets, Footprints,
-  Target, TrendingUp, Zap, ChevronRight, UserCircle2, Crown, Brain
+  Target, TrendingUp, Zap, ChevronRight, UserCircle2, Crown, Brain, Globe
 } from "lucide-react";
 import UpgradeModal from "@/components/UpgradeModal";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
@@ -12,6 +12,38 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+const LANG_KEY = "cfx_language";
+
+const LANGUAGES = [
+  { code: "en", label: "English",           flag: "🇬🇧" },
+  { code: "zh", label: "中文",               flag: "🇨🇳" },
+  { code: "hi", label: "हिंदी",              flag: "🇮🇳" },
+  { code: "es", label: "Español",           flag: "🇪🇸" },
+  { code: "fr", label: "Français",          flag: "🇫🇷" },
+  { code: "ar", label: "العربية",            flag: "🇸🇦" },
+  { code: "bn", label: "বাংলা",              flag: "🇧🇩" },
+  { code: "ru", label: "Русский",           flag: "🇷🇺" },
+  { code: "pt", label: "Português",         flag: "🇧🇷" },
+  { code: "ur", label: "اردو",              flag: "🇵🇰" },
+];
+
+const GREETINGS: Record<string, { morning: string; afternoon: string; evening: string; night: string }> = {
+  en: { morning: "Good Morning",    afternoon: "Good Afternoon",   evening: "Good Evening",  night: "Good Night"     },
+  zh: { morning: "早上好",           afternoon: "下午好",            evening: "晚上好",         night: "晚安"            },
+  hi: { morning: "सुप्रभात",          afternoon: "नमस्ते",            evening: "शुभ संध्या",     night: "शुभ रात्रि"      },
+  es: { morning: "Buenos días",     afternoon: "Buenas tardes",    evening: "Buenas tardes", night: "Buenas noches"  },
+  fr: { morning: "Bonjour",         afternoon: "Bon après-midi",   evening: "Bonsoir",       night: "Bonne nuit"     },
+  ar: { morning: "صباح الخير",       afternoon: "مساء الخير",       evening: "مساء الخير",    night: "تصبح على خير"  },
+  bn: { morning: "শুভ সকাল",         afternoon: "শুভ দুপুর",        evening: "শুভ সন্ধ্যা",   night: "শুভ রাত্রি"     },
+  ru: { morning: "Доброе утро",     afternoon: "Добрый день",      evening: "Добрый вечер",  night: "Спокойной ночи" },
+  pt: { morning: "Bom dia",         afternoon: "Boa tarde",        evening: "Boa tarde",     night: "Boa noite"      },
+  ur: { morning: "صبح بخیر",         afternoon: "دوپہر بخیر",       evening: "شام بخیر",      night: "شب بخیر"        },
+};
+
+function getGreetingText(langCode: string, period: "morning" | "afternoon" | "evening" | "night"): string {
+  return GREETINGS[langCode]?.[period] ?? GREETINGS.en[period];
+}
 
 const MACRO_EMOJI: Record<string, string> = { Protein: "💪", Carbs: "🌾", Fat: "🥑" };
 
@@ -175,7 +207,17 @@ export default function Dashboard() {
   const [macroTotals, setMacroTotals] = useState({ proteinG: 0, carbsG: 0, fatG: 0 });
   const [todayFoodCalories, setTodayFoodCalories] = useState(0);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showLangMenu, setShowLangMenu] = useState(false);
+  const [lang, setLang] = useState(() => localStorage.getItem(LANG_KEY) || "en");
   const carouselRef = useRef<HTMLDivElement>(null);
+
+  const changeLang = (code: string) => {
+    setLang(code);
+    localStorage.setItem(LANG_KEY, code);
+    setShowLangMenu(false);
+  };
+
+  const currentLang = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
 
   useEffect(() => { localStorage.setItem(STEPS_KEY, String(steps)); localStorage.setItem(STEPS_DATE_KEY, new Date().toISOString().split("T")[0]); }, [steps]);
 
@@ -277,7 +319,7 @@ export default function Dashboard() {
                 {greeting.time && <><span className="text-white/30">·</span><span className="text-violet-400 font-medium">{greeting.time}</span></>}
               </div>
               <h1 className="text-3xl md:text-4xl font-display font-bold mt-0.5 text-white">
-                {greeting.text}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">{safeProfile.name?.split(" ")[0] || "Champ"}</span>{" "}
+                {getGreetingText(lang, greeting.period)}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">{safeProfile.name?.split(" ")[0] || "Champ"}</span>{" "}
                 {greeting.period === "morning" ? "☀️" : greeting.period === "afternoon" ? "🌤️" : greeting.period === "evening" ? "🌅" : "🌙"}
               </h1>
               <div className="flex gap-2 mt-3">
@@ -290,6 +332,35 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="shrink-0 flex items-center gap-2">
+              {/* Language selector */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowLangMenu(v => !v)}
+                  className="flex items-center gap-1 px-2 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm"
+                  title="Change language"
+                >
+                  <span className="text-base leading-none">{currentLang.flag}</span>
+                  <Globe className="w-3 h-3 text-white/40" />
+                </button>
+                {showLangMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowLangMenu(false)} />
+                    <div className="absolute right-0 top-full mt-1 z-50 bg-[#0d0d14] border border-white/10 rounded-2xl shadow-2xl overflow-hidden w-44">
+                      {LANGUAGES.map(l => (
+                        <button
+                          key={l.code}
+                          onClick={() => changeLang(l.code)}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-white/8 transition-colors text-left ${lang === l.code ? "bg-violet-500/15 text-violet-300" : "text-white/70"}`}
+                        >
+                          <span className="text-base">{l.flag}</span>
+                          <span className="font-medium">{l.label}</span>
+                          {lang === l.code && <span className="ml-auto text-violet-400 text-xs">✓</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
               <button onClick={() => setShowUpgrade(true)} className="px-3 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 text-white text-xs sm:text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5 whitespace-nowrap shadow-[0_0_12px_rgba(124,58,237,0.3)]">
                 <Crown className="w-4 h-4" /> <span className="hidden sm:inline">Premium</span>
               </button>
