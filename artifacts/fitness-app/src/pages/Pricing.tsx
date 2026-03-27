@@ -33,9 +33,7 @@ export default function Pricing() {
   const [selectedPlan, setSelectedPlan] = useState<"premium" | "pro">("premium");
   const [subscription, setSubscription] = useState<any>(null);
   const [userCountry, setUserCountry] = useState<string>("");
-  const [stripeStatus, setStripeStatus] = useState<"success" | "cancel" | null>(null);
-  const [stripeVerifying, setStripeVerifying] = useState(false);
-
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
   useEffect(() => {
     fetch(`${BASE}/api/payments/subscription`, { credentials: "include" })
       .then(r => r.ok ? r.json() : null)
@@ -45,33 +43,6 @@ export default function Pricing() {
       .then(r => r.ok ? r.json() : null)
       .then(d => d?.country && setUserCountry(d.country))
       .catch(() => {});
-
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("stripe_success") === "1") {
-      const sessionId = params.get("session_id");
-      const plan = params.get("plan") || "premium";
-      window.history.replaceState({}, "", window.location.pathname);
-      if (sessionId) {
-        setStripeVerifying(true);
-        fetch(`${BASE}/api/payments/stripe/verify-session`, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          credentials: "include", body: JSON.stringify({ sessionId, plan }),
-        })
-          .then(r => r.json())
-          .then(d => {
-            if (d.success) {
-              setStripeStatus("success");
-              fetch(`${BASE}/api/payments/subscription`, { credentials: "include" })
-                .then(r => r.json()).then(setSubscription).catch(() => {});
-            }
-          })
-          .catch(() => {})
-          .finally(() => setStripeVerifying(false));
-      }
-    } else if (params.get("stripe_cancel") === "1") {
-      window.history.replaceState({}, "", window.location.pathname);
-      setStripeStatus("cancel");
-    }
   }, []);
 
   const isIndia = userCountry === "India";
@@ -100,32 +71,13 @@ export default function Pricing() {
           <p className="text-muted-foreground text-sm mt-1">Unlock your full potential with CaloForgeX Premium</p>
         </header>
 
-        {stripeVerifying && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl border border-violet-500/30 bg-violet-500/8 px-5 py-4 flex items-center gap-3">
-            <Zap className="w-5 h-5 text-violet-400 animate-pulse shrink-0" />
-            <p className="text-sm text-violet-300 font-medium">Verifying your payment...</p>
-          </motion.div>
-        )}
-
-        {stripeStatus === "success" && !stripeVerifying && (
+        {paymentSuccess && (
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
             className="rounded-2xl border border-green-500/30 bg-green-500/8 px-5 py-4 flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
             <div>
               <p className="font-semibold text-green-300">Payment successful! 🎉</p>
               <p className="text-xs text-muted-foreground">Your plan is now active. Enjoy unlimited access!</p>
-            </div>
-          </motion.div>
-        )}
-
-        {stripeStatus === "cancel" && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl border border-amber-500/30 bg-amber-500/8 px-5 py-4 flex items-center gap-3">
-            <span className="text-xl">↩️</span>
-            <div>
-              <p className="font-semibold text-amber-300">Payment cancelled</p>
-              <p className="text-xs text-muted-foreground">No charge was made. You can try again anytime.</p>
             </div>
           </motion.div>
         )}
@@ -267,9 +219,9 @@ export default function Pricing() {
         {/* Security badge */}
         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <ShieldCheck className="w-4 h-4 text-green-400" />
-          {isIndia || !userCountry
+          {isIndia
             ? <span>Secured by Razorpay · UPI, Cards, Net Banking &amp; Wallets accepted</span>
-            : <span>Secured by Stripe · Visa, Mastercard, Amex &amp; more accepted worldwide</span>
+            : <span>Secured by Razorpay · International Cards accepted (Visa, Mastercard, Amex)</span>
           }
         </div>
 
@@ -279,7 +231,7 @@ export default function Pricing() {
             defaultPlan={selectedPlan}
             usage={subscription?.usage}
             onClose={() => setShowUpgrade(false)}
-            onSuccess={refreshSubscription}
+            onSuccess={() => { refreshSubscription(); setPaymentSuccess(true); }}
           />
         )}
       </div>

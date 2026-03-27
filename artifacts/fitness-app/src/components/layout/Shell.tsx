@@ -1,27 +1,29 @@
 import { Link, useLocation } from "wouter";
 import { Activity, Dumbbell, LineChart, Apple, Brain, User, Crown } from "lucide-react";
 import { motion } from "framer-motion";
-
-const mobileNavItems = [
-  { href: "/", label: "Dashboard", icon: Activity },
-  { href: "/workout", label: "Workout", icon: Dumbbell },
-  { href: "/diet", label: "Diet", icon: Apple },
-  { href: "/progress", label: "Progress", icon: LineChart },
-  { href: "/ai-coach", label: "AI Coach", icon: Brain },
-];
-
-const allDesktopNavItems = [
-  { href: "/", label: "Dashboard", icon: Activity },
-  { href: "/workout", label: "Workout", icon: Dumbbell },
-  { href: "/progress", label: "Progress", icon: LineChart },
-  { href: "/diet", label: "Diet", icon: Apple },
-  { href: "/ai-coach", label: "AI Coach", icon: Brain },
-  { href: "/pricing", label: "Premium", icon: Crown },
-  { href: "/profile", label: "Profile", icon: User },
-];
+import { useLanguage } from "@/lib/i18n";
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const { t } = useLanguage();
+
+  const mobileNavItems = [
+    { href: "/", label: t.nav_dashboard, icon: Activity },
+    { href: "/workout", label: t.nav_workout, icon: Dumbbell },
+    { href: "/diet", label: t.nav_diet, icon: Apple },
+    { href: "/progress", label: t.nav_progress, icon: LineChart },
+    { href: "/ai-coach", label: t.nav_ai_coach, icon: Brain },
+  ];
+
+  const allDesktopNavItems = [
+    { href: "/", label: t.nav_dashboard, icon: Activity },
+    { href: "/workout", label: t.nav_workout, icon: Dumbbell },
+    { href: "/progress", label: t.nav_progress, icon: LineChart },
+    { href: "/diet", label: t.nav_diet, icon: Apple },
+    { href: "/ai-coach", label: t.nav_ai_coach, icon: Brain },
+    { href: "/pricing", label: t.nav_premium, icon: Crown },
+    { href: "/profile", label: t.nav_profile, icon: User },
+  ];
 
   return (
     <div className="h-[100dvh] bg-background text-foreground flex flex-col md:flex-row overflow-hidden">

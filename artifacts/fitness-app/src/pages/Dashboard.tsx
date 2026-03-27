@@ -10,40 +10,9 @@ import UpgradeModal from "@/components/UpgradeModal";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { useLanguage, LANGUAGES } from "@/lib/i18n";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-
-const LANG_KEY = "cfx_language";
-
-const LANGUAGES = [
-  { code: "en", label: "English",           flag: "🇬🇧" },
-  { code: "zh", label: "中文",               flag: "🇨🇳" },
-  { code: "hi", label: "हिंदी",              flag: "🇮🇳" },
-  { code: "es", label: "Español",           flag: "🇪🇸" },
-  { code: "fr", label: "Français",          flag: "🇫🇷" },
-  { code: "ar", label: "العربية",            flag: "🇸🇦" },
-  { code: "bn", label: "বাংলা",              flag: "🇧🇩" },
-  { code: "ru", label: "Русский",           flag: "🇷🇺" },
-  { code: "pt", label: "Português",         flag: "🇧🇷" },
-  { code: "ur", label: "اردو",              flag: "🇵🇰" },
-];
-
-const GREETINGS: Record<string, { morning: string; afternoon: string; evening: string; night: string }> = {
-  en: { morning: "Good Morning",    afternoon: "Good Afternoon",   evening: "Good Evening",  night: "Good Night"     },
-  zh: { morning: "早上好",           afternoon: "下午好",            evening: "晚上好",         night: "晚安"            },
-  hi: { morning: "सुप्रभात",          afternoon: "नमस्ते",            evening: "शुभ संध्या",     night: "शुभ रात्रि"      },
-  es: { morning: "Buenos días",     afternoon: "Buenas tardes",    evening: "Buenas tardes", night: "Buenas noches"  },
-  fr: { morning: "Bonjour",         afternoon: "Bon après-midi",   evening: "Bonsoir",       night: "Bonne nuit"     },
-  ar: { morning: "صباح الخير",       afternoon: "مساء الخير",       evening: "مساء الخير",    night: "تصبح على خير"  },
-  bn: { morning: "শুভ সকাল",         afternoon: "শুভ দুপুর",        evening: "শুভ সন্ধ্যা",   night: "শুভ রাত্রি"     },
-  ru: { morning: "Доброе утро",     afternoon: "Добрый день",      evening: "Добрый вечер",  night: "Спокойной ночи" },
-  pt: { morning: "Bom dia",         afternoon: "Boa tarde",        evening: "Boa tarde",     night: "Boa noite"      },
-  ur: { morning: "صبح بخیر",         afternoon: "دوپہر بخیر",       evening: "شام بخیر",      night: "شب بخیر"        },
-};
-
-function getGreetingText(langCode: string, period: "morning" | "afternoon" | "evening" | "night"): string {
-  return GREETINGS[langCode]?.[period] ?? GREETINGS.en[period];
-}
 
 const MACRO_EMOJI: Record<string, string> = { Protein: "💪", Carbs: "🌾", Fat: "🥑" };
 
@@ -200,6 +169,7 @@ const PHASE_DATA = [
 export default function Dashboard() {
   const { data: profile, isLoading: isProfileLoading } = useGetProfile({ query: { queryKey: ['fitness', 'profile'] } });
   const { data: stats, isLoading: isStatsLoading } = useGetDashboard({ query: { queryKey: ['fitness', 'dashboard-stats'] } });
+  const { t, lang, setLang, currentLang } = useLanguage();
   const [steps, setSteps] = useState(getStepsToday);
   const [stepsInput, setStepsInput] = useState("");
   const [showStepsInput, setShowStepsInput] = useState(false);
@@ -208,16 +178,12 @@ export default function Dashboard() {
   const [todayFoodCalories, setTodayFoodCalories] = useState(0);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
-  const [lang, setLang] = useState(() => localStorage.getItem(LANG_KEY) || "en");
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const changeLang = (code: string) => {
-    setLang(code);
-    localStorage.setItem(LANG_KEY, code);
+    setLang(code as any);
     setShowLangMenu(false);
   };
-
-  const currentLang = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
 
   useEffect(() => { localStorage.setItem(STEPS_KEY, String(steps)); localStorage.setItem(STEPS_DATE_KEY, new Date().toISOString().split("T")[0]); }, [steps]);
 
@@ -268,7 +234,9 @@ export default function Dashboard() {
   const waterGlasses = Math.round(waterMl / 250);
   const remaining = calTarget - todayFoodCalories;
 
-  const greeting = getGreeting(country);
+  const greetingRaw = getGreeting(country);
+  const greeting = greetingRaw;
+  const greetingText = t[`greeting_${greetingRaw.period}` as keyof typeof t] as string || greetingRaw.text;
   const timeBg = getTimeBackground(country);
   const isFemale = gender === "female";
   const periodStartDate: string | null = (safeProfile as any).periodStartDate || null;
@@ -319,15 +287,15 @@ export default function Dashboard() {
                 {greeting.time && <><span className="text-white/30">·</span><span className="text-violet-400 font-medium">{greeting.time}</span></>}
               </div>
               <h1 className="text-3xl md:text-4xl font-display font-bold mt-0.5 text-white">
-                {getGreetingText(lang, greeting.period)}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">{safeProfile.name?.split(" ")[0] || "Champ"}</span>{" "}
+                {greetingText}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">{safeProfile.name?.split(" ")[0] || "Champ"}</span>{" "}
                 {greeting.period === "morning" ? "☀️" : greeting.period === "afternoon" ? "🌤️" : greeting.period === "evening" ? "🌅" : "🌙"}
               </h1>
               <div className="flex gap-2 mt-3">
                 <Link href="/workout" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors shadow-[0_0_16px_rgba(124,58,237,0.4)] hover:shadow-[0_0_24px_rgba(124,58,237,0.6)]">
-                  <Activity className="w-4 h-4" /> Workout
+                  <Activity className="w-4 h-4" /> {t.workout_btn}
                 </Link>
                 <Link href="/diet" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium hover:bg-white/10 transition-colors">
-                  <Utensils className="w-4 h-4" /> Log Food
+                  <Utensils className="w-4 h-4" /> {t.log_food}
                 </Link>
               </div>
             </div>
@@ -378,9 +346,9 @@ export default function Dashboard() {
                 <div className="rounded-2xl border border-pink-500/25 bg-gradient-to-r from-pink-950/50 to-purple-950/40 px-4 py-3 flex items-center justify-between hover:border-pink-500/40 transition-colors cursor-pointer">
                   <div className="flex items-center gap-2.5">
                     <span className="text-lg">🌸</span>
-                    <div><p className="text-sm font-semibold text-pink-200">Cycle Tracker</p><p className="text-xs text-white/40">Tap to set your period dates</p></div>
+                    <div><p className="text-sm font-semibold text-pink-200">{t.cycle_tracker}</p><p className="text-xs text-white/40">{t.cycle_setup_desc}</p></div>
                   </div>
-                  <span className="text-xs text-pink-400 border border-pink-500/30 px-2.5 py-1 rounded-full">Set up →</span>
+                  <span className="text-xs text-pink-400 border border-pink-500/30 px-2.5 py-1 rounded-full">{t.set_up}</span>
                 </div>
               </Link>
             ) : (
@@ -401,8 +369,8 @@ export default function Dashboard() {
                     })}
                   </div>
                   <div className="text-right shrink-0">
-                    <div className={`text-xs font-bold ${PHASE_DATA[cycleInfo.phaseIdx].textColor}`}>Day {cycleInfo.cycleDay}</div>
-                    <div className="text-[9px] text-white/30">Next {cycleInfo.nextPeriodDays}d</div>
+                    <div className={`text-xs font-bold ${PHASE_DATA[cycleInfo.phaseIdx].textColor}`}>{t.day} {cycleInfo.cycleDay}</div>
+                    <div className="text-[9px] text-white/30">{t.next} {cycleInfo.nextPeriodDays}d</div>
                   </div>
                 </div>
               </div>
@@ -413,8 +381,8 @@ export default function Dashboard() {
         {/* Horizontal carousel: Calories + Macros only */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
           <div className="flex items-center justify-between mb-2 px-0.5">
-            <h3 className="font-display font-bold text-base text-white/90">Today's Overview</h3>
-            <span className="text-xs text-muted-foreground">Swipe →</span>
+            <h3 className="font-display font-bold text-base text-white/90">{t.todays_overview}</h3>
+            <span className="text-xs text-muted-foreground">{t.swipe}</span>
           </div>
           <div ref={carouselRef} className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
@@ -422,12 +390,12 @@ export default function Dashboard() {
             {/* ── Calories card: circular design with ripple ── */}
             <div className="snap-start shrink-0 w-[88vw] sm:w-[380px] glass-card rounded-2xl p-4 border border-white/5 relative overflow-hidden">
               <div className="flex items-center justify-between mb-4">
-                <h4 className="font-semibold text-sm flex items-center gap-1.5"><Flame className="w-4 h-4 text-orange-500" /> Calories</h4>
-                <span className="text-xs text-muted-foreground bg-white/5 px-2 py-0.5 rounded-full">Today</span>
+                <h4 className="font-semibold text-sm flex items-center gap-1.5"><Flame className="w-4 h-4 text-orange-500" /> {t.calories}</h4>
+                <span className="text-xs text-muted-foreground bg-white/5 px-2 py-0.5 rounded-full">{t.today}</span>
               </div>
               <div className="flex items-center justify-center gap-4 mb-4">
                 <CalorieCircle
-                  value={todayFoodCalories} label="Eaten"
+                  value={todayFoodCalories} label={t.eaten}
                   bgColor="bg-green-500/15" borderColor="border-green-500/50"
                   iconColor="text-green-400" textColor="text-green-300"
                   glowColor="rgba(34,197,94,0.25)"
@@ -435,7 +403,7 @@ export default function Dashboard() {
                 />
                 <CalorieMainRing remaining={remaining} goal={calTarget} eaten={todayFoodCalories} />
                 <CalorieCircle
-                  value={totalBurned} label="Burned"
+                  value={totalBurned} label={t.burned}
                   bgColor="bg-orange-500/15" borderColor="border-orange-500/50"
                   iconColor="text-orange-400" textColor="text-orange-300"
                   glowColor="rgba(249,115,22,0.25)"
@@ -444,8 +412,8 @@ export default function Dashboard() {
               </div>
               <div className="space-y-1">
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Target: <span className="text-white/60 font-semibold">{calTarget} kcal</span></span>
-                  <span className="capitalize text-violet-400 font-medium">{fitnessGoal === "weight loss" ? "Cut" : fitnessGoal === "muscle gain" ? "Bulk" : "Maintain"}</span>
+                  <span>{t.target}: <span className="text-white/60 font-semibold">{calTarget} {t.kcal}</span></span>
+                  <span className="capitalize text-violet-400 font-medium">{fitnessGoal === "weight loss" ? t.cut : fitnessGoal === "muscle gain" ? t.bulk : t.maintain}</span>
                 </div>
                 <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                   <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(todayFoodCalories / Math.max(calTarget, 1), 1) * 100}%` }}
@@ -457,19 +425,19 @@ export default function Dashboard() {
             {/* ── Macros card ── */}
             <div className="snap-start shrink-0 w-[88vw] sm:w-[380px] glass-card rounded-2xl p-4 border border-white/5">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-sm flex items-center gap-1.5"><Activity className="w-4 h-4 text-violet-400" /> Macros</h4>
-                <Link href="/diet" className="text-xs text-violet-400 hover:underline flex items-center gap-1">Diet <ArrowRight className="w-3 h-3" /></Link>
+                <h4 className="font-semibold text-sm flex items-center gap-1.5"><Activity className="w-4 h-4 text-violet-400" /> {t.macros}</h4>
+                <Link href="/diet" className="text-xs text-violet-400 hover:underline flex items-center gap-1">{t.diet} <ArrowRight className="w-3 h-3" /></Link>
               </div>
               <div className="flex justify-around py-2">
-                <MacroRing label="Protein" current={macroTotals.proteinG} target={proteinTarget} stroke="#4A90D9" track="rgba(74,144,217,0.15)" />
-                <MacroRing label="Carbs" current={macroTotals.carbsG} target={carbsTarget} stroke="#34C759" track="rgba(52,199,89,0.15)" />
-                <MacroRing label="Fat" current={macroTotals.fatG} target={fatTarget} stroke="#FF9500" track="rgba(255,149,0,0.15)" />
+                <MacroRing label={t.protein} current={macroTotals.proteinG} target={proteinTarget} stroke="#4A90D9" track="rgba(74,144,217,0.15)" />
+                <MacroRing label={t.carbs} current={macroTotals.carbsG} target={carbsTarget} stroke="#34C759" track="rgba(52,199,89,0.15)" />
+                <MacroRing label={t.fat} current={macroTotals.fatG} target={fatTarget} stroke="#FF9500" track="rgba(255,149,0,0.15)" />
               </div>
               <div className="grid grid-cols-3 gap-2 mt-3">
                 {[
-                  { label: "Protein", eaten: macroTotals.proteinG, target: proteinTarget, color: "bg-blue-400", text: "text-blue-400" },
-                  { label: "Carbs", eaten: macroTotals.carbsG, target: carbsTarget, color: "bg-green-400", text: "text-green-400" },
-                  { label: "Fat", eaten: macroTotals.fatG, target: fatTarget, color: "bg-orange-400", text: "text-orange-400" },
+                  { label: t.protein, eaten: macroTotals.proteinG, target: proteinTarget, color: "bg-blue-400", text: "text-blue-400" },
+                  { label: t.carbs, eaten: macroTotals.carbsG, target: carbsTarget, color: "bg-green-400", text: "text-green-400" },
+                  { label: t.fat, eaten: macroTotals.fatG, target: fatTarget, color: "bg-orange-400", text: "text-orange-400" },
                 ].map(({ label, eaten, target, color, text }) => (
                   <div key={label}>
                     <div className="flex justify-between text-[10px] mb-1">
@@ -513,8 +481,8 @@ export default function Dashboard() {
                   />
                 </span>
                 <span>
-                  <span className="block text-white">Future Body Simulator</span>
-                  <span className="text-[11px] font-normal text-violet-300/80">See your body in 7, 30 & 90 days</span>
+                  <span className="block text-white">{t.future_body}</span>
+                  <span className="text-[11px] font-normal text-violet-300/80">{t.future_body_desc}</span>
                 </span>
               </span>
               <ChevronRight className="w-4 h-4 text-violet-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
@@ -528,7 +496,7 @@ export default function Dashboard() {
           {/* Hydration */}
           <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="glass-card rounded-2xl p-4 border border-cyan-500/15 bg-cyan-500/3 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="font-display font-bold text-sm flex items-center gap-2"><Droplets className="w-4 h-4 text-cyan-400" /> Hydration</h3>
+              <h3 className="font-display font-bold text-sm flex items-center gap-2"><Droplets className="w-4 h-4 text-cyan-400" /> {t.hydration}</h3>
               <span className="text-xs text-cyan-400 font-semibold">{waterMl} / 3000 ml</span>
             </div>
             <div className="flex items-center gap-3">
@@ -563,21 +531,21 @@ export default function Dashboard() {
 
           {/* Workout & Streaks (circular) */}
           <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.12 }} className="glass-card rounded-2xl p-4 border border-white/5 space-y-3">
-            <h3 className="font-display font-bold text-sm flex items-center gap-2"><Flame className="w-4 h-4 text-orange-500" /> Workout & Streaks</h3>
+            <h3 className="font-display font-bold text-sm flex items-center gap-2"><Flame className="w-4 h-4 text-orange-500" /> {t.workouts} & {t.streak}</h3>
             <div className="flex items-center justify-center gap-6">
               <div className="flex flex-col items-center">
                 <div className="w-16 h-16 rounded-full border-2 border-orange-500/40 bg-orange-500/10 flex flex-col items-center justify-center shadow-[0_0_16px_rgba(249,115,22,0.2)]">
                   <p className="text-xl font-display font-black text-orange-400 leading-none">{safeStats.currentStreak}</p>
-                  <p className="text-[9px] text-orange-400/70">days</p>
+                  <p className="text-[9px] text-orange-400/70">{t.day}s</p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1.5">Streak 🔥</p>
+                <p className="text-xs text-muted-foreground mt-1.5">{t.streak} 🔥</p>
               </div>
               <div className="flex flex-col items-center">
                 <div className="w-16 h-16 rounded-full border-2 border-violet-500/40 bg-violet-500/10 flex flex-col items-center justify-center shadow-[0_0_16px_rgba(124,58,237,0.2)]">
                   <p className="text-xl font-display font-black text-violet-400 leading-none">{safeStats.totalWorkouts}</p>
-                  <p className="text-[9px] text-violet-400/70">total</p>
+                  <p className="text-[9px] text-violet-400/70">{t.total_workouts.split(" ")[0]}</p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1.5">Workouts</p>
+                <p className="text-xs text-muted-foreground mt-1.5">{t.workouts}</p>
               </div>
             </div>
             {(() => {
@@ -600,7 +568,7 @@ export default function Dashboard() {
               );
             })()}
             <Link href="/workout" className="flex items-center justify-between p-2.5 rounded-xl bg-violet-600/20 hover:bg-violet-600/30 transition-colors border border-violet-500/20 group">
-              <span className="text-xs font-semibold text-violet-300">Start Workout</span>
+              <span className="text-xs font-semibold text-violet-300">{t.start_now}</span>
               <ChevronRight className="w-3.5 h-3.5 text-violet-400 group-hover:translate-x-1 transition-transform" />
             </Link>
           </motion.div>
@@ -611,9 +579,9 @@ export default function Dashboard() {
           <button onClick={() => setShowStepsInput(v => !v)}
             className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-violet-500/8 border border-violet-500/20 hover:bg-violet-500/15 transition-colors">
             <span className="flex items-center gap-2 text-sm font-semibold text-violet-300">
-              <Footprints className="w-4 h-4 text-violet-400" /> Step Count
+              <Footprints className="w-4 h-4 text-violet-400" /> {t.steps}
             </span>
-            <span className="text-sm font-display font-bold text-violet-400">{steps.toLocaleString()} <span className="text-xs text-muted-foreground font-normal">≈ {stepCalories} kcal</span></span>
+            <span className="text-sm font-display font-bold text-violet-400">{steps.toLocaleString()} <span className="text-xs text-muted-foreground font-normal">≈ {stepCalories} {t.kcal}</span></span>
           </button>
           {showStepsInput && (
             <div className="flex gap-2 mt-2">
@@ -621,7 +589,7 @@ export default function Dashboard() {
                 onKeyDown={e => e.key === "Enter" && (() => { const n = parseInt(stepsInput); if (!isNaN(n) && n >= 0) setSteps(n); setStepsInput(""); setShowStepsInput(false); })()}
                 placeholder="Enter today's step count" className="flex-1 px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 focus:border-violet-500 outline-none text-sm" />
               <button onClick={() => { const n = parseInt(stepsInput); if (!isNaN(n) && n >= 0) setSteps(n); setStepsInput(""); setShowStepsInput(false); }}
-                className="px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors">Save</button>
+                className="px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors">{t.save}</button>
             </div>
           )}
         </div>
@@ -629,8 +597,8 @@ export default function Dashboard() {
         {/* Weekly Volume full width */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card rounded-2xl p-4 border border-white/5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-display font-bold text-sm flex items-center gap-2"><Activity className="w-4 h-4 text-violet-400" /> Weekly Volume</h3>
-            <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">Last 7 Days</span>
+            <h3 className="font-display font-bold text-sm flex items-center gap-2"><Activity className="w-4 h-4 text-violet-400" /> {t.weekly_volume}</h3>
+            <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">{t.today}</span>
           </div>
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
@@ -649,7 +617,7 @@ export default function Dashboard() {
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card rounded-2xl p-4 border border-white/5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-display font-bold text-sm flex items-center gap-2"><Trophy className="w-4 h-4 text-yellow-500" /> Personal Records</h3>
+            <h3 className="font-display font-bold text-sm flex items-center gap-2"><Trophy className="w-4 h-4 text-yellow-500" /> {t.top_records}</h3>
             <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">{safeStats.personalRecords.length} PRs</span>
           </div>
           {safeStats.personalRecords.length === 0 ? (
@@ -672,13 +640,13 @@ export default function Dashboard() {
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="glass-card rounded-2xl p-4 border border-white/5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-display font-bold text-sm">Recent Workouts</h3>
-            <Link href="/workout" className="text-xs text-violet-400 hover:underline flex items-center gap-1">See all <ArrowRight className="w-3 h-3" /></Link>
+            <h3 className="font-display font-bold text-sm">{t.recent_workouts}</h3>
+            <Link href="/workout" className="text-xs text-violet-400 hover:underline flex items-center gap-1">{t.start_now} <ArrowRight className="w-3 h-3" /></Link>
           </div>
           {safeStats.recentWorkouts.length === 0 ? (
             <div className="text-center py-5 border border-dashed border-white/10 rounded-2xl text-muted-foreground">
-              <p className="text-sm">No workouts yet.</p>
-              <Link href="/workout" className="text-violet-400 text-sm font-medium mt-2 inline-block hover:underline">Start your first workout!</Link>
+              <p className="text-sm">{t.no_workouts}.</p>
+              <Link href="/workout" className="text-violet-400 text-sm font-medium mt-2 inline-block hover:underline">{t.start_now}!</Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
