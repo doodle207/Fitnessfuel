@@ -15,9 +15,14 @@ function getRazorpay() {
   return new Razorpay({ key_id: keyId, key_secret: keySecret });
 }
 
-const PLANS: Record<string, { amountPaise: number; name: string; months: number }> = {
-  premium: { amountPaise: 19900, name: "Premium", months: 1 },
-  pro: { amountPaise: 34900, name: "Pro", months: 1 },
+const PLANS_INR: Record<string, { amount: number; name: string; months: number }> = {
+  premium: { amount: 19900, name: "Premium", months: 1 },
+  pro:     { amount: 34900, name: "Pro",     months: 1 },
+};
+
+const PLANS_USD: Record<string, { amount: number; name: string; months: number }> = {
+  premium: { amount: 599, name: "Premium", months: 1 },
+  pro:     { amount: 999, name: "Pro",     months: 1 },
 };
 
 router.post("/payments/razorpay/create-order", async (req: Request, res: Response): Promise<void> => {
@@ -26,8 +31,11 @@ router.post("/payments/razorpay/create-order", async (req: Request, res: Respons
     return;
   }
 
-  const { plan } = req.body;
-  const planConfig = PLANS[plan as string];
+  const { plan, currency: reqCurrency } = req.body;
+  const currency = (reqCurrency === "USD") ? "USD" : "INR";
+  const planMap = currency === "USD" ? PLANS_USD : PLANS_INR;
+  const planConfig = planMap[plan as string];
+
   if (!planConfig) {
     res.status(400).json({ error: "Invalid plan. Choose 'premium' or 'pro'." });
     return;
@@ -39,8 +47,8 @@ router.post("/payments/razorpay/create-order", async (req: Request, res: Respons
     const receipt = `cfx_${shortId}_${Date.now().toString().slice(-8)}`;
 
     const order = await razorpay.orders.create({
-      amount: planConfig.amountPaise,
-      currency: "INR",
+      amount: planConfig.amount,
+      currency,
       receipt,
       notes: {
         userId: req.user.id,
@@ -97,7 +105,7 @@ router.post("/payments/razorpay/verify", async (req: Request, res: Response): Pr
     return;
   }
 
-  const planConfig = PLANS[plan as string];
+  const planConfig = PLANS_INR[plan as string] || PLANS_USD[plan as string];
   if (!planConfig) {
     res.status(400).json({ error: "Invalid plan." });
     return;
