@@ -70,6 +70,53 @@ router.post("/auth/email/request-otp", async (req: Request, res: Response) => {
   });
 });
 
+router.post("/auth/email/signup", async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email || typeof email !== "string") {
+    res.status(400).json({ error: "Email is required" });
+    return;
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  let [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.email, normalizedEmail));
+
+  const isNewUser = !user;
+
+  if (!user) {
+    const [newUser] = await db
+      .insert(usersTable)
+      .values({
+        email: normalizedEmail,
+        firstName: null,
+        lastName: null,
+        profileImageUrl: null,
+      })
+      .returning();
+    user = newUser;
+  }
+
+  const sessionData: SessionData = {
+    user: {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      profileImageUrl: user.profileImageUrl,
+    },
+    access_token: null,
+    refresh_token: null,
+    expires_at: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30,
+  };
+
+  const sid = await createSession(sessionData);
+  setSessionCookie(res, sid);
+  res.json({ success: true, isNewUser });
+});
+
 router.post("/auth/email/verify-otp", async (req: Request, res: Response) => {
   const { email, otp, firstName } = req.body;
   if (!email || !otp) {

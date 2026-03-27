@@ -139,16 +139,16 @@ function SignupScreen({ onBack }: { onBack: () => void }) {
     return () => clearTimeout(t);
   }, [resendTimer]);
 
-  const handleEmailOtp = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true); setError(null);
     try {
-      const res = await fetch("/api/auth/email/request-otp", {
+      const res = await fetch("/api/auth/email/signup", {
         method: "POST", headers: { "Content-Type": "application/json" },
         credentials: "include", body: JSON.stringify({ email: authEmail.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Failed to send code."); return; }
+      if (!res.ok) { setError(data.error || "Failed to create account. Please try again."); return; }
       window.location.reload();
     } catch { setError("Network error. Please try again."); } finally { setLoading(false); }
   };
@@ -206,7 +206,7 @@ function SignupScreen({ onBack }: { onBack: () => void }) {
         <AnimatePresence mode="wait">
           {authStep === "email" && (
             <motion.div key="email" initial={{ opacity: 0, x: 0 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-              <form onSubmit={handleEmailOtp} className="space-y-3">
+              <form onSubmit={handleSignup} className="space-y-3">
                 <div>
                   <label className="block text-white font-semibold text-sm mb-2">Email address</label>
                   <input
