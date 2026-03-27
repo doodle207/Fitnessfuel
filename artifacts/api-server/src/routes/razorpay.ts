@@ -35,10 +35,13 @@ router.post("/payments/razorpay/create-order", async (req: Request, res: Respons
 
   try {
     const razorpay = getRazorpay();
+    const shortId = req.user.id.replace(/-/g, "").slice(-10);
+    const receipt = `cfx_${shortId}_${Date.now().toString().slice(-8)}`;
+
     const order = await razorpay.orders.create({
       amount: planConfig.amountPaise,
       currency: "INR",
-      receipt: `cfx_${req.user.id}_${Date.now()}`,
+      receipt,
       notes: {
         userId: req.user.id,
         plan,
