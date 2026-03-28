@@ -6,8 +6,12 @@ import { sql } from "drizzle-orm";
 
 const router: IRouter = Router();
 
+function getRazorpayKeyId(): string | undefined {
+  return process.env.RAZORPAY_API_KEY || process.env.RAZORPAY_KEY_ID;
+}
+
 function getRazorpay() {
-  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keyId = getRazorpayKeyId();
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
   if (!keyId || !keySecret) {
     throw new Error("Razorpay API keys are not configured.");
@@ -61,7 +65,7 @@ router.post("/payments/razorpay/create-order", async (req: Request, res: Respons
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
-      keyId: process.env.RAZORPAY_KEY_ID,
+      keyId: getRazorpayKeyId(),
       plan,
       planName: planConfig.name,
     });
