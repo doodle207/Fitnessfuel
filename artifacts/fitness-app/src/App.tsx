@@ -5,8 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@workspace/replit-auth-web";
 import { LanguageProvider } from "@/lib/i18n";
 import { useGetProfile, getGetProfileQueryKey } from "@workspace/api-client-react";
-import React, { useEffect, useState } from "react";
-import { Activity, Zap, TrendingUp, ChevronRight, Mail, ShieldCheck, Loader2 } from "lucide-react";
+import React, { useEffect, useState, Component, type ErrorInfo, type ReactNode } from "react";
+import { Activity, Zap, TrendingUp, ChevronRight, Mail, ShieldCheck, Loader2, RotateCcw, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Shell } from "@/components/layout/Shell";
@@ -24,6 +24,43 @@ import Pricing from "@/pages/Pricing";
 import FutureBodySimulator from "@/pages/FutureBodySimulator";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
+
+// ─── Error Boundary ───────────────────────────────────────────────────────────
+interface ErrorBoundaryState { hasError: boolean; error: Error | null; }
+class AppErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("[AppErrorBoundary] Render crash:", error, info.componentStack);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#080810] flex flex-col items-center justify-center gap-6 p-6 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+            <AlertTriangle className="w-8 h-8 text-red-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-2">Something went wrong</h1>
+            <p className="text-sm text-white/50 max-w-sm">{this.state.error?.message || "An unexpected error occurred."}</p>
+          </div>
+          <button
+            onClick={() => { this.setState({ hasError: false, error: null }); window.location.href = "/"; }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-colors text-sm font-medium"
+          >
+            <RotateCcw className="w-4 h-4" /> Reload App
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -603,7 +640,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     query: { queryKey: getGetProfileQueryKey(), enabled: isAuthenticated }
   });
 
-  const needsOnboarding = isAuthenticated && !isProfileLoading && profileError && (profileError as any).status === 404;
+  // True while we're waiting on a profile result for an authenticated user.
+  // Covers the brief "enabled just flipped to true" window where isLoading
+  // may still be false before the first fetch tick.
+  const profileNotResolved = isAuthenticated && profile === undefined && !profileError;
+  const needsOnboarding = isAuthenticated && !isProfileLoading && !profileNotResolved && profileError && (profileError as any).status === 404;
 
   // Save last visited route to localStorage for restoration on next login
   useEffect(() => {
@@ -632,7 +673,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [needsOnboarding, location, setLocation]);
 
-  if (isAuthLoading || (isAuthenticated && isProfileLoading)) {
+  if (isAuthLoading || (isAuthenticated && (isProfileLoading || profileNotResolved))) {
     return (
       <div className="min-h-screen bg-[#080810] flex items-center justify-center">
         <div className="relative">
@@ -696,16 +737,20 @@ function Router() {
 
 function App() {
   return (
-    <LanguageProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </LanguageProvider>
+    <AppErrorBoundary>
+      <LanguageProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <AppErrorBoundary>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <Router />
+              </WouterRouter>
+            </AppErrorBoundary>
+            <Toaster />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </LanguageProvider>
+    </AppErrorBoundary>
   );
 }
 
