@@ -4,9 +4,19 @@ import { sql } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-const VOUCHERS: Record<string, { durationDays: number; planName: string }> = {
-  LAUNCH: { durationDays: 7, planName: "voucher_pro" },
-};
+const COUPON_CODE = (process.env.COUPON_CODE || "").trim().toUpperCase();
+
+const VOUCHERS: Record<string, { durationDays: number; planName: string }> = COUPON_CODE
+  ? { [COUPON_CODE]: { durationDays: 7, planName: "pro_1week" } }
+  : {};
+
+router.get("/voucher/code-hint", (req: Request, res: Response) => {
+  if (!COUPON_CODE) {
+    res.status(404).json({ error: "No coupon code available" });
+    return;
+  }
+  res.json({ code: COUPON_CODE });
+});
 
 router.post("/voucher/redeem", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) {
