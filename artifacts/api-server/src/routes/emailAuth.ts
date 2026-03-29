@@ -2,7 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { sql } from "drizzle-orm";
-import { createSession, type SessionData } from "../lib/auth";
+import { createSession, generateJWT, type SessionData } from "../lib/auth";
 import { SESSION_COOKIE, SESSION_TTL } from "../lib/auth";
 import { generateOTP, sendVerificationEmail } from "../lib/email";
 
@@ -114,7 +114,8 @@ router.post("/auth/email/signup", async (req: Request, res: Response) => {
 
   const sid = await createSession(sessionData);
   setSessionCookie(res, sid);
-  res.json({ success: true, isNewUser });
+  const token = generateJWT(sessionData.user);
+  res.json({ success: true, isNewUser, token });
 });
 
 router.post("/auth/email/verify-otp", async (req: Request, res: Response) => {
@@ -181,7 +182,8 @@ router.post("/auth/email/verify-otp", async (req: Request, res: Response) => {
 
   const sid = await createSession(sessionData);
   setSessionCookie(res, sid);
-  res.json({ success: true, isNewUser });
+  const token = generateJWT(sessionData.user);
+  res.json({ success: true, isNewUser, token });
 });
 
 export default router;

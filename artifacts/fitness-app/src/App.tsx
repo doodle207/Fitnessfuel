@@ -2,7 +2,7 @@ import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useAuth } from "@workspace/replit-auth-web";
+import { useAuth, storeAuthToken } from "@workspace/replit-auth-web";
 import { LanguageProvider } from "@/lib/i18n";
 import { useGetProfile, getGetProfileQueryKey } from "@workspace/api-client-react";
 import React, { useEffect, useState, Component, type ErrorInfo, type ReactNode } from "react";
@@ -203,8 +203,11 @@ function SignupScreen({ onBack }: { onBack: () => void }) {
         method: "POST", headers: { "Content-Type": "application/json" },
         credentials: "include", body: JSON.stringify({ email: authEmail.trim(), otp: authOtp.trim() }),
       });
-      if (res.ok) { window.location.reload(); }
-      else { const d = await res.json(); setError(d.error || "Invalid or expired code. Please try again."); }
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.token) storeAuthToken(data.token);
+        window.location.reload();
+      } else { const d = await res.json(); setError(d.error || "Invalid or expired code. Please try again."); }
     } catch { setError("Network error. Please try again."); } finally { setLoading(false); }
   };
 
@@ -389,6 +392,7 @@ function LoginScreen({ onCreateAccount }: { onCreateAccount: () => void }) {
       });
       const data = await res.json();
       if (res.ok) {
+        if (data?.token) storeAuthToken(data.token);
         window.location.reload();
       } else {
         setError(data.error || "Invalid code. Please try again.");

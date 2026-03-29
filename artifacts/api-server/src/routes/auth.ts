@@ -14,6 +14,7 @@ import {
   getSessionId,
   createSession,
   deleteSession,
+  generateJWT,
   SESSION_COOKIE,
   SESSION_TTL,
   ISSUER_URL,
@@ -160,11 +161,9 @@ async function getGoogleOidcConfig(): Promise<oidc.Configuration | null> {
 }
 
 router.get("/auth/user", (req: Request, res: Response) => {
-  res.json(
-    GetCurrentAuthUserResponse.parse({
-      user: req.isAuthenticated() ? req.user : null,
-    }),
-  );
+  const user = req.isAuthenticated() ? req.user : null;
+  const token = user ? generateJWT(user) : undefined;
+  res.json({ user: user ?? null, token });
 });
 
 router.get("/auth/providers", (_req: Request, res: Response) => {
