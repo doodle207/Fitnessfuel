@@ -36,6 +36,14 @@ function VoucherBox({ onSuccess }: { onSuccess: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [expiry, setExpiry] = useState<string | null>(null);
+  const [hint, setHint] = useState<string>("");
+
+  React.useEffect(() => {
+    fetch(`${BASE}/api/voucher/code-hint`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d?.code && setHint(d.code))
+      .catch(() => {});
+  }, []);
 
   const handleRedeem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +154,11 @@ function VoucherBox({ onSuccess }: { onSuccess: () => void }) {
 
       <div className="border-t border-white/5 px-5 py-3 bg-violet-950/20">
         <p className="text-[11px] text-muted-foreground text-center">
-          Use code <span className="font-bold text-violet-300 tracking-widest">LAUNCH</span> for 1 week of free Pro access · Limited time offer
+          {hint ? (
+            <>Use code <span className="font-bold text-violet-300 tracking-widest">{hint}</span> for 1 week of free Pro access</>
+          ) : (
+            "Enter your coupon code for 1 week of free Pro access"
+          )}
         </p>
       </div>
     </motion.div>
