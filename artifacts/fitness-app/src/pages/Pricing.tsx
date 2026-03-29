@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { PageTransition } from "@/components/ui/LoadingState";
-import { motion } from "framer-motion";
-import { Crown, CheckCircle2, Zap, Brain, Camera, UtensilsCrossed, Sparkles, Gift, ArrowLeft, CreditCard, ShieldCheck } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Crown, CheckCircle2, Zap, Brain, Camera, UtensilsCrossed, Sparkles,
+  Gift, ArrowLeft, CreditCard, ShieldCheck, Tag, Loader2, X, PartyPopper
+} from "lucide-react";
 import { useLocation } from "wouter";
 import UpgradeModal from "@/components/UpgradeModal";
 
@@ -27,6 +30,129 @@ const PREMIUM_FEATURES = [
   { icon: Crown, label: "Priority feature access" },
 ];
 
+function VoucherBox({ onSuccess }: { onSuccess: () => void }) {
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [expiry, setExpiry] = useState<string | null>(null);
+
+  const handleRedeem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!code.trim()) return;
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetch(`${BASE}/api/voucher/redeem`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ code: code.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(data.message);
+        setExpiry(data.expiryDate ? new Date(data.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : null);
+        setCode("");
+        setTimeout(onSuccess, 1500);
+      } else {
+        setError(data.error || "Failed to redeem voucher.");
+      }
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="glass-card rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-950/30 to-purple-950/10 overflow-hidden"
+    >
+      <div className="p-5">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-violet-500/15 flex items-center justify-center shrink-0">
+            <Gift className="w-5 h-5 text-violet-400" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm text-white">Have a voucher code?</p>
+            <p className="text-xs text-muted-foreground">Redeem it for 1 week of free Pro access</p>
+          </div>
+        </div>
+
+        <AnimatePresence mode="wait">
+          {success ? (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center gap-3 py-4 text-center"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-green-500/15 border border-green-500/25 flex items-center justify-center">
+                <PartyPopper className="w-7 h-7 text-green-400" />
+              </div>
+              <div>
+                <p className="font-bold text-green-300 text-base">{success}</p>
+                {expiry && <p className="text-xs text-muted-foreground mt-1">Pro access until {expiry}</p>}
+              </div>
+            </motion.div>
+          ) : (
+            <motion.form
+              key="form"
+              onSubmit={handleRedeem}
+              className="flex gap-2"
+            >
+              <div className="relative flex-1">
+                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <input
+                  type="text"
+                  value={code}
+                  onChange={e => { setCode(e.target.value.toUpperCase()); setError(null); }}
+                  placeholder="Enter voucher code"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 uppercase tracking-widest"
+                  maxLength={32}
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading || !code.trim()}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Redeem"}
+              </button>
+            </motion.form>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20"
+            >
+              <X className="w-4 h-4 text-red-400 shrink-0" />
+              <p className="text-xs text-red-300">{error}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <div className="border-t border-white/5 px-5 py-3 bg-violet-950/20">
+        <p className="text-[11px] text-muted-foreground text-center">
+          Use code <span className="font-bold text-violet-300 tracking-widest">LAUNCH</span> for 1 week of free Pro access · Limited time offer
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function Pricing() {
   const [, setLocation] = useLocation();
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -34,6 +160,7 @@ export default function Pricing() {
   const [subscription, setSubscription] = useState<any>(null);
   const [userCountry, setUserCountry] = useState<string>("");
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+
   useEffect(() => {
     fetch(`${BASE}/api/payments/subscription`, { credentials: "include" })
       .then(r => r.ok ? r.json() : null)
@@ -87,10 +214,10 @@ export default function Pricing() {
             className="rounded-2xl border border-green-500/30 bg-green-500/8 px-5 py-4 flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
             <div>
-              <p className="font-semibold text-green-300">You have Premium access!</p>
+              <p className="font-semibold text-green-300">You have Premium access! 🎉</p>
               <p className="text-xs text-muted-foreground">
-                Expires: {subscription?.expiryDate ? new Date(subscription.expiryDate).toLocaleDateString() : "Never"}
-                {subscription?.couponUsed ? ` · Coupon: ${subscription.couponUsed}` : ""}
+                Expires: {subscription?.expiryDate ? new Date(subscription.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Never"}
+                {subscription?.couponUsed ? ` · Voucher: ${subscription.couponUsed}` : ""}
               </p>
             </div>
           </motion.div>
@@ -196,24 +323,9 @@ export default function Pricing() {
           </div>
         </div>
 
-        {/* Coupon section */}
+        {/* Voucher section */}
         {!isPremium && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-            className="glass-card rounded-2xl p-5 border border-white/5 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-violet-500/15 flex items-center justify-center shrink-0">
-              <Gift className="w-5 h-5 text-violet-400" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-sm">Have a coupon code?</p>
-              <p className="text-xs text-muted-foreground">Redeem it for 7 days of free Premium access.</p>
-            </div>
-            <button
-              onClick={() => { setSelectedPlan("premium"); setShowUpgrade(true); }}
-              className="px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors shrink-0"
-            >
-              Redeem
-            </button>
-          </motion.div>
+          <VoucherBox onSuccess={refreshSubscription} />
         )}
 
         {/* Security badge */}
