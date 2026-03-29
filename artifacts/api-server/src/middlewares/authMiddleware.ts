@@ -4,7 +4,7 @@ import type { AuthUser } from "@workspace/api-zod";
 import {
   clearSession,
   getOidcConfig,
-  getSessionId,
+  getTokenFromRequest,
   getSession,
   updateSession,
   type SessionData,
@@ -62,12 +62,19 @@ export async function authMiddleware(
     return this.user != null;
   } as Request["isAuthenticated"];
 
-  const sid = getSessionId(req);
-  if (!sid) {
+  const tokenResult = getTokenFromRequest(req);
+  if (!tokenResult) {
     next();
     return;
   }
 
+  if (tokenResult.type === "jwt") {
+    req.user = tokenResult.user;
+    next();
+    return;
+  }
+
+  const { sid } = tokenResult;
   const session = await getSession(sid);
   if (!session?.user?.id) {
     await clearSession(res, sid);
