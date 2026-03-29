@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { useParams, useLocation } from "wouter";
 import { useGetWorkout, useGetExercises, useAddSet } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -133,6 +133,98 @@ function PRBanner({ exerciseName }: { exerciseName: string }) {
   );
 }
 
+function WorkoutTimer({ startTime }: { startTime: number }) {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setElapsed(Math.floor((Date.now() - startTime) / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, [startTime]);
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+  return (
+    <span className="flex items-center gap-1 text-violet-400 font-semibold">
+      <Timer className="w-3 h-3" /> {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
+    </span>
+  );
+}
+
+interface ExerciseInputRowProps {
+  exId: number;
+  exSets: any[];
+  isAddingSet: boolean;
+  onAddSet: (exId: number, weight: string, reps: string) => void;
+}
+
+const ExerciseInputRow = memo(function ExerciseInputRow({ exId, exSets, isAddingSet, onAddSet }: ExerciseInputRowProps) {
+  const [weight, setWeight] = useState("");
+  const [reps, setReps] = useState("");
+  const lastSet = exSets[exSets.length - 1];
+
+  const handleAdd = useCallback(() => {
+    if (!weight || !reps) return;
+    onAddSet(exId, weight, reps);
+    setWeight("");
+    setReps("");
+  }, [exId, weight, reps, onAddSet]);
+
+  const handleRepeatLast = useCallback(() => {
+    if (!lastSet) return;
+    setWeight(String(lastSet.weightKg));
+    setReps(String(lastSet.reps));
+  }, [lastSet]);
+
+  const handleAddWeight = useCallback((delta: number) => {
+    setWeight(prev => String(Math.round((parseFloat(prev || String(lastSet?.weightKg || 0)) + delta) * 2) / 2));
+  }, [lastSet]);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center bg-violet-500/10 rounded-xl py-2 px-3 border border-violet-500/20 gap-2">
+        <div className="w-10 text-center font-bold text-violet-400 text-sm">{exSets.length + 1}</div>
+        <div className="flex-1 px-1">
+          <input type="number" inputMode="decimal" value={weight}
+            onChange={e => setWeight(e.target.value)}
+            className="w-full bg-black/50 border border-white/10 rounded-lg text-center py-1.5 focus:border-violet-500 outline-none text-sm placeholder:text-muted-foreground/50"
+            placeholder="kg" />
+        </div>
+        <div className="flex-1 px-1">
+          <input type="number" inputMode="numeric" value={reps}
+            onChange={e => setReps(e.target.value)}
+            className="w-full bg-black/50 border border-white/10 rounded-lg text-center py-1.5 focus:border-violet-500 outline-none text-sm placeholder:text-muted-foreground/50"
+            placeholder="reps" />
+        </div>
+        <div className="w-8 flex justify-center">
+          <button onClick={handleAdd} disabled={isAddingSet || !weight || !reps}
+            className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center text-white hover:bg-violet-500 disabled:opacity-40 shadow-[0_0_8px_rgba(124,58,237,0.4)] transition-all">
+            <Check className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-wider">Quick:</span>
+        {lastSet && (
+          <button onClick={handleRepeatLast}
+            className="text-[11px] px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-white/60 font-medium">
+            Repeat last
+          </button>
+        )}
+        {lastSet && (
+          <>
+            <button onClick={() => handleAddWeight(2.5)}
+              className="text-[11px] px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 hover:bg-cyan-500/20 transition-colors text-cyan-400 font-medium">
+              +2.5 kg
+            </button>
+            <button onClick={() => handleAddWeight(5)}
+              className="text-[11px] px-2.5 py-1 rounded-lg bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 transition-colors text-violet-400 font-medium">
+              +5 kg
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+});
+
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export default function ActiveWorkout() {
@@ -141,7 +233,6 @@ export default function ActiveWorkout() {
   const workoutId = parseInt(id || "0");
   const queryClient = useQueryClient();
   const startTimeRef = useRef(Date.now());
-  const [elapsed, setElapsed] = useState(0);
   const { toast } = useToast();
 
   const { data: workout, isLoading: isWorkoutLoading, error: workoutError } = useGetWorkout(workoutId, { query: { queryKey: ['fitness', 'workout', workoutId] } });
@@ -154,8 +245,6 @@ export default function ActiveWorkout() {
   const [showSelector, setShowSelector] = useState(false);
   const [search, setSearch] = useState("");
   const [selectorGroup, setSelectorGroup] = useState("All");
-  const [repsMap, setRepsMap] = useState<Record<number, string>>({});
-  const [weightMap, setWeightMap] = useState<Record<number, string>>({});
   const [isFinishing, setIsFinishing] = useState(false);
   const [finishSummary, setFinishSummary] = useState<{ caloriesBurned: number; durationMinutes: number } | null>(null);
 
@@ -168,11 +257,8 @@ export default function ActiveWorkout() {
   const [personalBests, setPersonalBests] = useState<Record<number, number>>({});
   // Set-based progress tracking
   const [completedSets, setCompletedSets] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000)), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  // Optimistic sets added before server confirms
+  const [optimisticSets, setOptimisticSets] = useState<any[]>([]);
 
   // Clear PR banner after 3 seconds
   useEffect(() => {
@@ -183,13 +269,17 @@ export default function ActiveWorkout() {
 
   const { mutate: addSet, isPending: isAddingSet } = useAddSet({
     mutation: {
-      onSuccess: (_data, variables) => {
-        queryClient.invalidateQueries({ queryKey: ['fitness', 'workout', workoutId] });
+      onSuccess: (data, variables) => {
         const exId = variables.data.exerciseId;
         const weight = parseFloat(variables.data.weightKg as any) || 0;
+        const tempId = (variables as any).__tempId;
 
-        // Increment completed sets
-        setCompletedSets(prev => prev + 1);
+        // Replace optimistic set with real server data
+        if (tempId) {
+          setOptimisticSets(prev => prev.filter(s => s.id !== tempId));
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['fitness', 'workout', workoutId] });
 
         // Check for PR
         const prevBest = personalBests[exId] || 0;
@@ -205,12 +295,10 @@ export default function ActiveWorkout() {
         const secs = diff === "Advanced" ? 120 : diff === "Intermediate" ? 75 : 60;
         setRestSeconds(secs);
         setRestTimerExId(exId);
-
-        // Clear inputs
-        setWeightMap(m => { const n = { ...m }; delete n[exId]; return n; });
-        setRepsMap(m => { const n = { ...m }; delete n[exId]; return n; });
       },
-      onError: () => {
+      onError: (_err, variables) => {
+        const tempId = (variables as any).__tempId;
+        if (tempId) setOptimisticSets(prev => prev.filter(s => s.id !== tempId));
         toast({ title: "Couldn't log set", description: "Server unavailable. Try again.", variant: "destructive" });
       }
     }
@@ -257,7 +345,8 @@ export default function ActiveWorkout() {
   }
 
   const sets: any[] = Array.isArray(workoutData.sets) ? workoutData.sets : [];
-  const setsByExercise = sets.reduce((acc: Record<number, any[]>, set: any) => {
+  const allSets = [...sets, ...optimisticSets];
+  const setsByExercise = allSets.reduce((acc: Record<number, any[]>, set: any) => {
     if (!acc[set.exerciseId]) acc[set.exerciseId] = [];
     acc[set.exerciseId].push(set);
     return acc;
@@ -276,13 +365,17 @@ export default function ActiveWorkout() {
     finally { setIsFinishing(false); }
   };
 
-  const handleAddSet = (exerciseId: number) => {
-    const weight = parseFloat(weightMap[exerciseId] || "");
-    const reps = parseInt(repsMap[exerciseId] || "");
+  const handleAddSet = useCallback((exerciseId: number, weightStr: string, repsStr: string) => {
+    const weight = parseFloat(weightStr);
+    const reps = parseInt(repsStr);
     if (isNaN(weight) || isNaN(reps) || reps <= 0) return;
     const existingSets = setsByExercise[exerciseId] || [];
-    addSet({ workoutId, data: { exerciseId, setNumber: existingSets.length + 1, reps, weightKg: weight, notes: "" } });
-  };
+    const tempId = -Date.now();
+    const optimisticSet = { id: tempId, exerciseId, setNumber: existingSets.length + 1, reps, weightKg: weight, notes: "", isOptimistic: true };
+    setOptimisticSets(prev => [...prev, optimisticSet]);
+    setCompletedSets(prev => prev + 1);
+    addSet({ workoutId, data: { exerciseId, setNumber: existingSets.length + 1, reps, weightKg: weight, notes: "" }, __tempId: tempId } as any);
+  }, [setsByExercise, workoutId, addSet]);
 
   const muscleGroups = ["All", "Chest", "Back", "Shoulders", "Arms", "Legs", "Core", "Cardio", "Full Body"];
   const filteredSelector = allExercises.filter(ex => {
@@ -291,8 +384,6 @@ export default function ActiveWorkout() {
     return matchGroup && matchSearch && !allDisplayIds.includes(ex.id);
   });
 
-  const mins = Math.floor(elapsed / 60);
-  const secs = elapsed % 60;
   const totalSets = sets.length;
   const totalVolume = sets.reduce((s: number, set: any) => s + (set.weightKg || 0) * (set.reps || 0), 0);
 
@@ -317,9 +408,7 @@ export default function ActiveWorkout() {
                 </div>
               </div>
               <div className="flex items-center gap-3 md:gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
-                <span className="flex items-center gap-1 text-violet-400 font-semibold">
-                  <Timer className="w-3 h-3" /> {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
-                </span>
+                <WorkoutTimer startTime={startTimeRef.current} />
                 <span className="flex items-center gap-1"><Check className="w-3 h-3 text-green-400 font-bold" /> {completedSets}/{totalSets} sets completed</span>
                 {totalVolume > 0 && <span className="flex items-center gap-1 text-cyan-400"><Flame className="w-3 h-3" /> {Math.round(totalVolume).toLocaleString()} kg vol</span>}
               </div>
@@ -360,8 +449,6 @@ export default function ActiveWorkout() {
             const isExpanded = expandedExId === exId;
             const showInfo = showInfoFor === exId;
             const lastSet = exSets[exSets.length - 1];
-            const currentWeight = weightMap[exId] ?? "";
-            const currentReps = repsMap[exId] ?? "";
             const diffColor = exercise.difficulty === "Advanced" ? "text-red-400"
               : exercise.difficulty === "Intermediate" ? "text-yellow-400" : "text-green-400";
 
@@ -422,60 +509,24 @@ export default function ActiveWorkout() {
 
                         {/* Logged sets */}
                         {exSets.map((set: any) => (
-                          <div key={set.id} className="flex items-center bg-white/5 rounded-xl py-2 px-3 border border-white/5 gap-2">
+                          <div key={set.id} className={`flex items-center rounded-xl py-2 px-3 border gap-2 transition-all ${set.isOptimistic ? "bg-violet-500/10 border-violet-500/20 opacity-70" : "bg-white/5 border-white/5"}`}>
                             <div className="w-10 text-center font-bold text-violet-400 text-sm">{set.setNumber}</div>
                             <div className="flex-1 text-center font-semibold text-sm">{set.weightKg} kg</div>
                             <div className="flex-1 text-center font-semibold text-sm">{set.reps} reps</div>
-                            <div className="w-8 flex justify-center"><Check className="w-4 h-4 text-green-500" /></div>
+                            <div className="w-8 flex justify-center">
+                              {set.isOptimistic
+                                ? <div className="w-4 h-4 rounded-full border-2 border-violet-400 border-t-transparent animate-spin" />
+                                : <Check className="w-4 h-4 text-green-500" />}
+                            </div>
                           </div>
                         ))}
 
-                        {/* New set input row */}
-                        <div className="flex items-center bg-violet-500/10 rounded-xl py-2 px-3 border border-violet-500/20 gap-2">
-                          <div className="w-10 text-center font-bold text-violet-400 text-sm">{exSets.length + 1}</div>
-                          <div className="flex-1 px-1">
-                            <input type="number" inputMode="decimal" value={currentWeight}
-                              onChange={e => setWeightMap(m => ({ ...m, [exId]: e.target.value }))}
-                              className="w-full bg-black/50 border border-white/10 rounded-lg text-center py-1.5 focus:border-violet-500 outline-none text-sm placeholder:text-muted-foreground/50"
-                              placeholder="kg" />
-                          </div>
-                          <div className="flex-1 px-1">
-                            <input type="number" inputMode="numeric" value={currentReps}
-                              onChange={e => setRepsMap(m => ({ ...m, [exId]: e.target.value }))}
-                              className="w-full bg-black/50 border border-white/10 rounded-lg text-center py-1.5 focus:border-violet-500 outline-none text-sm placeholder:text-muted-foreground/50"
-                              placeholder="reps" />
-                          </div>
-                          <div className="w-8 flex justify-center">
-                            <button onClick={() => handleAddSet(exId)} disabled={isAddingSet || !weightMap[exId] || !repsMap[exId]}
-                              className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center text-white hover:bg-violet-500 disabled:opacity-40 shadow-[0_0_8px_rgba(124,58,237,0.4)] transition-all">
-                              <Check className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Quick weight buttons */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-wider">Quick:</span>
-                          {lastSet && (
-                            <button
-                              onClick={() => { setWeightMap(m => ({ ...m, [exId]: String(lastSet.weightKg) })); setRepsMap(m => ({ ...m, [exId]: String(lastSet.reps) })); }}
-                              className="text-[11px] px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-white/60 font-medium">
-                              Repeat last
-                            </button>
-                          )}
-                          {lastSet && (
-                            <>
-                              <button onClick={() => setWeightMap(m => ({ ...m, [exId]: String(Math.round((parseFloat(m[exId] || String(lastSet.weightKg)) + 2.5) * 2) / 2) }))}
-                                className="text-[11px] px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 hover:bg-cyan-500/20 transition-colors text-cyan-400 font-medium">
-                                +2.5 kg
-                              </button>
-                              <button onClick={() => setWeightMap(m => ({ ...m, [exId]: String(Math.round((parseFloat(m[exId] || String(lastSet.weightKg)) + 5) * 2) / 2) }))}
-                                className="text-[11px] px-2.5 py-1 rounded-lg bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 transition-colors text-violet-400 font-medium">
-                                +5 kg
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        <ExerciseInputRow
+                          exId={exId}
+                          exSets={exSets}
+                          isAddingSet={isAddingSet}
+                          onAddSet={handleAddSet}
+                        />
                       </div>
                     </motion.div>
                   )}

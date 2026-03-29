@@ -49,17 +49,22 @@ export default function Diet() {
   const [isEstimating, setIsEstimating] = useState(false);
 
   useEffect(() => {
-    const today = new Date().toISOString().split("T")[0];
-    fetch(`${BASE}/api/diet/food-log`, { credentials: "include" })
-      .then(r => r.json()).then(d => Array.isArray(d) && setFoodLog(d)).catch(() => {});
-    fetch(`${BASE}/api/progress/water`, { credentials: "include" })
-      .then(r => r.json()).then(d => d.totalMl !== undefined && setWaterData(d)).catch(() => {});
-    fetch(`${BASE}/api/workouts`, { credentials: "include" })
-      .then(r => r.json()).then((ws: any[]) => {
-        if (!Array.isArray(ws)) return;
-        const todayBurned = ws.filter(w => w.date === today).reduce((s: number, w: any) => s + (w.caloriesBurned || 0), 0);
-        setCaloriesBurned(todayBurned);
-      }).catch(() => {});
+    const fetchAll = () => {
+      const today = new Date().toISOString().split("T")[0];
+      fetch(`${BASE}/api/diet/food-log`, { credentials: "include" })
+        .then(r => r.json()).then(d => Array.isArray(d) && setFoodLog(d)).catch(() => {});
+      fetch(`${BASE}/api/progress/water`, { credentials: "include" })
+        .then(r => r.json()).then(d => d.totalMl !== undefined && setWaterData(d)).catch(() => {});
+      fetch(`${BASE}/api/workouts`, { credentials: "include" })
+        .then(r => r.json()).then((ws: any[]) => {
+          if (!Array.isArray(ws)) return;
+          const todayBurned = ws.filter(w => w.date === today).reduce((s: number, w: any) => s + (w.caloriesBurned || 0), 0);
+          setCaloriesBurned(todayBurned);
+        }).catch(() => {});
+    };
+    fetchAll();
+    window.addEventListener("focus", fetchAll);
+    return () => window.removeEventListener("focus", fetchAll);
   }, []);
 
   const addFoodToLog = (entry: FoodLogEntry) => {
