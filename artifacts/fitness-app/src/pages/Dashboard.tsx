@@ -196,16 +196,21 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    fetch(`${BASE}/api/diet/food-log`, { credentials: "include" })
-      .then(r => r.json()).then((logs: any[]) => {
-        if (!Array.isArray(logs)) return;
-        const t = logs.reduce((acc, l) => ({ calories: acc.calories + (l.calories || 0), proteinG: acc.proteinG + (l.proteinG || 0), carbsG: acc.carbsG + (l.carbsG || 0), fatG: acc.fatG + (l.fatG || 0) }), { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 });
-        setTodayFoodCalories(Math.round(t.calories));
-        setMacroTotals({ proteinG: Math.round(t.proteinG), carbsG: Math.round(t.carbsG), fatG: Math.round(t.fatG) });
-      }).catch(() => {});
-    const today = new Date().toISOString().split("T")[0];
-    fetch(`${BASE}/api/progress/water?date=${today}`, { credentials: "include" })
-      .then(r => r.json()).then(d => { if (d && d.totalMl !== undefined) setWaterMl(d.totalMl); }).catch(() => {});
+    const fetchNutrition = () => {
+      fetch(`${BASE}/api/diet/food-log`, { credentials: "include" })
+        .then(r => r.json()).then((logs: any[]) => {
+          if (!Array.isArray(logs)) return;
+          const t = logs.reduce((acc, l) => ({ calories: acc.calories + (l.calories || 0), proteinG: acc.proteinG + (l.proteinG || 0), carbsG: acc.carbsG + (l.carbsG || 0), fatG: acc.fatG + (l.fatG || 0) }), { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 });
+          setTodayFoodCalories(Math.round(t.calories));
+          setMacroTotals({ proteinG: Math.round(t.proteinG), carbsG: Math.round(t.carbsG), fatG: Math.round(t.fatG) });
+        }).catch(() => {});
+      const today = new Date().toISOString().split("T")[0];
+      fetch(`${BASE}/api/progress/water?date=${today}`, { credentials: "include" })
+        .then(r => r.json()).then(d => { if (d && d.totalMl !== undefined) setWaterMl(d.totalMl); }).catch(() => {});
+    };
+    fetchNutrition();
+    window.addEventListener("focus", fetchNutrition);
+    return () => window.removeEventListener("focus", fetchNutrition);
   }, []);
 
   if (isProfileLoading || isStatsLoading) return <LoadingState message="Loading dashboard..." />;
