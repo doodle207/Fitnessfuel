@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Activity, Dumbbell, LineChart, Apple, Brain, User, Crown } from "lucide-react";
+import { Activity, Dumbbell, LineChart, Apple, Brain, User, Crown, Gift } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/lib/i18n";
 
@@ -22,6 +22,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     { href: "/diet", label: t.nav_diet, icon: Apple },
     { href: "/ai-coach", label: t.nav_ai_coach, icon: Brain },
     { href: "/pricing", label: t.nav_premium, icon: Crown },
+    { href: "/referral", label: "Invite Friends", icon: Gift },
     { href: "/profile", label: t.nav_profile, icon: User },
   ];
 

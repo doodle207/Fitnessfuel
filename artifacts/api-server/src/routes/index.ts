@@ -14,6 +14,7 @@ import paymentsRouter from "./payments";
 import razorpayRouter from "./razorpay";
 import emailAuthRouter from "./emailAuth";
 import voucherRouter from "./voucher";
+import referralRouter from "./referral";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(aiCoachRouter);
 router.use(paymentsRouter);
 router.use(razorpayRouter);
 router.use(voucherRouter);
+router.use(referralRouter);
 
 export default router;

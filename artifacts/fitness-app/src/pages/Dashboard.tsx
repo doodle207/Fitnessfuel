@@ -187,6 +187,14 @@ export default function Dashboard() {
 
   useEffect(() => { localStorage.setItem(STEPS_KEY, String(steps)); localStorage.setItem(STEPS_DATE_KEY, new Date().toISOString().split("T")[0]); }, [steps]);
 
+  // Referral heartbeat — send after 2 minutes of dashboard activity to validate pending referral
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetch(`${BASE}/api/referral/heartbeat`, { method: "POST", credentials: "include" }).catch(() => {});
+    }, 2 * 60 * 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     fetch(`${BASE}/api/diet/food-log`, { credentials: "include" })
       .then(r => r.json()).then((logs: any[]) => {

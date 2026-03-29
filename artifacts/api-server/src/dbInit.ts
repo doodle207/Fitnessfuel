@@ -283,7 +283,50 @@ async function createTables() {
     )
   `);
 
-  // Razorpay payment history
+  // ── Referral system ────────────────────────────────────────────────────────
+
+  // Add referral_code column to existing users table (idempotent)
+  await db.execute(sql`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code VARCHAR(16) UNIQUE
+  `);
+
+  // Seed referral codes for users that don't have one yet
+  await db.execute(sql`
+    UPDATE users SET referral_code = upper(substring(replace(gen_random_uuid()::text, '-', ''), 1, 8))
+    WHERE referral_code IS NULL
+  `);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS referrals (
+      id SERIAL PRIMARY KEY,
+      referrer_id TEXT NOT NULL,
+      referred_user_id TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL DEFAULT 'pending',
+      signup_ip TEXT,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+      validated_at TIMESTAMP WITH TIME ZONE
+    )
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals (referrer_id)
+  `);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS referral_rewards (
+      id SERIAL PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      months_added INTEGER NOT NULL DEFAULT 1,
+      referral_id INTEGER,
+      note TEXT,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    )
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS idx_referral_rewards_user ON referral_rewards (user_id)
+  `);
+
+  // ── Razorpay payment history ────────────────────────────────────────────────
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS payment_history (
       id SERIAL PRIMARY KEY,
