@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, Zap, Crown, CheckCircle2, Loader2, Gift, Brain, Camera, UtensilsCrossed, XCircle, CreditCard } from "lucide-react";
+import { X, Sparkles, Zap, Crown, CheckCircle2, Loader2, Gift, Brain, Camera, UtensilsCrossed, XCircle, CreditCard, Share2, Copy, CheckCheck, Users, Star } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -57,12 +57,15 @@ export default function UpgradeModal({ trigger = "general", usage, onClose, onSu
   const [couponError, setCouponError] = useState("");
   const [couponSuccess, setCouponSuccess] = useState("");
   const [isRedeeming, setIsRedeeming] = useState(false);
-  const [activeTab, setActiveTab] = useState<"upgrade" | "coupon">("upgrade");
+  const [activeTab, setActiveTab] = useState<"upgrade" | "coupon" | "refer">("upgrade");
   const [userCountry, setUserCountry] = useState<string>("");
   const [payingPlan, setPayingPlan] = useState<"premium" | "pro" | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("idle");
   const [paymentMessage, setPaymentMessage] = useState("");
   const [successPlan, setSuccessPlan] = useState("");
+  const [referralInfo, setReferralInfo] = useState<{ referralLink: string; referralCode: string; stats: any } | null>(null);
+  const [referralLoading, setReferralLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetch(`${BASE}/api/profile`, { credentials: "include" })
@@ -71,6 +74,30 @@ export default function UpgradeModal({ trigger = "general", usage, onClose, onSu
       .catch(() => {});
     loadRazorpayScript();
   }, []);
+
+  const loadReferralInfo = useCallback(() => {
+    if (referralInfo || referralLoading) return;
+    setReferralLoading(true);
+    fetch(`${BASE}/api/referral/info`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d && setReferralInfo(d))
+      .catch(() => {})
+      .finally(() => setReferralLoading(false));
+  }, [referralInfo, referralLoading]);
+
+  const copyReferralLink = useCallback(() => {
+    if (!referralInfo?.referralLink) return;
+    navigator.clipboard.writeText(referralInfo.referralLink).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [referralInfo?.referralLink]);
+
+  const shareWhatsApp = useCallback(() => {
+    if (!referralInfo?.referralLink) return;
+    const text = encodeURIComponent(`Join me on CaloForgeX — AI-powered fitness & nutrition! Sign up with my link: ${referralInfo.referralLink}`);
+    window.open(`https://wa.me/?text=${text}`, "_blank");
+  }, [referralInfo?.referralLink]);
 
   const isIndia = userCountry === "India";
   const premiumPrice = isIndia ? "₹199" : "$5.99";
@@ -286,11 +313,15 @@ export default function UpgradeModal({ trigger = "general", usage, onClose, onSu
                 <div className="flex bg-white/5 rounded-xl p-1 gap-1">
                   <button onClick={() => setActiveTab("upgrade")}
                     className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === "upgrade" ? "bg-violet-600 text-white" : "text-muted-foreground hover:text-white"}`}>
-                    Upgrade Plan
+                    Upgrade
                   </button>
                   <button onClick={() => setActiveTab("coupon")}
-                    className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${activeTab === "coupon" ? "bg-violet-600 text-white" : "text-muted-foreground hover:text-white"}`}>
+                    className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1 ${activeTab === "coupon" ? "bg-violet-600 text-white" : "text-muted-foreground hover:text-white"}`}>
                     <Gift className="w-3.5 h-3.5" /> Coupon
+                  </button>
+                  <button onClick={() => { setActiveTab("refer"); loadReferralInfo(); }}
+                    className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1 ${activeTab === "refer" ? "bg-violet-600 text-white" : "text-muted-foreground hover:text-white"}`}>
+                    <Share2 className="w-3.5 h-3.5" /> Refer
                   </button>
                 </div>
               </div>
@@ -421,6 +452,87 @@ export default function UpgradeModal({ trigger = "general", usage, onClose, onSu
                     <div className="text-center space-y-1">
                       <p className="text-xs text-muted-foreground">Each coupon can only be used once, globally.</p>
                       <p className="text-xs text-muted-foreground">Your 7-day premium access starts immediately.</p>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "refer" && (
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-500/10 to-violet-500/5 border border-cyan-500/20 text-center">
+                      <Share2 className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
+                      <p className="font-semibold text-white">Invite Friends, Earn Free Pro</p>
+                      <p className="text-xs text-muted-foreground mt-1">Every 5 friends = 1 free month. Friend buys Pro = +1 free month for you.</p>
+                    </div>
+
+                    {referralLoading ? (
+                      <div className="flex items-center justify-center py-6">
+                        <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
+                      </div>
+                    ) : referralInfo ? (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white/70 font-mono truncate select-all">
+                            {referralInfo.referralLink}
+                          </div>
+                          <button
+                            onClick={copyReferralLink}
+                            className={`shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all ${
+                              copied ? "bg-green-500/20 border-green-500/30 text-green-400" : "bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
+                            }`}
+                          >
+                            {copied ? <CheckCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copied ? "Copied!" : "Copy"}
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="bg-white/4 rounded-xl py-2.5 px-1">
+                            <Users className="w-4 h-4 text-cyan-400 mx-auto mb-1" />
+                            <p className="text-base font-bold text-white">{referralInfo.stats.totalReferrals}</p>
+                            <p className="text-[10px] text-muted-foreground">Invited</p>
+                          </div>
+                          <div className="bg-white/4 rounded-xl py-2.5 px-1">
+                            <CheckCheck className="w-4 h-4 text-green-400 mx-auto mb-1" />
+                            <p className="text-base font-bold text-white">{referralInfo.stats.validReferrals}</p>
+                            <p className="text-[10px] text-muted-foreground">Verified</p>
+                          </div>
+                          <div className="bg-white/4 rounded-xl py-2.5 px-1">
+                            <Star className="w-4 h-4 text-yellow-400 mx-auto mb-1" />
+                            <p className="text-base font-bold text-white">{referralInfo.stats.totalMonthsEarned}</p>
+                            <p className="text-[10px] text-muted-foreground">Months earned</p>
+                          </div>
+                        </div>
+
+                        <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-violet-600 to-cyan-500 rounded-full transition-all duration-500"
+                            style={{ width: `${Math.round((referralInfo.stats.progressToNextMilestone / 5) * 100)}%` }}
+                          />
+                        </div>
+                        <p className="text-[11px] text-center text-muted-foreground">
+                          {referralInfo.stats.nextMilestoneIn > 0
+                            ? `${referralInfo.stats.nextMilestoneIn} more verified referral${referralInfo.stats.nextMilestoneIn !== 1 ? "s" : ""} → 1 month free`
+                            : "🎉 You've earned a free month reward!"}
+                        </p>
+
+                        <button
+                          onClick={shareWhatsApp}
+                          className="w-full py-3 rounded-xl bg-[#25D366]/15 border border-[#25D366]/30 text-[#25D366] font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#25D366]/25 transition-colors"
+                        >
+                          <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+                            <path d="M12 0C5.373 0 0 5.373 0 12c0 2.062.524 4.004 1.447 5.7L0 24l6.436-1.417A11.958 11.958 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm.002 21.805c-1.791 0-3.534-.482-5.065-1.39l-.364-.215-3.77.83.879-3.67-.236-.374A9.772 9.772 0 0 1 2.23 12c0-5.395 4.377-9.772 9.772-9.772 5.394 0 9.77 4.377 9.77 9.772 0 5.394-4.376 9.805-9.77 9.805z" />
+                          </svg>
+                          Share on WhatsApp
+                        </button>
+                      </>
+                    ) : (
+                      <p className="text-center text-sm text-muted-foreground py-4">Could not load referral info. Please try again.</p>
+                    )}
+
+                    <div className="border-t border-white/5 pt-3 space-y-1.5 text-[11px] text-muted-foreground">
+                      <div className="flex items-center gap-2"><Zap className="w-3 h-3 text-yellow-400" /><span>5 verified referrals → 1 month free Pro</span></div>
+                      <div className="flex items-center gap-2"><Crown className="w-3 h-3 text-violet-400" /><span>Friend buys Pro → +1 month free for you</span></div>
                     </div>
                   </div>
                 )}
