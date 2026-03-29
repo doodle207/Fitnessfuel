@@ -293,10 +293,37 @@ router.get("/diet/food-log", async (req, res) => {
 
 router.post("/diet/food-log", async (req, res) => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const body = AddFoodLogBodyExtended.parse(req.body);
-  const inserted = await db.insert(foodLogsTable).values({ userId: req.user.id, ...body }).returning();
-  const l = inserted[0];
-  res.status(201).json({ ...l, date: l.date.toString(), loggedAt: l.loggedAt.toISOString() });
+  try {
+    const raw = req.body;
+    const coerced = {
+      ...raw,
+      calories: Number(raw.calories) || 0,
+      proteinG: raw.proteinG != null ? Number(raw.proteinG) : undefined,
+      carbsG: raw.carbsG != null ? Number(raw.carbsG) : undefined,
+      fatG: raw.fatG != null ? Number(raw.fatG) : undefined,
+      fiberG: raw.fiberG != null ? Number(raw.fiberG) : undefined,
+      sodiumMg: raw.sodiumMg != null ? Number(raw.sodiumMg) : undefined,
+    };
+    const body = AddFoodLogBodyExtended.parse(coerced);
+    const inserted = await db.insert(foodLogsTable).values({
+      userId: req.user.id,
+      date: body.date,
+      foodName: body.foodName,
+      calories: Math.round(body.calories),
+      proteinG: body.proteinG != null ? Math.round(body.proteinG) : null,
+      carbsG: body.carbsG != null ? Math.round(body.carbsG) : null,
+      fatG: body.fatG != null ? Math.round(body.fatG) : null,
+      fiberG: body.fiberG != null ? Math.round(body.fiberG) : null,
+      sodiumMg: body.sodiumMg != null ? Math.round(body.sodiumMg) : null,
+      servingSize: body.servingSize ?? null,
+      mealType: body.mealType,
+    }).returning();
+    const l = inserted[0];
+    res.status(201).json({ ...l, date: String(l.date), loggedAt: l.loggedAt.toISOString() });
+  } catch (err: any) {
+    console.error("[food-log POST error]", err?.message ?? err);
+    res.status(500).json({ error: err?.message ?? "Failed to save food log" });
+  }
 });
 
 router.delete("/diet/food-log/:id", async (req, res) => {

@@ -50,11 +50,15 @@ export default function Diet() {
   const [smartEstimate, setSmartEstimate] = useState<any>(null);
   const [isEstimating, setIsEstimating] = useState(false);
 
+  const fetchFoodLog = () => {
+    fetch(`${BASE}/api/diet/food-log`, { credentials: "include" })
+      .then(r => r.json()).then(d => Array.isArray(d) && setFoodLog(d)).catch(() => {});
+  };
+
   useEffect(() => {
+    const today = new Date().toISOString().split("T")[0];
     const fetchAll = () => {
-      const today = new Date().toISOString().split("T")[0];
-      fetch(`${BASE}/api/diet/food-log`, { credentials: "include" })
-        .then(r => r.json()).then(d => Array.isArray(d) && setFoodLog(d)).catch(() => {});
+      fetchFoodLog();
       fetch(`${BASE}/api/progress/water`, { credentials: "include" })
         .then(r => r.json()).then(d => d.totalMl !== undefined && setWaterData(d)).catch(() => {});
       fetch(`${BASE}/api/workouts`, { credentials: "include" })
@@ -71,6 +75,7 @@ export default function Diet() {
 
   const addFoodToLog = (entry: FoodLogEntry) => {
     setFoodLog(prev => [...prev, entry]);
+    setTimeout(fetchFoodLog, 600);
   };
 
   const estimateFood = async () => {
@@ -91,47 +96,47 @@ export default function Diet() {
   const logEstimatedFood = async () => {
     if (!smartEstimate) return;
     const today = new Date().toISOString().split("T")[0];
-    const tempId = Date.now();
-    const tempEntry: FoodLogEntry = {
-      id: tempId, foodName: smartEstimate.foodName, calories: smartEstimate.calories,
-      proteinG: smartEstimate.proteinG, carbsG: smartEstimate.carbsG, fatG: smartEstimate.fatG,
-      mealType: activeMealTab, loggedAt: today,
-    };
-    addFoodToLog(tempEntry);
+    const snapshot = { ...smartEstimate };
+    const mealTab = activeMealTab;
     setSmartFoodName(""); setSmartFoodWeight(""); setSmartEstimate(null);
     setShowFoodModal(false);
+    const tempEntry: FoodLogEntry = {
+      id: Date.now(), foodName: snapshot.foodName, calories: snapshot.calories,
+      proteinG: snapshot.proteinG, carbsG: snapshot.carbsG, fatG: snapshot.fatG,
+      mealType: mealTab, loggedAt: new Date().toISOString(),
+    };
+    setFoodLog(prev => [...prev, tempEntry]);
     try {
-      const r = await fetch(`${BASE}/api/diet/food-log`, {
+      await fetch(`${BASE}/api/diet/food-log`, {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: today, foodName: smartEstimate.foodName, calories: smartEstimate.calories, proteinG: smartEstimate.proteinG, carbsG: smartEstimate.carbsG, fatG: smartEstimate.fatG, mealType: activeMealTab }),
+        body: JSON.stringify({ date: today, foodName: snapshot.foodName, calories: snapshot.calories, proteinG: snapshot.proteinG, carbsG: snapshot.carbsG, fatG: snapshot.fatG, mealType: mealTab }),
       });
-      const d = await r.json();
-      if (d && d.id) setFoodLog(prev => prev.map(e => e.id === tempId ? d : e));
     } catch {}
+    fetchFoodLog();
   };
 
   const logCustomFood = async () => {
     const today = new Date().toISOString().split("T")[0];
     if (!customFood.name || !customFood.calories) return;
-    const tempId = Date.now();
-    const tempEntry: FoodLogEntry = {
-      id: tempId, foodName: customFood.name, calories: parseInt(customFood.calories) || 0,
-      proteinG: parseFloat(customFood.proteinG) || 0, carbsG: parseFloat(customFood.carbsG) || 0, fatG: parseFloat(customFood.fatG) || 0,
-      mealType: activeMealTab, loggedAt: today,
-    };
-    addFoodToLog(tempEntry);
+    const snapshot = { ...customFood };
+    const mealTab = activeMealTab;
     setShowFoodModal(false);
     setCustomFood({ name: "", calories: "", proteinG: "", carbsG: "", fatG: "" });
+    const tempEntry: FoodLogEntry = {
+      id: Date.now(), foodName: snapshot.name, calories: parseInt(snapshot.calories) || 0,
+      proteinG: parseFloat(snapshot.proteinG) || 0, carbsG: parseFloat(snapshot.carbsG) || 0, fatG: parseFloat(snapshot.fatG) || 0,
+      mealType: mealTab, loggedAt: new Date().toISOString(),
+    };
+    setFoodLog(prev => [...prev, tempEntry]);
     try {
-      const r = await fetch(`${BASE}/api/diet/food-log`, {
+      await fetch(`${BASE}/api/diet/food-log`, {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: today, foodName: customFood.name, calories: parseInt(customFood.calories) || 0, proteinG: parseFloat(customFood.proteinG) || 0, carbsG: parseFloat(customFood.carbsG) || 0, fatG: parseFloat(customFood.fatG) || 0, mealType: activeMealTab }),
+        body: JSON.stringify({ date: today, foodName: snapshot.name, calories: parseInt(snapshot.calories) || 0, proteinG: parseFloat(snapshot.proteinG) || 0, carbsG: parseFloat(snapshot.carbsG) || 0, fatG: parseFloat(snapshot.fatG) || 0, mealType: mealTab }),
       });
-      const d = await r.json();
-      if (d && d.id) setFoodLog(prev => prev.map(e => e.id === tempId ? d : e));
     } catch {}
+    fetchFoodLog();
   };
 
   const deleteFood = async (id: number) => {
