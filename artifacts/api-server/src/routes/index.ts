@@ -13,6 +13,7 @@ import aiCoachRouter from "./aiCoach";
 import paymentsRouter from "./payments";
 import razorpayRouter from "./razorpay";
 import emailAuthRouter from "./emailAuth";
+import voucherRouter from "./voucher";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(imageAnalysisRouter);
 router.use(aiCoachRouter);
 router.use(paymentsRouter);
 router.use(razorpayRouter);
+router.use(voucherRouter);
 
 export default router;
