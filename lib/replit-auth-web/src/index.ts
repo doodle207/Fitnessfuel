@@ -17,14 +17,42 @@ export interface UseAuthReturn {
   logout: () => void;
 }
 
-async function fetchCurrentUser(): Promise<AuthUser | null> {
+const TOKEN_KEY = "caloforge_jwt";
+
+export function storeAuthToken(token: string): void {
   try {
-    const res = await fetch("/api/auth/user", { credentials: "include" });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data?.user ?? null;
+    localStorage.setItem(TOKEN_KEY, token);
+  } catch {}
+}
+
+export function getAuthToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
+  }
+}
+
+export function clearAuthToken(): void {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+  } catch {}
+}
+
+async function fetchCurrentUser(): Promise<{ user: AuthUser | null; token?: string }> {
+  try {
+    const headers: Record<string, string> = {};
+    const stored = getAuthToken();
+    if (stored) {
+      headers["Authorization"] = `Bearer ${stored}`;
+    }
+    const res = await fetch("/api/auth/user", { credentials: "include", headers });
+    if (!res.ok) return { user: null };
+    const data = await res.json();
+    if (data?.token) storeAuthToken(data.token);
+    return { user: data?.user ?? null, token: data?.token };
+  } catch {
+    return { user: null };
   }
 }
 
@@ -33,7 +61,7 @@ export function useAuth(): UseAuthReturn {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchCurrentUser().then((u) => {
+    fetchCurrentUser().then(({ user: u }) => {
       setUser(u);
       setIsLoading(false);
     });
@@ -48,6 +76,7 @@ export function useAuth(): UseAuthReturn {
   }, []);
 
   const logout = useCallback(() => {
+    clearAuthToken();
     window.location.href = "/api/logout";
   }, []);
 
