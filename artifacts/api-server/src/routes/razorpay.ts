@@ -3,6 +3,7 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
+import { processReferralPurchaseBonus } from "./referral";
 
 const router: IRouter = Router();
 
@@ -138,6 +139,10 @@ router.post("/payments/razorpay/verify", async (req: Request, res: Response): Pr
     `).catch(() => {});
 
     console.log(`[razorpay/verify] Payment verified for user ${userId}, plan ${plan}`);
+
+    processReferralPurchaseBonus(userId).catch(err =>
+      console.error("[razorpay/verify] Referral purchase bonus error:", err),
+    );
 
     res.json({
       success: true,

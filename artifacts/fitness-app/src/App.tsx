@@ -24,6 +24,7 @@ import Pricing from "@/pages/Pricing";
 import FutureBodySimulator from "@/pages/FutureBodySimulator";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
+import Referral from "@/pages/Referral";
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
 interface ErrorBoundaryState { hasError: boolean; error: Error | null; }
@@ -636,6 +637,15 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const [showSignup, setShowSignup] = useState(false);
   const [restoredRoute, setRestoredRoute] = useState(false);
 
+  // Capture referral code from ?ref= query param before login
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref && ref.trim()) {
+      localStorage.setItem("cfx_pending_ref", ref.trim().toUpperCase());
+    }
+  }, []);
+
   const { data: profile, isLoading: isProfileLoading, error: profileError, refetch: refetchProfile } = useGetProfile({
     query: { queryKey: getGetProfileQueryKey(), enabled: isAuthenticated }
   });
@@ -726,6 +736,7 @@ function Router() {
             <Route path="/profile" component={Profile} />
             <Route path="/ai-coach" component={AICoach} />
             <Route path="/pricing" component={Pricing} />
+            <Route path="/referral" component={Referral} />
             <Route path="/future-body" component={FutureBodySimulator} />
             <Route component={NotFound} />
           </Switch>

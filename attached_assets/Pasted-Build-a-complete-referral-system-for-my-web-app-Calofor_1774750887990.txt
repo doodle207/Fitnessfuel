@@ -1,0 +1,125 @@
+Build a complete referral system for my web app "Caloforge" with anti-abuse protection and reward logic.
+
+### 🎯 Goal
+Users can invite friends and earn free premium months based on:
+1. 5 successful referrals → 1 month free
+2. Any referral purchases premium/pro → +1 month free
+3. If both conditions are met → total 2 months free
+4. Rewards should be stackable (no limit)
+
+---
+
+### 🧠 Referral Logic
+
+Each user gets a unique referral code or link:
+Example: caloforge.com?ref=USER_ID
+
+Track:
+- Who invited whom
+- Referral status (pending, active, rewarded)
+
+---
+
+### ✅ A referral is counted ONLY IF:
+1. New user signs up using referral link
+2. Email is unique (no duplicate accounts)
+3. Device/IP is not same as inviter (basic fraud check)
+4. User performs real action:
+   - stays on dashboard ≥ 2 minutes OR
+   - logs calories / uses AI feature
+5. Add a delay (10–30 mins) before marking referral as valid
+
+---
+
+### 💰 Reward System
+
+- When user reaches 5 valid referrals:
+  → Add 1 month premium access
+
+- When any referred user completes successful payment:
+  → Add +1 month premium
+
+- Use Razorpay webhook to confirm payment:
+  Only reward after payment is verified (payment_status = success)
+
+---
+
+### 🗃️ Database Schema (suggest structure)
+
+Users:
+- id
+- email
+- referral_code
+- referred_by
+- premium_expiry_date
+
+Referrals:
+- id
+- referrer_id
+- referred_user_id
+- status (pending, valid, rejected)
+- created_at
+
+Rewards:
+- id
+- user_id
+- type (referral_bonus / purchase_bonus)
+- months_added
+- created_at
+
+---
+
+### 🔐 Anti-Abuse Protection
+
+- Block same IP/device referrals
+- Limit max referrals per day (e.g. 5/day)
+- Prevent self-referral
+- Detect suspicious patterns (same IP, same device)
+- Only count first-time signups
+
+---
+
+### ⚡ UI Features
+
+- Referral dashboard:
+  - Show total referrals
+  - Show valid referrals
+  - Show rewards earned
+  - Show remaining invites needed (e.g. "2 more to unlock 1 month")
+
+- Copy referral link button
+- Share button (WhatsApp, etc.)
+
+---
+
+### 📊 Extra (Optional but recommended)
+
+- Leaderboard of top referrers
+- Show "You earned X months free"
+- Gamify progress bar (0 → 5 referrals)
+
+---
+
+### 🧩 Tech Requirements
+
+- Backend: Node.js / Express (or compatible with my current setup)
+- Database: MongoDB or PostgreSQL
+- Payment: Razorpay webhook integration
+- Ensure clean, modular code
+
+---
+
+### 🎯 Output Required
+
+- Full backend logic
+- API routes for:
+  - generating referral link
+  - tracking referrals
+  - validating referrals
+  - handling rewards
+- Razorpay webhook handler
+- Example frontend integration (basic)
+
+---
+
+Make the system scalable, secure, and production-ready.
