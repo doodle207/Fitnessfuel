@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { PageTransition } from "@/components/ui/LoadingState";
 import { motion, AnimatePresence } from "framer-motion";
 import {
