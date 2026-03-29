@@ -33,7 +33,7 @@ async function refreshIfExpired(
   const now = Math.floor(Date.now() / 1000);
   if (!session.expires_at || now <= session.expires_at) return session;
 
-  if (!session.refresh_token) return null;
+  if (!session.refresh_token) return session;
 
   try {
     const config = await getOidcConfig();
@@ -49,7 +49,7 @@ async function refreshIfExpired(
     await updateSession(sid, session);
     return session;
   } catch {
-    return null;
+    return session;
   }
 }
 

@@ -82,6 +82,30 @@ export interface Translations {
   future_body: string;
   future_body_desc: string;
   try_now: string;
+  // Diet page
+  breakfast: string;
+  lunch: string;
+  snacks: string;
+  dinner: string;
+  add_food: string;
+  search_food: string;
+  custom_food: string;
+  delete: string;
+  daily_calories: string;
+  water_intake: string;
+  food_name: string;
+  grams: string;
+  estimate: string;
+  // Workout / Progress
+  exercises: string;
+  muscle_group: string;
+  search_exercises: string;
+  todays_focus: string;
+  add_to_workout: string;
+  start_workout: string;
+  weekly_summary: string;
+  achievements: string;
+  volume: string;
 }
 
 const T: Record<LangCode, Translations> = {
@@ -108,6 +132,12 @@ const T: Record<LangCode, Translations> = {
     total_workouts: "Total Workouts", days_streak: "day streak",
     future_body: "Future Body Simulator", future_body_desc: "See your transformation in 90 days",
     try_now: "Try now",
+    breakfast: "Breakfast", lunch: "Lunch", snacks: "Snacks", dinner: "Dinner",
+    add_food: "Add Food", search_food: "Search food...", custom_food: "Custom", delete: "Delete",
+    daily_calories: "Today's Calories", water_intake: "Water Intake", food_name: "Food name", grams: "grams", estimate: "Estimate",
+    exercises: "Exercises", muscle_group: "Muscle Group", search_exercises: "Search exercises...",
+    todays_focus: "Today's Focus", add_to_workout: "Add to Workout", start_workout: "Start Workout",
+    weekly_summary: "Weekly Summary", achievements: "Achievements", volume: "Volume",
   },
   zh: {
     nav_dashboard: "仪表盘", nav_workout: "锻炼", nav_diet: "饮食",
@@ -132,6 +162,12 @@ const T: Record<LangCode, Translations> = {
     total_workouts: "总锻炼次数", days_streak: "天连续",
     future_body: "未来体型模拟器", future_body_desc: "90天后你的样子",
     try_now: "立即体验",
+    breakfast: "早餐", lunch: "午餐", snacks: "零食", dinner: "晚餐",
+    add_food: "添加食物", search_food: "搜索食物...", custom_food: "自定义", delete: "删除",
+    daily_calories: "今日卡路里", water_intake: "摄水量", food_name: "食物名称", grams: "克", estimate: "估算",
+    exercises: "练习", muscle_group: "肌肉群", search_exercises: "搜索练习...",
+    todays_focus: "今日重点", add_to_workout: "加入训练", start_workout: "开始训练",
+    weekly_summary: "每周总结", achievements: "成就", volume: "训练量",
   },
   hi: {
     nav_dashboard: "डैशबोर्ड", nav_workout: "व्यायाम", nav_diet: "आहार",
@@ -156,6 +192,12 @@ const T: Record<LangCode, Translations> = {
     total_workouts: "कुल व्यायाम", days_streak: "दिन की स्ट्रीक",
     future_body: "भविष्य का शरीर सिमुलेटर", future_body_desc: "90 दिनों में आपका बदलाव",
     try_now: "अभी आज़माएं",
+    breakfast: "नाश्ता", lunch: "दोपहर का खाना", snacks: "स्नैक्स", dinner: "रात का खाना",
+    add_food: "खाना जोड़ें", search_food: "खाना खोजें...", custom_food: "कस्टम", delete: "हटाएं",
+    daily_calories: "आज की कैलोरी", water_intake: "पानी का सेवन", food_name: "खाने का नाम", grams: "ग्राम", estimate: "अनुमान",
+    exercises: "व्यायाम", muscle_group: "मांसपेशी समूह", search_exercises: "व्यायाम खोजें...",
+    todays_focus: "आज का लक्ष्य", add_to_workout: "वर्कआउट में जोड़ें", start_workout: "वर्कआउट शुरू करें",
+    weekly_summary: "साप्ताहिक सारांश", achievements: "उपलब्धियां", volume: "वॉल्यूम",
   },
   es: {
     nav_dashboard: "Tablero", nav_workout: "Ejercicio", nav_diet: "Dieta",
@@ -180,6 +222,12 @@ const T: Record<LangCode, Translations> = {
     total_workouts: "Entrenamientos totales", days_streak: "días de racha",
     future_body: "Simulador de cuerpo futuro", future_body_desc: "Ve tu transformación en 90 días",
     try_now: "Probar ahora",
+    breakfast: "Desayuno", lunch: "Almuerzo", snacks: "Meriendas", dinner: "Cena",
+    add_food: "Añadir alimento", search_food: "Buscar alimento...", custom_food: "Personalizado", delete: "Eliminar",
+    daily_calories: "Calorías de hoy", water_intake: "Ingesta de agua", food_name: "Nombre del alimento", grams: "gramos", estimate: "Estimar",
+    exercises: "Ejercicios", muscle_group: "Grupo muscular", search_exercises: "Buscar ejercicios...",
+    todays_focus: "Enfoque de hoy", add_to_workout: "Añadir al entrenamiento", start_workout: "Iniciar entrenamiento",
+    weekly_summary: "Resumen semanal", achievements: "Logros", volume: "Volumen",
   },
   fr: {
     nav_dashboard: "Tableau de bord", nav_workout: "Entraînement", nav_diet: "Alimentation",
@@ -204,6 +252,12 @@ const T: Record<LangCode, Translations> = {
     total_workouts: "Entraînements totaux", days_streak: "jours de suite",
     future_body: "Simulateur de corps futur", future_body_desc: "Voyez votre transformation en 90 jours",
     try_now: "Essayer maintenant",
+    breakfast: "Petit-déjeuner", lunch: "Déjeuner", snacks: "Collations", dinner: "Dîner",
+    add_food: "Ajouter un aliment", search_food: "Rechercher un aliment...", custom_food: "Personnalisé", delete: "Supprimer",
+    daily_calories: "Calories du jour", water_intake: "Apport en eau", food_name: "Nom de l'aliment", grams: "grammes", estimate: "Estimer",
+    exercises: "Exercices", muscle_group: "Groupe musculaire", search_exercises: "Rechercher des exercices...",
+    todays_focus: "Objectif du jour", add_to_workout: "Ajouter à l'entraînement", start_workout: "Démarrer l'entraînement",
+    weekly_summary: "Résumé hebdomadaire", achievements: "Réalisations", volume: "Volume",
   },
   ar: {
     nav_dashboard: "لوحة التحكم", nav_workout: "التمرين", nav_diet: "النظام الغذائي",
@@ -228,6 +282,12 @@ const T: Record<LangCode, Translations> = {
     total_workouts: "إجمالي التمارين", days_streak: "أيام متتالية",
     future_body: "محاكي الجسم المستقبلي", future_body_desc: "شاهد تحولك في 90 يومًا",
     try_now: "جرب الآن",
+    breakfast: "الإفطار", lunch: "الغداء", snacks: "الوجبات الخفيفة", dinner: "العشاء",
+    add_food: "إضافة طعام", search_food: "ابحث عن طعام...", custom_food: "مخصص", delete: "حذف",
+    daily_calories: "سعرات اليوم", water_intake: "تناول الماء", food_name: "اسم الطعام", grams: "جرام", estimate: "تقدير",
+    exercises: "تمارين", muscle_group: "مجموعة العضلات", search_exercises: "ابحث عن تمارين...",
+    todays_focus: "تركيز اليوم", add_to_workout: "أضف للتمرين", start_workout: "ابدأ التمرين",
+    weekly_summary: "الملخص الأسبوعي", achievements: "الإنجازات", volume: "الحجم",
   },
   de: {
     nav_dashboard: "Dashboard", nav_workout: "Training", nav_diet: "Ernährung",
@@ -252,6 +312,12 @@ const T: Record<LangCode, Translations> = {
     total_workouts: "Gesamte Trainingseinheiten", days_streak: "Tage hintereinander",
     future_body: "Körper-Simulator der Zukunft", future_body_desc: "Sehen Sie Ihre Umwandlung in 90 Tagen",
     try_now: "Jetzt versuchen",
+    breakfast: "Frühstück", lunch: "Mittagessen", snacks: "Snacks", dinner: "Abendessen",
+    add_food: "Nahrung hinzufügen", search_food: "Nahrung suchen...", custom_food: "Benutzerdefiniert", delete: "Löschen",
+    daily_calories: "Kalorien heute", water_intake: "Wasseraufnahme", food_name: "Nahrungsname", grams: "Gramm", estimate: "Schätzen",
+    exercises: "Übungen", muscle_group: "Muskelgruppe", search_exercises: "Übungen suchen...",
+    todays_focus: "Heutiger Fokus", add_to_workout: "Zum Training hinzufügen", start_workout: "Training starten",
+    weekly_summary: "Wöchentliche Zusammenfassung", achievements: "Erfolge", volume: "Volumen",
   },
   ru: {
     nav_dashboard: "Панель", nav_workout: "Тренировка", nav_diet: "Питание",
@@ -276,6 +342,12 @@ const T: Record<LangCode, Translations> = {
     total_workouts: "Всего тренировок", days_streak: "дней подряд",
     future_body: "Симулятор тела", future_body_desc: "Увидьте преображение за 90 дней",
     try_now: "Попробовать",
+    breakfast: "Завтрак", lunch: "Обед", snacks: "Перекусы", dinner: "Ужин",
+    add_food: "Добавить еду", search_food: "Поиск еды...", custom_food: "Своё", delete: "Удалить",
+    daily_calories: "Калории сегодня", water_intake: "Потребление воды", food_name: "Название блюда", grams: "грамм", estimate: "Оценить",
+    exercises: "Упражнения", muscle_group: "Группа мышц", search_exercises: "Поиск упражнений...",
+    todays_focus: "Фокус сегодня", add_to_workout: "В тренировку", start_workout: "Начать тренировку",
+    weekly_summary: "Итоги недели", achievements: "Достижения", volume: "Объём",
   },
   pt: {
     nav_dashboard: "Painel", nav_workout: "Treino", nav_diet: "Dieta",
@@ -300,6 +372,12 @@ const T: Record<LangCode, Translations> = {
     total_workouts: "Total de treinos", days_streak: "dias seguidos",
     future_body: "Simulador de corpo futuro", future_body_desc: "Veja sua transformação em 90 dias",
     try_now: "Tentar agora",
+    breakfast: "Café da manhã", lunch: "Almoço", snacks: "Lanches", dinner: "Jantar",
+    add_food: "Adicionar alimento", search_food: "Pesquisar alimento...", custom_food: "Personalizado", delete: "Excluir",
+    daily_calories: "Calorias de hoje", water_intake: "Ingestão de água", food_name: "Nome do alimento", grams: "gramas", estimate: "Estimar",
+    exercises: "Exercícios", muscle_group: "Grupo muscular", search_exercises: "Pesquisar exercícios...",
+    todays_focus: "Foco de hoje", add_to_workout: "Adicionar ao treino", start_workout: "Iniciar treino",
+    weekly_summary: "Resumo semanal", achievements: "Conquistas", volume: "Volume",
   },
   ja: {
     nav_dashboard: "ダッシュボード", nav_workout: "ワークアウト", nav_diet: "食事",
@@ -324,6 +402,12 @@ const T: Record<LangCode, Translations> = {
     total_workouts: "総ワークアウト数", days_streak: "日間連続",
     future_body: "未来のボディシミュレーター", future_body_desc: "90日でのあなたの変身を見てください",
     try_now: "今すぐ試す",
+    breakfast: "朝食", lunch: "昼食", snacks: "スナック", dinner: "夕食",
+    add_food: "食物を追加", search_food: "食物を検索...", custom_food: "カスタム", delete: "削除",
+    daily_calories: "今日のカロリー", water_intake: "水分摂取", food_name: "食物名", grams: "グラム", estimate: "推定",
+    exercises: "エクササイズ", muscle_group: "筋肉グループ", search_exercises: "エクササイズを検索...",
+    todays_focus: "今日の焦点", add_to_workout: "ワークアウトに追加", start_workout: "ワークアウト開始",
+    weekly_summary: "週間サマリー", achievements: "実績", volume: "ボリューム",
   },
 };
 

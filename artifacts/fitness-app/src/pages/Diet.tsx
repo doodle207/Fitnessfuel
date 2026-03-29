@@ -7,15 +7,9 @@ import { format } from "date-fns";
 import ImageFoodAnalyzer from "@/components/ImageFoodAnalyzer";
 import AdBanner from "@/components/AdBanner";
 import UpgradeModal from "@/components/UpgradeModal";
+import { useLanguage } from "@/lib/i18n";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-
-const MEAL_TYPES = [
-  { id: "breakfast", label: "Breakfast", icon: Coffee, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
-  { id: "lunch", label: "Lunch", icon: Sun, color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
-  { id: "snack", label: "Snacks", icon: Sandwich, color: "text-green-400", bg: "bg-green-500/10 border-green-500/20" },
-  { id: "dinner", label: "Dinner", icon: Moon, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
-];
 const WATER_GOAL = 3000;
 
 interface FoodLogEntry {
@@ -30,8 +24,16 @@ interface FoodLogEntry {
 }
 
 export default function Diet() {
+  const { t } = useLanguage();
   const { data: rawProfile } = useGetProfile({ query: { queryKey: ['fitness', 'profile-diet'] } });
   const profile = rawProfile && typeof rawProfile === "object" && !Array.isArray(rawProfile) ? rawProfile as any : null;
+
+  const MEAL_TYPES = [
+    { id: "breakfast", label: t.breakfast, icon: Coffee, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+    { id: "lunch", label: t.lunch, icon: Sun, color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
+    { id: "snack", label: t.snacks, icon: Sandwich, color: "text-green-400", bg: "bg-green-500/10 border-green-500/20" },
+    { id: "dinner", label: t.dinner, icon: Moon, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
+  ];
 
   const [showFoodModal, setShowFoodModal] = useState(false);
   const [activeMealTab, setActiveMealTab] = useState("breakfast");
@@ -206,9 +208,9 @@ export default function Diet() {
 
           <div className="mt-4 grid grid-cols-3 gap-3">
             {[
-              { label: "Protein", eaten: eatenProtein, target: proteinTarget, color: "bg-blue-400", text: "text-blue-400" },
-              { label: "Carbs", eaten: eatenCarbs, target: carbsTarget, color: "bg-green-400", text: "text-green-400" },
-              { label: "Fat", eaten: eatenFat, target: fatTarget, color: "bg-orange-400", text: "text-orange-400" },
+              { label: t.protein, eaten: eatenProtein, target: proteinTarget, color: "bg-blue-400", text: "text-blue-400" },
+              { label: t.carbs, eaten: eatenCarbs, target: carbsTarget, color: "bg-green-400", text: "text-green-400" },
+              { label: t.fat, eaten: eatenFat, target: fatTarget, color: "bg-orange-400", text: "text-orange-400" },
             ].map(({ label, eaten, target, color, text }) => (
               <div key={label}>
                 <div className="flex justify-between text-[10px] mb-1">
@@ -330,7 +332,7 @@ export default function Diet() {
                   <button onClick={estimateFood} disabled={!smartFoodName.trim() || isEstimating}
                     className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2 shrink-0 shadow-[0_0_14px_rgba(124,58,237,0.35)]">
                     {isEstimating ? <Search className="w-4 h-4 animate-pulse" /> : <Sparkles className="w-4 h-4" />}
-                    {isEstimating ? "..." : "Estimate"}
+                    {isEstimating ? "..." : t.estimate}
                   </button>
                 </div>
               </div>
@@ -344,9 +346,9 @@ export default function Diet() {
                     <div className="grid grid-cols-4 gap-2 text-center">
                       {[
                         { val: smartEstimate.calories, unit: "kcal", color: "text-violet-400" },
-                        { val: `${smartEstimate.proteinG}g`, unit: "Protein", color: "text-blue-400" },
-                        { val: `${smartEstimate.carbsG}g`, unit: "Carbs", color: "text-green-400" },
-                        { val: `${smartEstimate.fatG}g`, unit: "Fat", color: "text-orange-400" },
+                        { val: `${smartEstimate.proteinG}g`, unit: t.protein, color: "text-blue-400" },
+                        { val: `${smartEstimate.carbsG}g`, unit: t.carbs, color: "text-green-400" },
+                        { val: `${smartEstimate.fatG}g`, unit: t.fat, color: "text-orange-400" },
                       ].map(({ val, unit, color }, i) => (
                         <div key={i} className="p-1.5 rounded-lg bg-black/30 border border-white/5">
                           <p className={`text-sm font-bold ${color}`}>{val}</p>
@@ -408,7 +410,7 @@ export default function Diet() {
                 className="bg-[#0d0d14] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg max-h-[85vh] overflow-hidden flex flex-col shadow-2xl">
                 <div className="p-4 border-b border-white/5 flex items-center justify-between">
                   <div>
-                    <h3 className="font-display font-bold text-lg">Add Food</h3>
+                    <h3 className="font-display font-bold text-lg">{t.add_food}</h3>
                     <div className="flex gap-1.5 mt-2">
                       {MEAL_TYPES.map(({ id, label, color }) => (
                         <button key={id} onClick={() => setActiveMealTab(id)}
