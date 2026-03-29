@@ -131,7 +131,7 @@ export default function ImageFoodAnalyzer({ activeMealTab, onFoodLogged, onClose
     setSaving(true);
     const today = new Date().toISOString().split("T")[0];
     try {
-      const res = await fetch(`${BASE}/api/diet/save-analyzed-food`, {
+      const res = await fetch(`${BASE}/api/diet/food-log`, {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ foodName: editable.foodName, calories: editable.calories, proteinG: editable.proteinG, carbsG: editable.carbsG, fatG: editable.fatG, mealType, date: today }),
