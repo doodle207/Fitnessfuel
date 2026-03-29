@@ -52,24 +52,6 @@ function getGreeting(country: string): { text: string; time: string; period: "mo
   return { text, time: timeStr, period };
 }
 
-function getTimeBackground(country: string) {
-  const { h, min } = getLocalHourMinute(country);
-  const isNight = h >= 22 || h < 5;
-  const isMorning = h >= 5 && h < 12;
-  const isAfternoon = h >= 12 && (h < 16 || (h === 16 && min < 30));
-  if (isNight) return {
-    blobs: [{ color: "bg-indigo-900/30", pos: "top-[-10%] left-[-5%]", size: "w-[55%] h-[55%]" }, { color: "bg-blue-950/40", pos: "top-[5%] right-[-10%]", size: "w-[45%] h-[45%]" }, { color: "bg-violet-950/20", pos: "bottom-[0%] left-[20%]", size: "w-[40%] h-[30%]" }],
-  };
-  if (isMorning) return {
-    blobs: [{ color: "bg-amber-500/20", pos: "top-[-15%] right-[-5%]", size: "w-[50%] h-[50%]" }, { color: "bg-yellow-400/15", pos: "top-[0%] left-[-10%]", size: "w-[45%] h-[40%]" }, { color: "bg-sky-500/15", pos: "bottom-[0%] right-[10%]", size: "w-[35%] h-[30%]" }],
-  };
-  if (isAfternoon) return {
-    blobs: [{ color: "bg-orange-500/20", pos: "top-[-10%] right-[-5%]", size: "w-[50%] h-[50%]" }, { color: "bg-amber-400/15", pos: "top-[5%] left-[-8%]", size: "w-[40%] h-[40%]" }, { color: "bg-yellow-500/10", pos: "bottom-[0%] left-[30%]", size: "w-[30%] h-[25%]" }],
-  };
-  return {
-    blobs: [{ color: "bg-rose-600/20", pos: "top-[-15%] right-[-5%]", size: "w-[55%] h-[50%]" }, { color: "bg-orange-500/15", pos: "top-[0%] left-[-10%]", size: "w-[45%] h-[40%]" }, { color: "bg-violet-600/20", pos: "bottom-[-5%] right-[5%]", size: "w-[40%] h-[35%]" }],
-  };
-}
 
 interface MacroRingProps { label: string; current: number; target: number; stroke: string; track: string; }
 function MacroRing({ label, current, target, stroke, track }: MacroRingProps) {
@@ -250,7 +232,6 @@ export default function Dashboard() {
   const greetingRaw = getGreeting(country);
   const greeting = greetingRaw;
   const greetingText = t[`greeting_${greetingRaw.period}` as keyof typeof t] as string || greetingRaw.text;
-  const timeBg = getTimeBackground(country);
   const isFemale = gender === "female";
   const periodStartDate: string | null = (safeProfile as any).periodStartDate || null;
   const periodEndDate: string | null = (safeProfile as any).periodEndDate || null;
@@ -285,14 +266,7 @@ export default function Dashboard() {
     <PageTransition>
       <div className="space-y-4 max-w-5xl mx-auto">
 
-        {/* Dynamic background blobs */}
         <div className="relative">
-          <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none -z-10">
-            {timeBg.blobs.map((blob, i) => (
-              <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2, delay: i * 0.3 }}
-                className={`absolute ${blob.color} ${blob.pos} ${blob.size} rounded-full blur-[100px]`} />
-            ))}
-          </div>
           <header className="flex items-start justify-between gap-3 pt-1">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 text-muted-foreground text-sm">

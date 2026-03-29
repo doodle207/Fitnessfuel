@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { Dumbbell, Play, Calendar, X, Target, Info, Zap, Search, AlertCircle, Star, ChevronRight, CheckCircle2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/lib/i18n";
 
 import imgChest from "@assets/IMG_5147_1774142427972.png";
 import imgBack from "@assets/IMG_5146_1774142427972.png";
@@ -195,6 +196,7 @@ export default function WorkoutBuilder() {
   const [selectedSplit, setSelectedSplit] = useState<string>("ppl");
   const [aiChoose, setAiChoose] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const { data: rawExercises, isLoading: exLoading } = useGetExercises({ muscleGroup: selectedGroup } as any, { query: { queryKey: ['fitness', 'exercises', selectedGroup] } });
   const { data: rawWorkouts } = useGetWorkouts({ query: { queryKey: ['fitness', 'workouts'] } });
@@ -300,8 +302,7 @@ export default function WorkoutBuilder() {
               const isSelected = selectedSplit === split.id || (aiChoose && split.recommended);
               return (
                 <div key={split.id}>
-                  <motion.button
-                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
+                  <button
                     onClick={() => { setSelectedSplit(split.id); setAiChoose(false); }}
                     className={`relative w-full text-left p-4 rounded-2xl border transition-all ${isSelected ? `bg-gradient-to-br ${split.color} ring-1 ring-violet-500/50` : "bg-white/3 border-white/8 hover:bg-white/6 hover:border-white/15"}`}
                   >
@@ -324,7 +325,7 @@ export default function WorkoutBuilder() {
                       <span className={`text-[11px] border rounded-full px-2 py-0.5 ${diffColor(split.level)}`}>{split.level}</span>
                     </div>
                     <p className="text-xs text-white/55 leading-relaxed">{split.desc}</p>
-                  </motion.button>
+                  </button>
 
                   {/* Weekly Schedule - appears right below selected split */}
                   <AnimatePresence>
@@ -372,7 +373,7 @@ export default function WorkoutBuilder() {
           {activeSplit && (
             <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
               className="mb-4 rounded-2xl p-4 bg-gradient-to-r from-violet-500/10 to-cyan-500/10 border border-violet-500/25">
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Today's Focus</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">{t.todays_focus}</p>
               <p className="text-sm font-display font-bold text-white">
                 <span className="text-violet-400">{activeSplit.name}</span>
                 <span className="text-muted-foreground mx-2">—</span>
@@ -381,17 +382,16 @@ export default function WorkoutBuilder() {
             </motion.div>
           )}
 
-          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Muscle Group</p>
+          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">{t.muscle_group}</p>
           <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
             {muscleGroups.map((group, idx) => {
               const isSelected = selectedGroup === group.id;
               const imgSrc = muscleGroupImages[group.id];
               return (
-                <motion.button
+                <button
                   key={group.id}
-                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
                   onClick={() => { setSelectedGroup(group.id); setExpandedTip(null); setSearch(""); }}
-                  className={`relative shrink-0 w-24 h-18 rounded-2xl overflow-hidden transition-all duration-300 ${isSelected ? "ring-2 ring-violet-500 ring-offset-2 ring-offset-background scale-105" : "opacity-70 hover:opacity-100 hover:scale-105"}`}
+                  className={`relative shrink-0 w-24 rounded-2xl overflow-hidden transition-all duration-300 ${isSelected ? "ring-2 ring-violet-500 ring-offset-2 ring-offset-background scale-105" : "opacity-70 hover:opacity-100 hover:scale-105"}`}
                   style={{ height: 72 }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/10 animate-pulse" />
@@ -407,7 +407,7 @@ export default function WorkoutBuilder() {
                       <div className="w-2 h-2 rounded-full bg-white" />
                     </div>
                   )}
-                </motion.button>
+                </button>
               );
             })}
           </div>
@@ -420,8 +420,8 @@ export default function WorkoutBuilder() {
                 <Dumbbell className="w-4 h-4 text-violet-400" />
               </div>
               <div>
-                <h2 className="font-display font-bold text-base">{selectedGroup} Exercises</h2>
-                <p className="text-xs text-muted-foreground">{filteredExercises.length} exercises</p>
+                <h2 className="font-display font-bold text-base">{selectedGroup} {t.exercises}</h2>
+                <p className="text-xs text-muted-foreground">{filteredExercises.length} {t.exercises.toLowerCase()}</p>
               </div>
             </div>
             <button
@@ -436,7 +436,7 @@ export default function WorkoutBuilder() {
           <div className="px-4 pt-3 pb-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search exercises..."
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t.search_exercises}
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-black/40 border border-white/8 focus:border-violet-500 outline-none text-sm" />
             </div>
           </div>
