@@ -307,6 +307,33 @@ export default function ActiveWorkout() {
     }
   });
 
+  // Derive sets data safely — must happen before any early return so hook count stays constant
+  const workoutData = (workout as any) || {};
+  const sets: any[] = Array.isArray(workoutData.sets) ? workoutData.sets : [];
+  const allSets = [...sets, ...optimisticSets];
+  const setsByExercise = allSets.reduce((acc: Record<number, any[]>, set: any) => {
+    if (!acc[set.exerciseId]) acc[set.exerciseId] = [];
+    acc[set.exerciseId].push(set);
+    return acc;
+  }, {} as Record<number, any[]>);
+  const exercisedIds = Object.keys(setsByExercise).map(Number);
+  const allDisplayIds = [...new Set([...exercisedIds, ...pendingExerciseIds])];
+
+  // useCallback must be declared before any conditional return to satisfy Rules of Hooks
+  const handleAddSet = useCallback((exerciseId: number, weightStr: string, repsStr: string) => {
+    const weight = parseFloat(weightStr);
+    const reps = parseInt(repsStr);
+    if (isNaN(weight) || isNaN(reps) || reps <= 0) return;
+    const existingSets = setsByExercise[exerciseId] || [];
+    const tempId = -Date.now();
+    const optimisticSet = { id: tempId, exerciseId, setNumber: existingSets.length + 1, reps, weightKg: weight, notes: "", isOptimistic: true };
+    setOptimisticSets(prev => [...prev, optimisticSet]);
+    setCompletedSets(prev => prev + 1);
+    addSet({ workoutId, data: { exerciseId, setNumber: existingSets.length + 1, reps, weightKg: weight, notes: "" }, __tempId: tempId } as any);
+  }, [setsByExercise, workoutId, addSet]);
+
+  // --- Early returns (all hooks already declared above) ---
+
   if (isWorkoutLoading || isExLoading) return <LoadingState message="Loading session..." />;
 
   if (!workout || workoutError || !isNaN(workoutId) === false || workoutId === 0) {
@@ -324,8 +351,6 @@ export default function ActiveWorkout() {
       </div>
     );
   }
-
-  const workoutData = workout as any;
 
   if (workoutData.durationMinutes && workoutData.durationMinutes > 0) {
     return (
@@ -347,17 +372,6 @@ export default function ActiveWorkout() {
     );
   }
 
-  const sets: any[] = Array.isArray(workoutData.sets) ? workoutData.sets : [];
-  const allSets = [...sets, ...optimisticSets];
-  const setsByExercise = allSets.reduce((acc: Record<number, any[]>, set: any) => {
-    if (!acc[set.exerciseId]) acc[set.exerciseId] = [];
-    acc[set.exerciseId].push(set);
-    return acc;
-  }, {} as Record<number, any[]>);
-
-  const exercisedIds = Object.keys(setsByExercise).map(Number);
-  const allDisplayIds = [...new Set([...exercisedIds, ...pendingExerciseIds])];
-
   const handleFinishWorkout = async () => {
     setIsFinishing(true);
     try {
@@ -367,18 +381,6 @@ export default function ActiveWorkout() {
     } catch { setLocation("/workout"); }
     finally { setIsFinishing(false); }
   };
-
-  const handleAddSet = useCallback((exerciseId: number, weightStr: string, repsStr: string) => {
-    const weight = parseFloat(weightStr);
-    const reps = parseInt(repsStr);
-    if (isNaN(weight) || isNaN(reps) || reps <= 0) return;
-    const existingSets = setsByExercise[exerciseId] || [];
-    const tempId = -Date.now();
-    const optimisticSet = { id: tempId, exerciseId, setNumber: existingSets.length + 1, reps, weightKg: weight, notes: "", isOptimistic: true };
-    setOptimisticSets(prev => [...prev, optimisticSet]);
-    setCompletedSets(prev => prev + 1);
-    addSet({ workoutId, data: { exerciseId, setNumber: existingSets.length + 1, reps, weightKg: weight, notes: "" }, __tempId: tempId } as any);
-  }, [setsByExercise, workoutId, addSet]);
 
   const muscleGroups = ["All", "Chest", "Back", "Shoulders", "Arms", "Legs", "Core", "Cardio", "Full Body"];
   const filteredSelector = allExercises.filter(ex => {
