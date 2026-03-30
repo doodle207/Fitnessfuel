@@ -146,7 +146,7 @@ function ExerciseTip({ exercise, onClose }: { exercise: Exercise; onClose: () =>
   const scheme = repSchemes[exercise.difficulty ?? "Intermediate"] ?? repSchemes.Intermediate;
   const steps = (exercise.instructions ?? "").split(". ").filter(Boolean).slice(0, 4);
   return (
-    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
       className="overflow-hidden border-t border-white/5 bg-black/30">
       <div className="p-4 space-y-3">
         <div className="flex justify-between items-start">

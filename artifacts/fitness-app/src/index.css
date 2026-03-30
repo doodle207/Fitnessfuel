@@ -99,6 +99,18 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-display tracking-tight;
   }
+
+  button, a, [role="button"] {
+    transition: opacity 0.18s ease, background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.15s ease;
+  }
+
+  button:active, [role="button"]:active {
+    transform: scale(0.97);
+  }
+
+  input, textarea, select {
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+  }
 }
 
 @layer utilities {
