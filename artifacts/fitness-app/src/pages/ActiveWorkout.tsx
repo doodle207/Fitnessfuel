@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, memo } from "react";
+import { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
 import { useParams, useLocation } from "wouter";
 import { useGetWorkout, useGetExercises, useAddSet } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -235,8 +235,11 @@ export default function ActiveWorkout() {
   const startTimeRef = useRef(Date.now());
   const { toast } = useToast();
 
-  const { data: workout, isLoading: isWorkoutLoading, error: workoutError } = useGetWorkout(workoutId, { query: { queryKey: ['fitness', 'workout', workoutId] } });
-  const { data: rawExercises, isLoading: isExLoading } = useGetExercises(undefined, { query: { queryKey: ['fitness', 'exercises'] } });
+  const workoutQueryOptions = useMemo(() => ({ query: { queryKey: ['fitness', 'workout', workoutId] } }), [workoutId]);
+  const exercisesQueryOptions = useMemo(() => ({ query: { queryKey: ['fitness', 'exercises'] } }), []);
+
+  const { data: workout, isLoading: isWorkoutLoading, error: workoutError } = useGetWorkout(workoutId, workoutQueryOptions);
+  const { data: rawExercises, isLoading: isExLoading } = useGetExercises(undefined, exercisesQueryOptions);
   const allExercises: Exercise[] = Array.isArray(rawExercises) ? rawExercises : [];
 
   const [pendingExerciseIds, setPendingExerciseIds] = useState<number[]>([]);

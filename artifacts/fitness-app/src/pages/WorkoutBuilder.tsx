@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { PageTransition } from "@/components/ui/LoadingState";
 import { useCreateWorkout, useGetExercises, useGetWorkouts } from "@workspace/api-client-react";
@@ -198,8 +198,11 @@ export default function WorkoutBuilder() {
   const { toast } = useToast();
   const { t } = useLanguage();
 
-  const { data: rawExercises, isLoading: exLoading } = useGetExercises({ muscleGroup: selectedGroup } as any, { query: { queryKey: ['fitness', 'exercises', selectedGroup] } });
-  const { data: rawWorkouts } = useGetWorkouts({ query: { queryKey: ['fitness', 'workouts'] } });
+  const exercisesQueryOptions = useMemo(() => ({ query: { queryKey: ['fitness', 'exercises', selectedGroup] } }), [selectedGroup]);
+  const workoutsQueryOptions = useMemo(() => ({ query: { queryKey: ['fitness', 'workouts'] } }), []);
+
+  const { data: rawExercises, isLoading: exLoading } = useGetExercises({ muscleGroup: selectedGroup } as any, exercisesQueryOptions);
+  const { data: rawWorkouts } = useGetWorkouts(workoutsQueryOptions);
 
   const exercises: Exercise[] = Array.isArray(rawExercises) ? rawExercises : [];
   const recentWorkouts = Array.isArray(rawWorkouts) ? rawWorkouts : [];
