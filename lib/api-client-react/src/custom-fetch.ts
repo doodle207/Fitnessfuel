@@ -311,6 +311,16 @@ export async function customFetch<T = unknown>(
     headers.set("accept", DEFAULT_JSON_ACCEPT);
   }
 
+  // Inject JWT Authorization header from localStorage if available
+  if (!headers.has("authorization")) {
+    try {
+      const token = localStorage.getItem("caloforge_jwt");
+      if (token) {
+        headers.set("authorization", `Bearer ${token}`);
+      }
+    } catch {}
+  }
+
   const requestInfo = { method, url: resolveUrl(input) };
 
   const response = await fetch(input, { ...init, method, headers, credentials: "include" });
