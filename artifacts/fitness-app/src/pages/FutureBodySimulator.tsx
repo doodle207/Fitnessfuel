@@ -364,7 +364,7 @@ export default function FutureBodySimulator() {
                 <LineChart data={chart} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
                   <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#888" }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
                   <YAxis domain={["auto", "auto"]} tick={{ fontSize: 9, fill: "#888" }} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={{ background: "#13131f", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, fontSize: 12 }} formatter={(v: any) => [`${v} kg`, "Weight"]} />
+                  <Tooltip contentStyle={{ background: "#13131f", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, fontSize: 12, color: "#fff" }} labelStyle={{ color: "#fff" }} itemStyle={{ color: "#ccc" }} formatter={(v: any) => [`${v} kg`, "Weight"]} />
                   <Line type="monotone" dataKey="weight" stroke="url(#wGrad)" strokeWidth={2.5} dot={false} />
                   <defs>
                     <linearGradient id="wGrad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -385,7 +385,7 @@ export default function FutureBodySimulator() {
                 <BarChart data={[{ name: "Fat", value: result.fatChange }, { name: "Muscle", value: result.muscleChange }]} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
                   <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#888" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 9, fill: "#888" }} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={{ background: "#13131f", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, fontSize: 12 }} formatter={(v: any) => [`${v > 0 ? "+" : ""}${v} kg`]} />
+                  <Tooltip contentStyle={{ background: "#13131f", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, fontSize: 12, color: "#fff" }} labelStyle={{ color: "#fff" }} itemStyle={{ color: "#ccc" }} formatter={(v: any) => [`${v > 0 ? "+" : ""}${v} kg`]} />
                   <ReferenceLine y={0} stroke="rgba(255,255,255,0.1)" />
                   <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                     {[result.fatChange, result.muscleChange].map((v, i) => (
