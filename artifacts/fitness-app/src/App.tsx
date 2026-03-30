@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth, storeAuthToken } from "@workspace/replit-auth-web";
 import { LanguageProvider } from "@/lib/i18n";
 import { useGetProfile, getGetProfileQueryKey } from "@workspace/api-client-react";
-import React, { useEffect, useState, Component, type ErrorInfo, type ReactNode } from "react";
+import React, { useEffect, useState, useMemo, Component, type ErrorInfo, type ReactNode } from "react";
 import { Activity, Zap, TrendingUp, ChevronRight, Mail, ShieldCheck, Loader2, RotateCcw, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -650,8 +650,9 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const profileQueryKey = useMemo(() => getGetProfileQueryKey(), []);
   const { data: profile, isLoading: isProfileLoading, error: profileError, refetch: refetchProfile } = useGetProfile({
-    query: { queryKey: getGetProfileQueryKey(), enabled: isAuthenticated }
+    query: { queryKey: profileQueryKey, enabled: isAuthenticated }
   });
 
   // True while we're waiting on a profile result for an authenticated user.
@@ -731,18 +732,18 @@ function Router() {
       <Route>
         <AuthGuard>
           <Switch>
-            <Route path="/onboarding" component={Onboarding} />
-            <Route path="/" component={Dashboard} />
-            <Route path="/workout" component={WorkoutBuilder} />
-            <Route path="/workout/active/:id" component={ActiveWorkout} />
-            <Route path="/progress" component={Progress} />
-            <Route path="/diet" component={Diet} />
-            <Route path="/profile" component={Profile} />
-            <Route path="/ai-coach" component={AICoach} />
-            <Route path="/pricing" component={Pricing} />
-            <Route path="/referral" component={Referral} />
-            <Route path="/future-body" component={FutureBodySimulator} />
-            <Route component={NotFound} />
+            <Route key="onboarding" path="/onboarding" component={Onboarding} />
+            <Route key="workout-active" path="/workout/active/:id" component={ActiveWorkout} />
+            <Route key="workout" path="/workout" component={WorkoutBuilder} />
+            <Route key="progress" path="/progress" component={Progress} />
+            <Route key="diet" path="/diet" component={Diet} />
+            <Route key="profile" path="/profile" component={Profile} />
+            <Route key="ai-coach" path="/ai-coach" component={AICoach} />
+            <Route key="pricing" path="/pricing" component={Pricing} />
+            <Route key="referral" path="/referral" component={Referral} />
+            <Route key="future-body" path="/future-body" component={FutureBodySimulator} />
+            <Route key="dashboard" path="/" component={Dashboard} />
+            <Route key="not-found" component={NotFound} />
           </Switch>
         </AuthGuard>
       </Route>
