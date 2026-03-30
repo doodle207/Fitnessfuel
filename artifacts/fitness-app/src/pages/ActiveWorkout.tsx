@@ -455,7 +455,7 @@ export default function ActiveWorkout() {
             const nextWeight = lastSet ? Math.round((lastSet.weightKg + 2.5) * 2) / 2 : null;
 
             return (
-              <motion.div key={exId} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              <motion.div key={exId} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
                 className="glass-card rounded-2xl overflow-hidden border border-white/5">
                 {/* Exercise header */}
                 <div className="p-4 bg-black/40 flex items-center justify-between cursor-pointer hover:bg-black/60 transition-colors"
@@ -478,13 +478,13 @@ export default function ActiveWorkout() {
                       className="p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-400 text-muted-foreground transition-colors">
                       <X className="w-4 h-4" />
                     </button>
-                    <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ease-in-out ${isExpanded ? "rotate-180" : ""}`} />
                   </div>
                 </div>
 
                 <AnimatePresence>
                   {isExpanded && (
-                    <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden">
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }} className="overflow-hidden">
                       {showInfo && <ExerciseInfoPanel exercise={exercise} />}
 
                       <div className="p-4 space-y-3 bg-black/10">

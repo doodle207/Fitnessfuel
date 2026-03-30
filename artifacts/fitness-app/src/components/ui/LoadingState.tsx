@@ -6,10 +6,10 @@ export function LoadingState({ message = "Loading..." }: { message?: string }) {
     <div className="min-h-[50vh] flex flex-col items-center justify-center w-full">
       <motion.div
         animate={{ 
-          scale: [1, 1.2, 1],
-          opacity: [0.5, 1, 0.5]
+          scale: [1, 1.15, 1],
+          opacity: [0.6, 1, 0.6]
         }}
-        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
         className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(124,58,237,0.3)]"
       >
         <Activity className="w-8 h-8 text-primary" />
@@ -22,12 +22,32 @@ export function LoadingState({ message = "Loading..." }: { message?: string }) {
 export function PageTransition({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.3 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
       {children}
     </motion.div>
   );
 }
+
+export const fadeUp = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -6 },
+  transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] },
+};
+
+export const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.07,
+    },
+  },
+};
+
+export const staggerItem = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] } },
+};

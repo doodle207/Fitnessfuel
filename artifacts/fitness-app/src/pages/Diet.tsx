@@ -206,7 +206,7 @@ export default function Diet() {
             </div>
           </div>
           <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-            <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(eatenCalories / targetCal, 1) * 100}%` }} transition={{ duration: 1 }}
+            <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(eatenCalories / targetCal, 1) * 100}%` }} transition={{ duration: 1.2, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="h-full rounded-full bg-gradient-to-r from-green-500 to-violet-500" />
           </div>
           <p className="text-xs text-muted-foreground mt-1.5">Target: {targetCal} kcal/day</p>
@@ -288,8 +288,8 @@ export default function Diet() {
                       </div>
                     ) : (
                       <div className="divide-y divide-white/3">
-                        {mealEntries.map(entry => (
-                          <motion.div key={entry.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                        {mealEntries.map((entry, idx) => (
+                          <motion.div key={entry.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.25, delay: idx * 0.04, ease: [0.25, 0.46, 0.45, 0.94] }}
                             className="flex items-center justify-between px-4 py-3 hover:bg-white/3 transition-colors group">
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm">{entry.foodName}</p>
@@ -342,7 +342,7 @@ export default function Diet() {
                 </div>
               </div>
               {smartEstimate && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-3 space-y-2">
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }} className="mt-3 space-y-2">
                   <div className="p-3 rounded-xl bg-white/5 border border-violet-500/15">
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-semibold text-sm text-white">{smartEstimate.foodName}</p>
