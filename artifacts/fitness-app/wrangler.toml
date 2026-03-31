@@ -5,4 +5,4 @@ compatibility_date = "2024-01-01"
 bucket = "./dist/public"
 
 [vars]
-BACKEND_URL = "https://easetracker.replit.app"
+BACKEND_URL = "https://caloforge.com"
