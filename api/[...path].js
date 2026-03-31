@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  const BACKEND_URL = process.env.BACKEND_URL || "https://easetracker.replit.app";
+  const BACKEND_URL = process.env.BACKEND_URL || "https://caloforge.com";
 
   const url = new URL(req.url, `https://${req.headers.host}`);
   const targetUrl = `${BACKEND_URL}${url.pathname}${url.search}`;
