@@ -265,6 +265,8 @@ router.get("/callback", async (req: Request, res: Response) => {
   res.redirect(returnTo);
 });
 
+const GOOGLE_CALLBACK_URL = "https://caloforge.com/api/auth/google/callback";
+
 router.get("/auth/google/login", async (req: Request, res: Response) => {
   const config = await getGoogleOidcConfig();
   if (!config) {
@@ -272,7 +274,7 @@ router.get("/auth/google/login", async (req: Request, res: Response) => {
     return;
   }
 
-  const callbackUrl = `${getOrigin(req)}/api/auth/google/callback`;
+  const callbackUrl = GOOGLE_CALLBACK_URL;
   const returnTo = getSafeReturnTo(req.query.returnTo);
 
   const state = oidc.randomState();
@@ -302,7 +304,7 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
     return;
   }
 
-  const callbackUrl = `${getOrigin(req)}/api/auth/google/callback`;
+  const callbackUrl = GOOGLE_CALLBACK_URL;
   const stateParam = req.query.state as string | undefined;
   const pkce = stateParam ? await consumePkce(stateParam) : null;
 
