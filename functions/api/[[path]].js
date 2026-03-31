@@ -1,7 +1,7 @@
 export async function onRequest(context) {
   const { request, env } = context;
   
-  const BACKEND_URL = env.BACKEND_URL || "https://easetracker.replit.app";
+  const BACKEND_URL = env.BACKEND_URL || "https://caloforge.com";
   
   const url = new URL(request.url);
   const targetUrl = `${BACKEND_URL}${url.pathname}${url.search}`;
