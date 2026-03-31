@@ -162,6 +162,12 @@ function WelcomeScreen({ onContinue }: { onContinue: () => void }) {
           Get Started <ChevronRight className="w-5 h-5" />
         </motion.button>
       </motion.div>
+
+      <footer className="absolute bottom-4 left-0 right-0 text-center text-xs text-white/25 z-10">
+        <a href="/privacy-policy" className="hover:text-white/50 transition-colors">Privacy Policy</a>
+        <span className="mx-2">·</span>
+        <a href="/terms-of-service" className="hover:text-white/50 transition-colors">Terms of Service</a>
+      </footer>
     </div>
   );
 }
@@ -327,6 +333,12 @@ function SignupScreen({ onBack }: { onBack: () => void }) {
           </button>
         </p>
       </motion.div>
+
+      <footer className="absolute bottom-4 left-0 right-0 text-center text-xs text-white/25 z-10">
+        <a href="/privacy-policy" className="hover:text-white/50 transition-colors">Privacy Policy</a>
+        <span className="mx-2">·</span>
+        <a href="/terms-of-service" className="hover:text-white/50 transition-colors">Terms of Service</a>
+      </footer>
     </div>
   );
 }
@@ -630,6 +642,12 @@ function LoginScreen({ onCreateAccount }: { onCreateAccount: () => void }) {
           </motion.button>
         </div>
       </motion.div>
+
+      <footer className="absolute bottom-4 left-0 right-0 text-center text-xs text-white/25 z-10">
+        <a href="/privacy-policy" className="hover:text-white/50 transition-colors">Privacy Policy</a>
+        <span className="mx-2">·</span>
+        <a href="/terms-of-service" className="hover:text-white/50 transition-colors">Terms of Service</a>
+      </footer>
     </div>
   );
 }
@@ -729,6 +747,7 @@ function Router() {
     <Switch>
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-of-service" component={TermsOfService} />
+      <Route path="/terms" component={TermsOfService} />
       <Route>
         <AuthGuard>
           <Switch>

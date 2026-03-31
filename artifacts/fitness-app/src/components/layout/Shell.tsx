@@ -34,7 +34,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <span className="font-display font-bold text-xl tracking-tight">Calo<span className="text-primary">Forge</span><span className="text-cyan-400">X</span></span>
         </div>
 
-        <nav className="flex-1 px-4 space-y-2 mt-4">
+        <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto">
           {allDesktopNavItems.map((item) => {
             const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
             return (
@@ -61,6 +61,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
+
+        <div className="px-4 py-4 border-t border-white/5 text-center text-[11px] text-white/20 shrink-0">
+          <a href="/privacy-policy" className="hover:text-white/50 transition-colors">Privacy Policy</a>
+          <span className="mx-1.5">·</span>
+          <a href="/terms-of-service" className="hover:text-white/50 transition-colors">Terms of Service</a>
+        </div>
       </aside>
 
       <main className="flex-1 overflow-y-auto overscroll-y-contain pb-24 md:pb-0 min-w-0 max-w-full overflow-x-hidden relative" style={{ WebkitOverflowScrolling: "touch" }}>
@@ -69,6 +75,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
         <div className="p-4 md:p-8 lg:p-10 max-w-7xl mx-auto relative z-10">
           {children}
+          <footer className="mt-10 pt-6 border-t border-white/5 text-center text-xs text-white/20">
+            <a href="/privacy-policy" className="hover:text-white/40 transition-colors">Privacy Policy</a>
+            <span className="mx-2">·</span>
+            <a href="/terms-of-service" className="hover:text-white/40 transition-colors">Terms of Service</a>
+          </footer>
         </div>
       </main>
 
