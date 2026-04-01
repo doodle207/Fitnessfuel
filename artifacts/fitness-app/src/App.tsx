@@ -6,7 +6,7 @@ import { useAuth, storeAuthToken } from "@workspace/replit-auth-web";
 import { LanguageProvider } from "@/lib/i18n";
 import { useGetProfile, getGetProfileQueryKey } from "@workspace/api-client-react";
 import React, { useEffect, useState, useMemo, Component, type ErrorInfo, type ReactNode } from "react";
-import { Activity, Zap, TrendingUp, ChevronRight, Mail, ShieldCheck, Loader2, RotateCcw, AlertTriangle } from "lucide-react";
+import { Activity, Zap, TrendingUp, ChevronRight, Mail, ShieldCheck, Loader2, RotateCcw, AlertTriangle, ExternalLink, Smartphone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Shell } from "@/components/layout/Shell";
@@ -345,8 +345,20 @@ function SignupScreen({ onBack }: { onBack: () => void }) {
 
 type EmailStep = "email" | "otp" | "name";
 
+function isInAppBrowser(): boolean {
+  const ua = navigator.userAgent || "";
+  // Named in-app browsers
+  if (/LinkedIn|FBAN|FBAV|Instagram/i.test(ua)) return true;
+  // Android WebView flag
+  if (/Android/.test(ua) && /wv\b/.test(ua)) return true;
+  // iOS WebView: has iPhone/iPad but lacks "Safari" in UA (UIWebView / WKWebView)
+  if (/iPhone|iPod|iPad/.test(ua) && !/Safari/.test(ua)) return true;
+  return false;
+}
+
 function LoginScreen({ onCreateAccount }: { onCreateAccount: () => void }) {
   const { loginWithGoogle } = useAuth();
+  const inAppBrowser = isInAppBrowser();
 
   const [step, setStep] = useState<EmailStep>("email");
   const [email, setEmail] = useState("");
@@ -507,23 +519,45 @@ function LoginScreen({ onCreateAccount }: { onCreateAccount: () => void }) {
                 </span>
               </label>
 
-              <motion.button
-                type="button"
-                whileHover={{ scale: agreed ? 1.02 : 1 }}
-                whileTap={{ scale: agreed ? 0.98 : 1 }}
-                onClick={loginWithGoogle}
-                disabled={!agreed}
-                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-semibold text-base text-[#1a1a2e] bg-white hover:bg-white/95 transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <GoogleIcon />
-                Continue with Google
-              </motion.button>
+              {inAppBrowser ? (
+                <div className="mb-5 p-5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center">
+                    <Smartphone className="w-6 h-6 text-amber-400" />
+                  </div>
+                  <p className="text-white font-semibold text-sm mb-1">Open in Chrome or Safari to sign in</p>
+                  <p className="text-white/50 text-xs mb-4 leading-relaxed">
+                    Google sign-in is blocked inside in-app browsers. Tap below to open CaloForgeX in your default browser.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => window.open("https://caloforge.com", "_blank", "noopener,noreferrer")}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:bg-amber-500/30 font-semibold text-sm transition-all"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Open in Chrome / Safari
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: agreed ? 1.02 : 1 }}
+                    whileTap={{ scale: agreed ? 0.98 : 1 }}
+                    onClick={loginWithGoogle}
+                    disabled={!agreed}
+                    className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-semibold text-base text-[#1a1a2e] bg-white hover:bg-white/95 transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <GoogleIcon />
+                    Continue with Google
+                  </motion.button>
 
-              <div className="flex items-center gap-3 my-5">
-                <div className="flex-1 h-px bg-white/10" />
-                <span className="text-white/40 text-sm">or</span>
-                <div className="flex-1 h-px bg-white/10" />
-              </div>
+                  <div className="flex items-center gap-3 my-5">
+                    <div className="flex-1 h-px bg-white/10" />
+                    <span className="text-white/40 text-sm">or</span>
+                    <div className="flex-1 h-px bg-white/10" />
+                  </div>
+                </>
+              )}
 
               <form onSubmit={handleEmailContinue} className="space-y-3">
                 <div>
