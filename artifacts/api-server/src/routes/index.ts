@@ -15,6 +15,7 @@ import razorpayRouter from "./razorpay";
 import emailAuthRouter from "./emailAuth";
 import voucherRouter from "./voucher";
 import referralRouter from "./referral";
+import forgeWorkoutRouter from "./forgeWorkout";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(paymentsRouter);
 router.use(razorpayRouter);
 router.use(voucherRouter);
 router.use(referralRouter);
+router.use(forgeWorkoutRouter);
 
 export default router;
