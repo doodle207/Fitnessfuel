@@ -3,6 +3,8 @@ RUN npm install -g pnpm
 WORKDIR /app
 COPY . .
 WORKDIR /app/artifacts/fitness-app
+RUN sed -i '/@replit/d' package.json
+RUN sed -i '/@replit/d' vite.config.ts
 RUN pnpm install --no-frozen-lockfile
 RUN pnpm build
 RUN npm install -g serve
