@@ -6,9 +6,7 @@ import { rm, readFile } from "fs/promises";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// server deps to bundle to reduce openat(2) syscalls
-// which helps cold start times without risking some
-// packages that are not bundle compatible
+// Bundle ALL dependencies including @workspace packages for standalone deployment
 const allowlist = [
   "@google/generative-ai",
   "axios",
@@ -48,18 +46,20 @@ async function buildAll() {
     ...Object.keys(pkg.dependencies || {}),
     ...Object.keys(pkg.devDependencies || {}),
   ];
+  // Only mark node built-ins and non-bundleable packages as external
+  // @workspace packages are NOT excluded - they will be bundled
   const externals = allDeps.filter(
     (dep) =>
       !allowlist.includes(dep) &&
-      !(pkg.dependencies?.[dep]?.startsWith("workspace:")),
+      !dep.startsWith("@workspace/")
   );
 
   await esbuild({
     entryPoints: [path.resolve(__dirname, "src/index.ts")],
     platform: "node",
     bundle: true,
-    format: "cjs",
-    outfile: path.resolve(distDir, "index.cjs"),
+    format: "esm",
+    outfile: path.resolve(distDir, "index.js"),
     define: {
       "process.env.NODE_ENV": '"production"',
     },
