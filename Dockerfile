@@ -1,7 +1,8 @@
 FROM node:22-alpine
-RUN npm install -g pnpm
+RUN npm install -g pnpm typescript
 WORKDIR /app
 COPY . .
-RUN ls -la
-RUN find . -name "package.json" -not -path "*/node_modules/*" -maxdepth 3
-CMD ["sh", "-c", "echo starting"]
+WORKDIR /app/artifacts/api-server
+RUN pnpm install --no-frozen-lockfile
+RUN pnpm build
+CMD ["node", "./dist/index.js"]
