@@ -1,10 +1,9 @@
 FROM node:22-alpine
 RUN npm install -g pnpm
+WORKDIR /app
+COPY . .
 WORKDIR /app/artifacts/fitness-app
-COPY artifacts/fitness-app/package.json .
-COPY artifacts/fitness-app/pnpm-lock.yaml .
 RUN pnpm install --no-frozen-lockfile
-COPY artifacts/fitness-app .
 RUN pnpm build
 RUN npm install -g serve
 CMD ["serve", "-s", "dist", "-l", "3000"]
