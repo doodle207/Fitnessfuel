@@ -2,10 +2,9 @@ FROM node:22-alpine
 RUN npm install -g pnpm
 WORKDIR /app
 COPY . .
+RUN sed -i '/@replit/d' artifacts/fitness-app/package.json
+RUN sed -i '/@workspace\/replit/d' artifacts/fitness-app/package.json
 WORKDIR /app/artifacts/fitness-app
-RUN sed -i '/@replit/d' package.json
-RUN sed -i '/@workspace\/replit/d' package.json
-RUN cat package.json
 RUN pnpm install --no-frozen-lockfile
 RUN pnpm build
 RUN npm install -g serve
