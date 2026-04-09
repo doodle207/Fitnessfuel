@@ -71,6 +71,8 @@
     "zod": "latest"
   },
   "dependencies": {
+    "@workspace/api-client-react": "workspace:*",
+    "@workspace/replit-auth-web": "workspace:*",
     "@supabase/supabase-js": "^2.99.2",
     "heic2any": "^0.0.4"
   }
