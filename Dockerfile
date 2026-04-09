@@ -1,4 +1,4 @@
-FROM node:22-alpine
+FROM node:22-bookworm-slim
 RUN npm install -g pnpm typescript
 WORKDIR /app
 COPY pnpm-workspace.yaml .
