@@ -1,6 +1,4 @@
 import { pgTable, text, serial, integer, real, timestamp, boolean, date } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod/v4";
 
 export const userProfilesTable = pgTable("user_profiles", {
   id: serial("id").primaryKey(),
@@ -21,10 +19,7 @@ export const userProfilesTable = pgTable("user_profiles", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertUserProfileSchema = createInsertSchema(userProfilesTable, {
-  cycles: "ref",
-}).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
+export type InsertUserProfile = typeof userProfilesTable.$inferInsert;
 export type UserProfile = typeof userProfilesTable.$inferSelect;
 
 export const exercisesTable = pgTable("exercises", {
@@ -59,10 +54,7 @@ export const workoutsTable = pgTable("workouts", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertWorkoutSchema = createInsertSchema(workoutsTable, {
-  cycles: "ref",
-}).omit({ id: true, createdAt: true });
-export type InsertWorkout = z.infer<typeof insertWorkoutSchema>;
+export type InsertWorkout = typeof workoutsTable.$inferInsert;
 export type Workout = typeof workoutsTable.$inferSelect;
 
 export const workoutSetsTable = pgTable("workout_sets", {
@@ -76,10 +68,7 @@ export const workoutSetsTable = pgTable("workout_sets", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertWorkoutSetSchema = createInsertSchema(workoutSetsTable, {
-  cycles: "ref",
-}).omit({ id: true, createdAt: true });
-export type InsertWorkoutSet = z.infer<typeof insertWorkoutSetSchema>;
+export type InsertWorkoutSet = typeof workoutSetsTable.$inferInsert;
 export type WorkoutSet = typeof workoutSetsTable.$inferSelect;
 
 export const bodyweightLogsTable = pgTable("bodyweight_logs", {
