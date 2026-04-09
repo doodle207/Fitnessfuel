@@ -21,7 +21,9 @@ export const userProfilesTable = pgTable("user_profiles", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertUserProfileSchema = createInsertSchema(userProfilesTable).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertUserProfileSchema = createInsertSchema(userProfilesTable, {
+  cycles: "ref",
+}).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 export type UserProfile = typeof userProfilesTable.$inferSelect;
 
@@ -57,7 +59,9 @@ export const workoutsTable = pgTable("workouts", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertWorkoutSchema = createInsertSchema(workoutsTable).omit({ id: true, createdAt: true });
+export const insertWorkoutSchema = createInsertSchema(workoutsTable, {
+  cycles: "ref",
+}).omit({ id: true, createdAt: true });
 export type InsertWorkout = z.infer<typeof insertWorkoutSchema>;
 export type Workout = typeof workoutsTable.$inferSelect;
 
@@ -72,7 +76,9 @@ export const workoutSetsTable = pgTable("workout_sets", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertWorkoutSetSchema = createInsertSchema(workoutSetsTable).omit({ id: true, createdAt: true });
+export const insertWorkoutSetSchema = createInsertSchema(workoutSetsTable, {
+  cycles: "ref",
+}).omit({ id: true, createdAt: true });
 export type InsertWorkoutSet = z.infer<typeof insertWorkoutSetSchema>;
 export type WorkoutSet = typeof workoutSetsTable.$inferSelect;
 

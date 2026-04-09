@@ -8,7 +8,9 @@ export const conversations = pgTable("conversations", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const insertConversationSchema = createInsertSchema(conversations).omit({
+export const insertConversationSchema = createInsertSchema(conversations, {
+  cycles: "ref",
+}).omit({
   id: true,
   createdAt: true,
 });
