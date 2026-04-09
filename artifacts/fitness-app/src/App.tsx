@@ -7,10 +7,8 @@ import { useGetProfile, getGetProfileQueryKey } from "@workspace/api-client-reac
 import React, { useEffect, useState, useMemo, Component, type ErrorInfo, type ReactNode } from "react";
 import { Activity, Zap, TrendingUp, ChevronRight, Mail, ShieldCheck, Loader2, RotateCcw, AlertTriangle, ExternalLink, Smartphone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
 import { Shell } from "@/components/layout/Shell";
 import NotFound from "@/pages/not-found";
-
 import Onboarding from "@/pages/Onboarding";
 import Dashboard from "@/pages/Dashboard";
 import WorkoutBuilder from "@/pages/WorkoutBuilder";
@@ -28,27 +26,17 @@ import Referral from "@/pages/Referral";
 function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
-
   React.useEffect(() => {
     fetch("/api/auth/me", { credentials: "include" })
-      .then(res => {
-        setIsAuthenticated(res.ok);
-        setIsLoading(false);
-      })
-      .catch(() => {
-        setIsAuthenticated(false);
-        setIsLoading(false);
-      });
+      .then(res => { setIsAuthenticated(res.ok); setIsLoading(false); })
+      .catch(() => { setIsAuthenticated(false); setIsLoading(false); });
   }, []);
-
   return { isAuthenticated, isLoading, loginWithGoogle: () => { window.location.href = "/api/auth/google"; } };
 }
 
 function storeAuthToken(token: string) {
   document.cookie = `sid=${token}; path=/`;
 }
-
-// ─── Error Boundary ───────────────────────────────────────────────────────────
 interface ErrorBoundaryState { hasError: boolean; error: Error | null; }
 class AppErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
   constructor(props: { children: ReactNode }) {
