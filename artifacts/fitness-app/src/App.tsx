@@ -2,7 +2,28 @@ import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useAuth, storeAuthToken } from "@workspace/replit-auth-web";
+function useAuth() {
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetch("/api/auth/me", { credentials: "include" })
+      .then(res => {
+        setIsAuthenticated(res.ok);
+        setIsLoading(false);
+      })
+      .catch(() => {
+        setIsAuthenticated(false);
+        setIsLoading(false);
+      });
+  }, []);
+
+  return { isAuthenticated, isLoading, loginWithGoogle: () => { window.location.href = "/api/auth/google"; } };
+}
+
+function storeAuthToken(token: string) {
+  document.cookie = `sid=${token}; path=/`;
+}
 import { LanguageProvider } from "@/lib/i18n";
 import { useGetProfile, getGetProfileQueryKey } from "@workspace/api-client-react";
 import React, { useEffect, useState, useMemo, Component, type ErrorInfo, type ReactNode } from "react";
