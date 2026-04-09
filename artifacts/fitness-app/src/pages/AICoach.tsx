@@ -7,7 +7,8 @@ import {
   MessageSquare, ChevronRight, Flame, Dumbbell, Sparkles, Activity, UtensilsCrossed,
   Mic, MicOff
 } from "lucide-react";
-import doctorImg from "@assets/IMG_3514_1774455847548.jpeg";
+const doctorImg =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' fill='%231e1b4b'/%3E%3Ccircle cx='40' cy='30' r='14' fill='%23a78bfa'/%3E%3Crect x='24' y='46' width='32' height='20' rx='10' fill='%237c3aed'/%3E%3C/svg%3E";
 import AdBanner from "@/components/AdBanner";
 import ChatMessage from "@/components/ChatMessage";
 import UpgradeModal from "@/components/UpgradeModal";

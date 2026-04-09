@@ -6,6 +6,7 @@ COPY package.json .
 COPY tsconfig.base.json .
 COPY pnpm-lock.yaml* .
 COPY lib/ ./lib/
+COPY attached_assets/ ./attached_assets/
 COPY artifacts/api-server/ ./artifacts/api-server/
 COPY artifacts/fitness-app/ ./artifacts/fitness-app/
 RUN pnpm install --no-frozen-lockfile

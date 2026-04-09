@@ -8,14 +8,19 @@ import { Dumbbell, Play, Calendar, X, Target, Info, Zap, Search, AlertCircle, St
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/lib/i18n";
 
-import imgChest from "@assets/IMG_5147_1774142427972.png";
-import imgBack from "@assets/IMG_5146_1774142427972.png";
-import imgLegs from "@assets/IMG_5144_1774142427972.jpeg";
-import imgShoulders from "@assets/IMG_5148_1774142427972.png";
-import imgArms from "@assets/IMG_5151_1774142427972.jpeg";
-import imgCore from "@assets/IMG_5152_1774142427972.jpeg";
-import imgCardio from "@assets/IMG_5149_1774142427972.png";
-import imgFullBody from "@assets/IMG_5153_1774142427972.jpeg";
+const makeGroupImage = (label: string, color: string) =>
+  `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 200'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='${color}'/%3E%3Cstop offset='100%25' stop-color='%230f172a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='320' height='200' fill='url(%23g)'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='Arial' font-size='28' font-weight='700'%3E${encodeURIComponent(
+    label,
+  )}%3C/text%3E%3C/svg%3E`;
+
+const imgChest = makeGroupImage("Chest", "%233b82f6");
+const imgBack = makeGroupImage("Back", "%238b5cf6");
+const imgLegs = makeGroupImage("Legs", "%23f97316");
+const imgShoulders = makeGroupImage("Shoulders", "%2310b981");
+const imgArms = makeGroupImage("Arms", "%23ec4899");
+const imgCore = makeGroupImage("Core", "%23f59e0b");
+const imgCardio = makeGroupImage("Cardio", "%2306b6d4");
+const imgFullBody = makeGroupImage("Full Body", "%236b7280");
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
