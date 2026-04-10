@@ -421,6 +421,14 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
         : responseBody && typeof responseBody === "object"
           ? JSON.stringify(responseBody)
           : "";
+    const oauthError =
+      (responseBody && typeof responseBody === "object" && typeof responseBody.error === "string"
+        ? responseBody.error
+        : "");
+    const oauthDescription =
+      (responseBody && typeof responseBody === "object" && typeof responseBody.error_description === "string"
+        ? responseBody.error_description
+        : "");
     const combined = `${code} ${msg} ${responseText}`.toLowerCase();
 
     const reason =
@@ -435,7 +443,10 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
 
     // Log full error details server-side; don't leak internals to browser.
     console.error("Google auth error:", err);
-    res.redirect(`/?error=google_auth_failed&reason=${encodeURIComponent(reason)}`);
+    const oauthHint = oauthError || oauthDescription ? `${oauthError}${oauthDescription ? `:${oauthDescription}` : ""}` : "";
+    const qp = new URLSearchParams({ error: "google_auth_failed", reason });
+    if (oauthHint) qp.set("oauth", oauthHint.slice(0, 200));
+    res.redirect(`/?${qp.toString()}`);
   }
 });
 
