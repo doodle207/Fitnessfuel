@@ -108,6 +108,11 @@ export function useAuth() {
   const isAuthenticated = !!user;
   const isLoading = query.isLoading;
 
-  return { user, isLoading, isAuthenticated };
+  function logout() {
+    clearAuthToken();
+    window.location.href = "/api/logout";
+  }
+
+  return { user, isLoading, isAuthenticated, logout };
 }
 

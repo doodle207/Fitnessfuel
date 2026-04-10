@@ -48,6 +48,8 @@ function getOrigin(_req: Request): string {
     const domain = process.env.REPLIT_DOMAINS.split(",")[0].trim();
     return `https://${domain}`;
   }
+  // Render / custom deployment
+  if (process.env.APP_URL) return process.env.APP_URL;
   // Local non-Replit fallback
   return `http://localhost:${process.env.PORT || 3000}`;
 }
@@ -265,7 +267,9 @@ router.get("/callback", async (req: Request, res: Response) => {
   res.redirect(returnTo);
 });
 
-const GOOGLE_CALLBACK_URL = "https://caloforge.com/api/auth/google/callback";
+const GOOGLE_CALLBACK_URL = process.env.APP_URL
+  ? `${process.env.APP_URL}/api/auth/google/callback`
+  : "https://caloforge.com/api/auth/google/callback";
 
 router.get("/auth/google/login", async (req: Request, res: Response) => {
   const config = await getGoogleOidcConfig();
