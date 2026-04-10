@@ -74,6 +74,12 @@ async function consumePkce(state: string): Promise<{ codeVerifier: string; nonce
 
 const router: IRouter = Router();
 
+function getAppUrl(): string | undefined {
+  const raw = process.env.APP_URL;
+  if (!raw) return undefined;
+  return raw.replace(/\/+$/, "");
+}
+
 function getOrigin(_req: Request): string {
   // REPLIT_DOMAINS is set in both dev and production Replit environments
   // and gives us the correct public-facing domain, bypassing proxy header issues.
@@ -82,7 +88,8 @@ function getOrigin(_req: Request): string {
     return `https://${domain}`;
   }
   // Render / custom deployment
-  if (process.env.APP_URL) return process.env.APP_URL;
+  const appUrl = getAppUrl();
+  if (appUrl) return appUrl;
   // Local non-Replit fallback
   return `http://localhost:${process.env.PORT || 3000}`;
 }
@@ -311,8 +318,8 @@ router.get("/callback", async (req: Request, res: Response) => {
   res.redirect(returnTo);
 });
 
-const GOOGLE_CALLBACK_URL = process.env.APP_URL
-  ? `${process.env.APP_URL}/api/auth/google/callback`
+const GOOGLE_CALLBACK_URL = getAppUrl()
+  ? `${getAppUrl()}/api/auth/google/callback`
   : "https://caloforge.com/api/auth/google/callback";
 
 router.get("/auth/google/login", async (req: Request, res: Response) => {
@@ -404,8 +411,17 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
     setSessionCookie(res, sid);
     res.redirect(pkce.returnTo);
   } catch (err) {
+    const msg = String((err as any)?.message || "");
+    const code = String((err as any)?.code || (err as any)?.error || "");
+    const combined = `${code} ${msg}`.toLowerCase();
+    const reason =
+      combined.includes("redirect_uri") ? "redirect_uri_mismatch"
+      : combined.includes("invalid_client") ? "invalid_client"
+      : combined.includes("invalid_grant") ? "invalid_grant"
+      : combined.includes("pkce") ? "pkce_failed"
+      : "unknown";
     console.error("Google auth error:", err);
-    res.redirect("/?error=google_auth_failed");
+    res.redirect(`/?error=google_auth_failed&reason=${encodeURIComponent(reason)}`);
   }
 });
 

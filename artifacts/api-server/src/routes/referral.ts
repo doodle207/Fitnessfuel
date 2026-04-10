@@ -128,7 +128,7 @@ router.get("/referral/info", async (req: Request, res: Response) => {
 
     const origin = process.env.REPLIT_DOMAINS
       ? `https://${process.env.REPLIT_DOMAINS.split(",")[0].trim()}`
-      : (process.env.APP_URL || `http://localhost:5173`);
+      : ((process.env.APP_URL || "").replace(/\/+$/, "") || `http://localhost:5173`);
     const referralLink = `${origin}/?ref=${referralCode}`;
 
     const { rows: referralRows } = await db.execute(sql`
