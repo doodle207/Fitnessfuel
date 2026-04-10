@@ -31,7 +31,7 @@ function useAuth() {
       .then(res => { setIsAuthenticated(res.ok); setIsLoading(false); })
       .catch(() => { setIsAuthenticated(false); setIsLoading(false); });
   }, []);
-  return { isAuthenticated, isLoading, loginWithGoogle: () => { window.location.href = "/api/auth/google"; } };
+  return { isAuthenticated, isLoading, loginWithGoogle: () => { window.location.href = "/api/auth/google/login"; } };
 }
 
 function storeAuthToken(token: string) {
@@ -474,9 +474,10 @@ function LoginScreen({ onCreateAccount }: { onCreateAccount: () => void }) {
           <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
             {error && error}
             {!error && urlError === "google_auth_failed" && "Google sign-in failed. Please try again."}
+            {!error && urlError === "google_not_configured" && "Google sign-in isn’t configured yet. Please try email login or come back later."}
             {!error && urlError === "auth_session_expired" && "Login session expired. Please try signing in again."}
             {!error && urlError === "auth_failed" && "Authentication failed. Please try again."}
-            {!error && urlError && !["google_auth_failed","auth_session_expired","auth_failed"].includes(urlError) && "Sign-in error. Please try again."}
+            {!error && urlError && !["google_auth_failed","google_not_configured","auth_session_expired","auth_failed"].includes(urlError) && "Sign-in error. Please try again."}
           </div>
         )}
 
