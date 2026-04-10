@@ -168,6 +168,17 @@ router.get("/auth/user", (req: Request, res: Response) => {
   res.json({ user: user ?? null, token });
 });
 
+// Frontend compatibility endpoint: returns the user directly.
+// `useAuth` in the app expects `/api/auth/me` to 401 when logged out.
+router.get("/auth/me", (req: Request, res: Response) => {
+  const user = req.isAuthenticated() ? req.user : null;
+  if (!user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  res.json(user);
+});
+
 router.get("/auth/providers", (_req: Request, res: Response) => {
   res.json({
     google: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
