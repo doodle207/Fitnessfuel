@@ -23,20 +23,53 @@ import {
 
 const OIDC_STATE_TTL_MINUTES = 10;
 
-// DB-backed PKCE store — works across all server processes (no in-memory split-brain)
+type PkceRow = {
+  provider: string;
+  codeVerifier: string;
+  nonce: string;
+  returnTo: string;
+  expiresAt: Date;
+};
+
+const pkceMemory = new Map<string, PkceRow>();
+
+function purgePkceMemory(now = new Date()) {
+  for (const [state, row] of pkceMemory.entries()) {
+    if (row.expiresAt < now) pkceMemory.delete(state);
+  }
+}
+
+// DB-backed PKCE store (with in-memory fallback for missing DB/migrations)
 async function storePkce(state: string, provider: string, codeVerifier: string, nonce: string, returnTo: string) {
   const expiresAt = new Date(Date.now() + OIDC_STATE_TTL_MINUTES * 60 * 1000);
-  // Purge stale entries while we're here
-  await db.delete(oauthStatesTable).where(lt(oauthStatesTable.expiresAt, new Date()));
-  await db.insert(oauthStatesTable).values({ state, provider, codeVerifier, nonce, returnTo, expiresAt });
+  try {
+    // Purge stale entries while we're here
+    await db.delete(oauthStatesTable).where(lt(oauthStatesTable.expiresAt, new Date()));
+    await db.insert(oauthStatesTable).values({ state, provider, codeVerifier, nonce, returnTo, expiresAt });
+  } catch (err) {
+    // If Render DB init/migrations haven't created oauth_states yet, fall back to memory.
+    purgePkceMemory();
+    pkceMemory.set(state, { provider, codeVerifier, nonce, returnTo, expiresAt });
+    console.warn("[oauth] PKCE DB store failed; using in-memory fallback:", err);
+  }
 }
 
 async function consumePkce(state: string): Promise<{ codeVerifier: string; nonce: string; returnTo: string } | null> {
-  const [row] = await db.select().from(oauthStatesTable).where(eq(oauthStatesTable.state, state));
-  if (!row) return null;
-  await db.delete(oauthStatesTable).where(eq(oauthStatesTable.state, state));
-  if (row.expiresAt < new Date()) return null;
-  return { codeVerifier: row.codeVerifier, nonce: row.nonce, returnTo: row.returnTo };
+  try {
+    const [row] = await db.select().from(oauthStatesTable).where(eq(oauthStatesTable.state, state));
+    if (!row) return null;
+    await db.delete(oauthStatesTable).where(eq(oauthStatesTable.state, state));
+    if (row.expiresAt < new Date()) return null;
+    return { codeVerifier: row.codeVerifier, nonce: row.nonce, returnTo: row.returnTo };
+  } catch (err) {
+    purgePkceMemory();
+    const row = pkceMemory.get(state);
+    if (!row) return null;
+    pkceMemory.delete(state);
+    if (row.expiresAt < new Date()) return null;
+    console.warn("[oauth] PKCE DB consume failed; using in-memory fallback:", err);
+    return { codeVerifier: row.codeVerifier, nonce: row.nonce, returnTo: row.returnTo };
+  }
 }
 
 const router: IRouter = Router();
