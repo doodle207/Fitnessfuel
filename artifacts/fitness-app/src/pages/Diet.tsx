@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { PageTransition } from "@/components/ui/LoadingState";
-import { useGetProfile } from "@workspace/api-client-react";
+import { useGetProfile } from "@/hooks/useProfile";
 import { Apple, Flame, Droplets, Plus, X, Trash2, ChevronDown, UtensilsCrossed, Coffee, Sun, Moon, Sandwich, Camera, Sparkles, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";

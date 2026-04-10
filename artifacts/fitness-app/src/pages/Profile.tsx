@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { useGetProfile, useCreateProfile } from "@workspace/api-client-react";
+import { useCreateProfile } from "@workspace/api-client-react";
+import { useGetProfile } from "@/hooks/useProfile";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@workspace/replit-auth-web";
+import { useAuth } from "@/hooks/useAuth";
 import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
 import { User, Settings, LogOut, Target, X, Check, ChevronDown, Save, Globe } from "lucide-react";
 

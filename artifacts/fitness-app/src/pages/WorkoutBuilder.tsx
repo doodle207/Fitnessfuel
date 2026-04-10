@@ -1,7 +1,8 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
 import { PageTransition } from "@/components/ui/LoadingState";
-import { useCreateWorkout, useGetExercises, useGetWorkouts, useGetProfile } from "@workspace/api-client-react";
+import { useCreateWorkout, useGetExercises, useGetWorkouts } from "@workspace/api-client-react";
+import { useGetProfile } from "@/hooks/useProfile";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { Dumbbell, Play, Calendar, X, Target, Info, Zap, Search, AlertCircle, Star, ChevronRight, CheckCircle2, Sparkles, Flame, Loader2, Wand2, MapPin, Clock, RotateCcw } from "lucide-react";

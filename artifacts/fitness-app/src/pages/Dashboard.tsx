@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useGetDashboard, useGetProfile } from "@workspace/api-client-react";
+import { useGetDashboard } from "@workspace/api-client-react";
+import { useGetProfile } from "@/hooks/useProfile";
 import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
 import { format, startOfWeek, addDays, differenceInDays, parseISO } from "date-fns";
 import {

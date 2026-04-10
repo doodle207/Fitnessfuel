@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useGetProfile } from "@workspace/api-client-react";
+import { useGetProfile } from "@/hooks/useProfile";
 import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
 import { motion } from "framer-motion";
 import {

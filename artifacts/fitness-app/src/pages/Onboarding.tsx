@@ -3,7 +3,7 @@ import { useCreateProfile } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAuth } from "@workspace/replit-auth-web";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Target, ChevronRight, ChevronLeft,
   User, Scale, CheckCircle2,

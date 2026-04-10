@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useGetBodyweightLogs, useAddBodyweightLog, useGetProfile } from "@workspace/api-client-react";
+import { useGetBodyweightLogs, useAddBodyweightLog } from "@workspace/api-client-react";
+import { useGetProfile } from "@/hooks/useProfile";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageTransition, LoadingState } from "@/components/ui/LoadingState";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, Legend } from "recharts";

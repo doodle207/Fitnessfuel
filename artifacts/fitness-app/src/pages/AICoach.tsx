@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { PageTransition } from "@/components/ui/LoadingState";
-import { useGetProfile } from "@workspace/api-client-react";
+import { useGetProfile } from "@/hooks/useProfile";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Brain, Send, RefreshCw, Zap, AlertTriangle, Target, TrendingUp,

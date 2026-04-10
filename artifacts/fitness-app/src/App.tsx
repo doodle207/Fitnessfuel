@@ -3,27 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/lib/i18n";
-function useGetProfile(options?: any) {
-  const [data, setData] = React.useState<any>(undefined);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<any>(null);
-
-  React.useEffect(() => {
-    if (options?.query?.enabled === false) { setIsLoading(false); return; }
-    fetch("/api/profile", { credentials: "include" })
-      .then(res => {
-        if (res.status === 404) throw Object.assign(new Error("Not found"), { status: 404 });
-        if (!res.ok) throw Object.assign(new Error("Failed"), { status: res.status });
-        return res.json();
-      })
-      .then(d => { setData(d); setIsLoading(false); })
-      .catch(e => { setError(e); setIsLoading(false); });
-  }, [options?.query?.enabled]);
-
-  return { data, isLoading, error, refetch: () => {} };
-}
-
-function getGetProfileQueryKey() { return ["profile"]; }
+import { useGetProfile, getGetProfileQueryKey } from "@/hooks/useProfile";
 import React, { useEffect, useState, useMemo, Component, type ErrorInfo, type ReactNode } from "react";
 import { Activity, Zap, TrendingUp, ChevronRight, Mail, ShieldCheck, Loader2, RotateCcw, AlertTriangle, ExternalLink, Smartphone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
