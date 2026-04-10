@@ -411,15 +411,29 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
     setSessionCookie(res, sid);
     res.redirect(pkce.returnTo);
   } catch (err) {
-    const msg = String((err as any)?.message || "");
-    const code = String((err as any)?.code || (err as any)?.error || "");
-    const combined = `${code} ${msg}`.toLowerCase();
+    const anyErr: any = err;
+    const msg = String(anyErr?.message || "");
+    const code = String(anyErr?.code || anyErr?.error || "");
+    const responseBody = anyErr?.response?.body;
+    const responseText =
+      typeof responseBody === "string"
+        ? responseBody
+        : responseBody && typeof responseBody === "object"
+          ? JSON.stringify(responseBody)
+          : "";
+    const combined = `${code} ${msg} ${responseText}`.toLowerCase();
+
     const reason =
       combined.includes("redirect_uri") ? "redirect_uri_mismatch"
+      : combined.includes("unauthorized_client") ? "unauthorized_client"
       : combined.includes("invalid_client") ? "invalid_client"
       : combined.includes("invalid_grant") ? "invalid_grant"
-      : combined.includes("pkce") ? "pkce_failed"
+      : combined.includes("access_denied") ? "access_denied"
+      : combined.includes("invalid_request") ? "invalid_request"
+      : combined.includes("pkce") || combined.includes("state") ? "pkce_failed"
       : "unknown";
+
+    // Log full error details server-side; don't leak internals to browser.
     console.error("Google auth error:", err);
     res.redirect(`/?error=google_auth_failed&reason=${encodeURIComponent(reason)}`);
   }
